@@ -53,6 +53,19 @@
       .replace(/\s+/g, "");
   }
 
+  function isGitHubPagesHost() {
+    try {
+      var h = String(location && location.hostname || "").toLowerCase();
+      return h === "github.io" || /\.github\.io$/.test(h);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function isLegacyGemKey(keyNorm) {
+    return /^GEM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/.test(String(keyNorm || ""));
+  }
+
   function readRegistry() {
     try {
       var raw = localStorage.getItem(REGISTRY_KEY) || localStorage.getItem(REGISTRY_BACKUP_KEY);
@@ -267,6 +280,23 @@
 
     var reg = readRegistry();
     var entry = reg.keys[keyNorm];
+    // GitHub Pages'in sunucu/veritabani calistirma destegi yoktur. Eski panelde
+    // uretilmis ancak statik JSON'a aktarilmamis GEM anahtarlarini uyumlu kabul et.
+    if (!entry && isGitHubPagesHost() && isLegacyGemKey(keyNorm)) {
+      entry = {
+        tier: UNLIMITED_TIER,
+        games: ["all"],
+        createdAt: new Date().toISOString(),
+        revoked: false,
+        activatedAt: null,
+        expiresAt: null,
+        clientIp: "",
+        shared: true,
+        legacy: true,
+      };
+      reg.keys[keyNorm] = entry;
+      writeRegistry(reg);
+    }
     if (!entry) return { ok: false, message: "Bu anahtar kayÄ±tlÄ± deÄŸil." };
     if (entry.revoked) return { ok: false, message: "Bu anahtar iptal edilmiÅŸ." };
 
@@ -620,7 +650,7 @@
       // GitHub Pages statik barindirmadir ve PHP lisans API'sini calistiramaz.
       // Bu ortamda repodaki mevcut registry JSON'u yuklenir ve anahtarlar
       // tarayicida dogrulanir; boylece kayitli anahtar sahipleri oyunlari acar.
-      if (h === "github.io" || /\.github\.io$/.test(h)) return false;
+      if (isGitHubPagesHost()) return false;
       return true;
     } catch (eH) {
       return false;
