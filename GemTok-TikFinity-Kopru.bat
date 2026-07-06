@@ -13,9 +13,15 @@ if not exist "tools\node_modules\ws" (
   call npm install ws --no-save --silent
   popd
 )
-echo TikFinity koprusu baslatiliyor (ws://127.0.0.1:29213)
+echo TikFinity koprusu ve yerel oyun merkezi baslatiliyor...
 echo TikFinity masaustu uygulamasinin acik oldugundan emin olun.
 echo Hostinger sitesinde Chrome/Edge yerel ag erisimine izin verin.
 echo.
-node "tools\gemtok-tikfinity-bridge.mjs"
+start "GemTok TikFinity Koprusu" /min node "tools\gemtok-tikfinity-bridge.mjs"
+timeout /t 2 /nobreak >nul
+start "" "http://127.0.0.1:29213/"
+
+echo.
+echo Oyun Merkezi tarayicida acildi: http://127.0.0.1:29213/
+echo Bu pencereyi kapatabilirsiniz. Kopru ayri, kucultulmus pencerede calisiyor.
 pause

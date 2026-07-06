@@ -2,10 +2,11 @@
  * TikFinity WebSocket köprüsü — Hostinger (HTTPS) sitesinden yerel TikFinity'ye.
  * ws://127.0.0.1:29213 → ws://127.0.0.1:21213
  */
-import { createServer } from "http";
-import { createRequire } from "module";
-import path from "path";
-import { fileURLToPath } from "url";
+import { createServer } from "http";
+import { createRequire } from "module";
+import { promises as fs } from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -27,10 +28,45 @@ function loadWsModule() {
 
 const { WebSocketServer, WebSocket } = loadWsModule();
 
-const PORT = Number(process.env.GEMTOK_TIKFINITY_BRIDGE_PORT || 29213);
-const UPSTREAM = String(process.env.TIKFINITY_WS_URL || "ws://127.0.0.1:21213").trim();
+const PORT = Number(process.env.GEMTOK_TIKFINITY_BRIDGE_PORT || 29213);
+const UPSTREAM = String(process.env.TIKFINITY_WS_URL || "ws://127.0.0.1:21213").trim();
+const PUBLIC_ROOT = path.resolve(__dirname, "..");
+
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".gif": "image/gif",
+  ".ico": "image/x-icon",
+  ".mp3": "audio/mpeg",
+  ".wav": "audio/wav",
+  ".webm": "video/webm",
+  ".woff": "font/woff",
+  ".woff2": "font/woff2",
+};
+
+function isDeniedPath(filePath) {
+  const rel = path.relative(PUBLIC_ROOT, filePath);
+  if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) return rel !== "";
+  const normalized = rel.replace(/\\/g, "/").toLowerCase();
+  return (
+    normalized.startsWith(".git/") ||
+    normalized.startsWith(".gemtok-private/") ||
+    normalized.includes("/node_modules/") ||
+    normalized.startsWith("node_modules/") ||
+    normalized.endsWith(".env") ||
+    normalized.endsWith(".php")
+  );
+}
 
-const server = createServer((req, res) => {
+const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -39,13 +75,41 @@ const server = createServer((req, res) => {
     res.end();
     return;
   }
-  if (req.url === "/health" || req.url === "/") {
-    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+  if (req.url === "/health" || req.url === "/") {
+    if (req.url === "/") {
+      res.writeHead(302, { Location: "/s%C4%B1ra/OYUN%20MERKEZI.html" });
+      res.end();
+      return;
+    }
+    res.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     res.end(JSON.stringify({ ok: true, service: "gemtok-tikfinity-bridge", upstream: UPSTREAM, port: PORT }));
     return;
   }
-  res.writeHead(404);
-  res.end();
+  try {
+    res.removeHeader("Access-Control-Allow-Origin");
+    res.removeHeader("Access-Control-Allow-Methods");
+    res.removeHeader("Access-Control-Allow-Headers");
+    const requestUrl = new URL(req.url || "/", `http://127.0.0.1:${PORT}`);
+    const pathname = decodeURIComponent(requestUrl.pathname);
+    const filePath = path.resolve(PUBLIC_ROOT, `.${pathname}`);
+    if (isDeniedPath(filePath)) {
+      res.writeHead(403);
+      res.end("Forbidden");
+      return;
+    }
+    const stat = await fs.stat(filePath);
+    if (!stat.isFile()) throw new Error("not_file");
+    const body = await fs.readFile(filePath);
+    res.writeHead(200, {
+      "Content-Type": MIME[path.extname(filePath).toLowerCase()] || "application/octet-stream",
+      "Cache-Control": "no-store",
+      "X-Content-Type-Options": "nosniff",
+    });
+    res.end(body);
+  } catch {
+    res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("Not found");
+  }
 });
 
 const wss = new WebSocketServer({ server });
@@ -80,8 +144,9 @@ wss.on("connection", (client) => {
   client.on("error", closeBoth);
 });
 
-server.listen(PORT, "127.0.0.1", () => {
+server.listen(PORT, "127.0.0.1", () => {
   console.log(`[gemtok-tikfinity-bridge] http://127.0.0.1:${PORT}/health`);
   console.log(`[gemtok-tikfinity-bridge] ws://127.0.0.1:${PORT}/  →  ${UPSTREAM}`);
-  console.log("[gemtok-tikfinity-bridge] TikFinity acik olmali. Site HTTPS ise tarayicide yerel ag izni verin.");
-});
+  console.log("[gemtok-tikfinity-bridge] TikFinity acik olmali. Site HTTPS ise tarayicide yerel ag izni verin.");
+  console.log(`[gemtok-tikfinity-bridge] Yerel oyun merkezi: http://127.0.0.1:${PORT}/`);
+});
