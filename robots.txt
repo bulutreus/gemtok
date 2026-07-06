@@ -1,0 +1,14 @@
+# Robots.txt tavsiye niteliğindedir; HTTrack "robots yok say" ile yine de indirebilir.
+# Sunucu tarafı kural için kök .htaccess içindeki /game/ User-Agent kısıtına bakın.
+
+User-agent: HTTrack
+Disallow: /
+
+User-agent: WinHTTrack
+Disallow: /
+
+User-agent: wget
+Disallow: /game/
+
+User-agent: *
+Disallow: /game/

@@ -1,0 +1,26 @@
+{
+  "wsPort": 21213,
+  "tiktokUsername": "KULLANICI_ADI_BURAYA",
+  "enableExtendedGiftInfo": true,
+  "giftIdToLane": {
+    "5655": { "lane": 0, "label": "Rose → Türkiye" },
+    "6064": { "lane": 0, "label": "İkinci hediye → Türkiye" }
+  },
+  "giftNameToLane": [
+    { "match": "rose", "lane": 0 },
+    { "match": "gül", "lane": 0 },
+    { "match": "heart", "lane": 1 },
+    { "match": "kalp", "lane": 1 },
+    { "match": "finger", "lane": 2 },
+    { "match": "confetti", "lane": 3 },
+    { "match": "sun", "lane": 4 },
+    { "match": "corgi", "lane": 4 }
+  ],
+  "commentLaneKeywords": [
+    ["TURKIYE", "TÜRKİYE", "TURKEY"],
+    ["KURDISTAN", "KÜRDISTAN", "KURD"],
+    ["AZERBAYCAN", "AZERBAIJAN"],
+    ["SURIYE", "SURİYE", "SYRIA"],
+    ["AFGHANISTAN", "AFGAN"]
+  ]
+}

@@ -1,0 +1,289 @@
+.lives {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.live {
+    width: calc(20% - 16px);
+    box-sizing: border-box;
+    background: #eee;
+    padding: 8px;
+    margin: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+.live:hover {
+    background: #2e435e52 !important;
+}
+
+.live-br {
+    border: 1px solid #454545;
+}
+
+h2 {
+    color: #757693;
+    
+}
+
+.pro-live {
+    border: 1px solid #e46060 !important;
+    box-shadow: 0 0 5px rgba(228, 96, 96, 0.2);
+}
+
+.expert-live {
+    border: 1px solid #b960e4 !important;
+    box-shadow: 0 0 8px rgba(185, 96, 228, 0.3);
+    position: relative;
+    z-index: 2;
+}
+
+
+.streamerAvatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.user-panel {
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
+
+.user-panel > div:last-child {
+    min-width: 0;
+    flex: 1;
+}
+
+.user-panel .tiktokUsername {
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: auto;
+}
+
+.flex-page {
+    display: flex;
+    min-height: 74vh;
+    margin-top: 20px;
+    justify-content: space-between;
+}
+
+.flex-page .left-side {
+    width: 100%;
+}
+
+.flex-page .right-side{
+    width: 250px;
+    background: #fbfbfb;
+    padding: 11px;
+    margin-left: 10px;
+    height: 200px;
+    border-radius: 8px;
+}
+
+#livesContainer {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.pro-label,
+.expert-label {
+    background: #e46060; /* Default red, override below */
+    border-radius: 4px;
+    color: #fff;
+    position: absolute;
+    bottom: -2px;
+    left: 40%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    width: 28px;
+    height: 18px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    z-index: 10;
+}
+
+.expert-label {
+    background: #b960e4;
+}
+
+.game {
+    display: flex;
+    align-items: center;
+}
+
+.game img {
+    width: 17px;
+    margin-right: 4px;
+}
+
+.live-eye {
+    width: 17px;
+    background: #fff;
+    margin-right: 4px;
+}
+
+.live-board-panel h3 {
+    margin-bottom: 9px;
+    font-size: 25px;
+    text-align: center;
+}
+
+.flex-align-center {
+    display: flex;
+    align-items: center;
+    text-transform: capitalize;
+}
+
+.short-icon {
+    width: 20px;
+    margin-right: 5px;
+}
+
+.info-panel {
+    font-size: 20px;
+    position: relative;
+}
+
+.info-panel .row {
+    display: flex;
+    height: 30px;
+    width: 120px;
+}
+
+.valueNumber {
+    color: orange;
+    padding-left: 3px;
+}
+
+/* Стили для select */
+#platformFilter,
+#gameFilter {
+    padding: 8px 16px; /* Добавляет внутренние отступы для комфорта */
+    border-radius: 4px; /* Скругление углов */
+    border: 1px solid #ccc; /* Легкая рамка вокруг select */
+    background-color: white; /* Белый фон */
+    font-size: 16px; /* Размер шрифта */
+    cursor: pointer; /* Курсор в виде указателя */
+    -webkit-appearance: none; /* Убирает стандартный вид в WebKit браузерах */
+    -moz-appearance: none; /* Убирает стандартный вид в Firefox */
+    appearance: none; /* Убирает стандартный вид select */
+    position: relative; /* Позиционирование относительно */
+    display: inline-block; /* Для правильного позиционирования */
+    width: 100%; /* Ширина во всю доступную ширину */
+    margin-bottom: 10px; /* Отступ снизу */
+    box-sizing: border-box; /* Учитывает padding и border в ширине */
+    transition: border-color 0.2s ease; /* Плавный переход цвета рамки */
+}
+
+#platformFilter:last-of-type,
+#gameFilter:last-of-type {
+    margin-bottom: 0; /* Убираем отступ у последнего select */
+}
+
+#platformFilter:focus,
+#gameFilter:focus {
+    border-color: #0056b3; /* Синий цвет рамки при фокусе */
+    outline: none; /* Убирает стандартную рамку фокуса */
+    box-shadow: 0 0 0 2px rgba(0, 86, 179, 0.1); /* Легкая тень при фокусе */
+}
+
+/* Стили для стрелочки (псевдоэлементы для кастомной стрелочки) */
+#platformFilter::-ms-expand,
+#gameFilter::-ms-expand {
+    display: none; /* Убирает стандартную стрелку в IE */
+}
+
+/* Кастомная стрелка для select */
+.info-panel select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 40px; /* Место для стрелки */
+}
+
+
+
+@media screen and (max-width:1240px) {
+
+    .live {
+        width: calc(25% - 16px);
+    }
+    
+}
+
+
+@media screen and (max-width:1042px) {
+
+    .live {
+        width: 200px
+    }
+
+    #livesContainer {
+        justify-content: space-around;
+    }
+    
+}
+
+
+@media screen and (max-width:890px) {
+
+    .flex-page .right-side {
+        display: none;
+    }
+
+    .flex-page .right-side  {
+        display: block;
+    }
+
+    .flex-page {
+        flex-direction: column-reverse;
+    }
+
+    .right-side {
+        height: 100px !important;
+        width: 100% !important;
+    }
+
+    #platformFilter,
+    #gameFilter {
+        width: 160px;
+    }
+ 
+    
+}
+
+@media screen and (max-width:470px) {
+
+    .live {
+        width: calc(50% - 16px)
+    }
+
+    .user-panel .tiktokUsername {
+        width: auto;
+        font-size: 13px;
+    }
+
+    h2 {
+        margin: 8px 0;
+        font-size: 17px;
+    }
+
+    .right-side {
+        box-sizing: border-box;
+        height: 120px !important;
+        width: 96% !important;
+    }
+
+   
+    
+}
+
+

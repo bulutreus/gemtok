@@ -1,0 +1,438 @@
+:root {
+  --bg-deep: #050a14;
+  --panel: rgba(12, 28, 48, 0.92);
+  --border: #4db8ff;
+  --text: #e8f4ff;
+  --accent: #4db8ff;
+  --danger: #ff4466;
+  --gold: #ffd54a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-deep);
+  color: var(--text);
+  font-family: "Rajdhani", system-ui, sans-serif;
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+}
+
+.game-shell {
+  /* ~22% of canvas height reserved below arena (matches engine); dock panel fits this band */
+  --arena-hud-band: 22%;
+  position: relative;
+  width: min(100%, 420px);
+  aspect-ratio: 9 / 16;
+  max-height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  /* Animated box-shadow + canvas caused jank — keep shadow static */
+  box-shadow:
+    0 0 0 2px rgba(100, 195, 255, 0.4),
+    0 12px 48px rgba(0, 0, 0, 0.65);
+}
+
+#game-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+#game-canvas:focus {
+  outline: none;
+}
+
+.hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+  padding: 10px 10px 8px;
+  min-height: 0;
+}
+
+.hud-top {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.timer-box {
+  pointer-events: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 6px 14px;
+  font-family: "Orbitron", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  transition:
+    border-color 0.25s,
+    color 0.25s,
+    box-shadow 0.25s;
+}
+
+.timer-box.timer-urgent {
+  color: #ffb4b4;
+  border-color: rgba(255, 100, 120, 0.85);
+  animation: timer-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes timer-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.03);
+    opacity: 0.9;
+  }
+}
+
+.settings-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  background: rgba(0, 0, 0, 0.58);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  pointer-events: auto;
+}
+
+.settings-backdrop[hidden] {
+  display: none !important;
+}
+
+.settings-panel {
+  width: 100%;
+  max-width: 340px;
+  max-height: min(92vh, 520px);
+  overflow: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+.settings-title {
+  font-family: "Orbitron", sans-serif;
+  font-size: 1rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin: 0 0 6px;
+}
+
+.settings-hint {
+  font-size: 0.72rem;
+  color: rgba(232, 244, 255, 0.75);
+  margin: 0 0 14px;
+  line-height: 1.35;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+  font-size: 0.78rem;
+  color: var(--text);
+}
+
+.settings-field span {
+  line-height: 1.3;
+}
+
+.settings-field input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(77, 184, 255, 0.45);
+  background: rgba(5, 10, 20, 0.85);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+}
+
+.settings-field input[type="range"] {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
+.settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+.settings-primary,
+.settings-secondary {
+  font-family: inherit;
+  font-size: 0.82rem;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.settings-primary {
+  background: rgba(77, 184, 255, 0.25);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.settings-primary:hover {
+  background: rgba(77, 184, 255, 0.38);
+}
+
+.settings-secondary {
+  background: rgba(5, 10, 20, 0.6);
+  color: rgba(232, 244, 255, 0.9);
+}
+
+.settings-secondary:hover {
+  border-color: rgba(100, 195, 255, 0.65);
+}
+
+.leaderboard {
+  pointer-events: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.72rem;
+  box-sizing: border-box;
+}
+
+/* Bottom dock: gifts (left) + leaderboard (right); flex keeps it pinned to bottom */
+.leaderboard--dock {
+  margin-top: auto;
+  align-self: center;
+  margin-bottom: 0;
+  width: min(calc(100% - 16px), 400px);
+  min-width: 260px;
+  /* Shorter height: stay inside bottom HUD band (matches engine 0.22 reserve) */
+  max-height: calc(var(--arena-hud-band) - 12px);
+  height: min(168px, calc(var(--arena-hud-band) - 12px));
+  min-height: 0;
+  flex-shrink: 0;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(
+    90deg,
+    rgba(12, 28, 48, 0.96) 0%,
+    rgba(12, 28, 48, 0.96) 50%,
+    rgba(8, 22, 42, 0.94) 50%,
+    rgba(8, 22, 42, 0.94) 100%
+  );
+}
+
+.lb-split {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  gap: 8px;
+  flex: 1;
+  min-height: 0;
+}
+
+.lb-help {
+  flex: 1 1 50%;
+  min-width: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 4px;
+  scrollbar-width: thin;
+}
+
+.lb-help-heading {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.5rem;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  margin: 0 0 3px;
+  opacity: 0.95;
+}
+
+.lb-help-heading:not(:first-child) {
+  margin-top: 6px;
+}
+
+.lb-gift-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.lb-gift-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 0.52rem;
+  line-height: 1.2;
+}
+
+.lb-gift-lab {
+  font-family: "Orbitron", monospace;
+  color: var(--gold);
+  flex-shrink: 0;
+}
+
+.lb-gift-act {
+  text-align: right;
+  color: rgba(232, 244, 255, 0.88);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lb-rank-col {
+  flex: 1 1 50%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid rgba(77, 184, 255, 0.22);
+  padding-left: 8px;
+}
+
+.lb-rank-title {
+  font-family: "Orbitron", sans-serif;
+  font-size: 0.48rem;
+  color: var(--accent);
+  margin: 0 0 6px;
+  letter-spacing: 0.06em;
+  opacity: 0.9;
+  flex-shrink: 0;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.lb-rank-col #lb-rows {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.lb-row {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) auto auto;
+  align-items: center;
+  column-gap: 6px;
+  height: 26px;
+  min-height: 26px;
+  max-height: 26px;
+  padding: 0;
+  border-bottom: 1px solid rgba(77, 184, 255, 0.12);
+  box-sizing: border-box;
+  white-space: nowrap;
+}
+
+.lb-row:last-child {
+  border-bottom: none;
+}
+
+.lb-avatar {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  flex-shrink: 0;
+  grid-column: 1;
+}
+
+.lb-avatar--initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(100, 195, 255, 0.28);
+  color: #fff;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1;
+}
+
+.lb-name {
+  grid-column: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  min-width: 0;
+}
+
+.lb-score {
+  grid-column: 3;
+  color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 0.68rem;
+  min-width: 2.4em;
+  padding-left: 4px;
+}
+
+.lb-kills {
+  grid-column: 4;
+  color: var(--danger);
+  font-size: 0.68rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  text-align: right;
+  min-width: 1.8em;
+}
+
+/*
+ * Playroom TikTok: the SDK may remount .bootstrap-wrapper repeatedly.
+ * Default: hide completely. Shown only while body[data-arena-playroom-ui="active"] (insertCoin flow).
+ */
+body:not([data-arena-playroom-ui="active"]) .bootstrap-wrapper {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+body[data-arena-playroom-ui="active"] .bootstrap-wrapper {
+  display: revert !important;
+  visibility: revert !important;
+  pointer-events: revert !important;
+}
+
+/* Playroom TikTok modal (SDK z-index: 100) — stay above our HUD */
+.bootstrap-wrapper .modal-container {
+  z-index: 200000 !important;
+}

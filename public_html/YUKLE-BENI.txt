@@ -1,0 +1,24 @@
+GemTok - Hostinger yükleme paketi
+=================================
+
+1) Bu paketin içindeki dosyaları Hostinger'da public_html klasörünün içine yükleyin.
+   hostinger-yukle klasörünün kendisini değil, içindeki tüm dosya ve klasörleri yükleyin.
+
+2) Yükleme sonrası şu adresler 404 vermemeli:
+   https://ALANADINIZ/sıra/ANA SAYFA.html
+   https://ALANADINIZ/sıra/OYUN MERKEZI.html
+   https://ALANADINIZ/sıra/gemtok-license-registry.json
+   https://ALANADINIZ/game/WarFront%20Arena/public/game.js
+
+3) Kullanım sırası:
+   Oyun Merkezi -> lisans anahtarı -> Anahtarı uygula -> oyunu aynı sekmede aç.
+
+4) TikFinity bağlantısı yayıncının bilgisayarında çalışır:
+   - TikFinity masaüstü uygulaması açık olmalı.
+   - GemTok-TikFinity-Kopru.bat yayıncının bilgisayarında çalışmalı.
+   - Chrome/Edge yerel ağ erişimine izin verilmeli.
+
+5) Güncel dosyalar görünmüyorsa tarayıcıda Ctrl+Shift+R ile sert yenileme yapın.
+
+Not: Hostinger sunucusu TikFinity'yi doğrudan çalıştırmaz. Site oyun arayüzünü sunar;
+TikFinity WebSocket bağlantısı yayıncının kendi bilgisayarından yapılır.

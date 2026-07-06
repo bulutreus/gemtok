@@ -1,0 +1,18 @@
+{
+  "name": "GemTok (yerel arşiv)",
+  "short_name": "GemTok",
+  "description": "Yerel GemTok arşivi — oyunlar ve sıra sayfaları.",
+  "start_url": "../sıra/ANA SAYFA.html",
+  "scope": "../",
+  "display": "standalone",
+  "background_color": "#020817",
+  "theme_color": "#1e88e5",
+  "icons": [
+    {
+      "src": "gemtok.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

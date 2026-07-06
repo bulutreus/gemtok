@@ -1,0 +1,18 @@
+{
+  "name": "streamxt-tiktok-battle",
+  "version": "1.0.0",
+  "description": "TikTok Live iki takım MOBA tarzı savaş oyunu — TikFinity / webhook köprüsü",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "ws": "^8.18.0"
+  }
+}

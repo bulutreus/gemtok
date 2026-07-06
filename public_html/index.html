@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <link rel="icon" type="image/png" href="./gemtok/gemtok.png">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="view-transition" content="same-origin">
+  <meta http-equiv="refresh" content="1;url=sıra/ANA SAYFA.html">
+  <title>GemTok</title>
+  <style>
+    @view-transition{navigation:auto;}
+    @media (prefers-reduced-motion:reduce){@view-transition{navigation:none;}}
+    body{margin:0;padding:1.5rem;font-family:system-ui,sans-serif;background:#020817;color:#e2e8f8;line-height:1.5}
+    a{color:#22d3ee}
+  </style>
+  <script>
+    (function () {
+      var u = "sıra/ANA SAYFA.html";
+      function go() {
+        try {
+          location.replace(u);
+        } catch (e) {
+          try {
+            location.href = u;
+          } catch (e2) {}
+        }
+      }
+      if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(go, 50); });
+      else setTimeout(go, 50);
+    })();
+  </script>
+</head>
+<body>
+  <p><strong>GemTok</strong> - Ana sayfaya yönlendiriliyorsunuz. Otomatik açılmazsa:</p>
+  <p>
+    <a href="sıra/ANA SAYFA.html">Ana sayfa</a> ·
+    <a href="sıra/OYUN MERKEZI.html">Oyun merkezi</a> ·
+    <a href="sıra/TikTok Gift Yönetimi.html">Hediye yönetimi</a> ·
+    <a href="hub.html">Site menüsü</a>
+  </p>
+</body>
+</html>

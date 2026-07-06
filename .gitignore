@@ -1,0 +1,22 @@
+httrack_mirror/cookies.txt
+
+# Hostinger paket çıktısı (tools/hostinger-paketle.ps1)
+hostinger-yukle/
+hostinger-yukle-*/
+
+# Hostinger FTP sifreleri
+hostinger-deploy.env
+
+gift-hub/data/*.sqlite
+gift-hub/node_modules/
+
+/node_modules/
+/dist/
+
+# Tum alt projelerdeki kurulu bagimliliklar ve derleme ciktilari
+**/node_modules/
+**/dist/
+
+# GitHub'in 100 MB dosya sinirini asan yerel dagitim paketleri
+GEMTOK-HOSTINGER-LISANS-V2.zip
+HOSTINGER-BUNU-YUKLE-GUNCEL.zip

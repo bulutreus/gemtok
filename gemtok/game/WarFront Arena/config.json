@@ -1,0 +1,10 @@
+{
+  "teamAlphaName": "TEAM GS 1",
+  "teamBravoName": "TEAM FB 2",
+  "teamAlphaSubtitle": "Team GS CMT 1",
+  "teamBravoSubtitle": "Team FB CMT 2",
+  "bgLeftPath": "/assets/streamxt-bg-left.png",
+  "bgRightPath": "/assets/streamxt-bg-right.png",
+  "tikfinityWsUrl": "",
+  "roundDurationMinutes": 5
+}

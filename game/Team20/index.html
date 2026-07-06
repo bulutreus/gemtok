@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Ülke Yarışı</title>
+  <script src="../../gemtok-web-host.js"></script>
+  <script src="../../sıra/gemtok-license.js"></script>
+  <script src="../../gemtok-game-license-gate.js"></script>
+  <script>GemtokGameLicenseGate("team20");</script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="gameShell">
+      <div id="gameStage">
+        <canvas id="gameCanvas"></canvas>
+        <div id="runnersLayer"></div>
+        <div id="watermark" aria-hidden="true">gemtok.store</div>
+      </div>
+      <button id="settingsBtn" type="button" aria-label="Ayarlar" title="Ayarlar">⚙</button>
+    </div>
+  </div>
+
+  <div id="settingsOverlay" class="settings-hidden" aria-hidden="true">
+    <div id="settingsPanel" role="dialog" aria-labelledby="settingsTitle">
+      <div class="settings-header">
+        <h2 id="settingsTitle">Ayarlar</h2>
+        <button id="settingsClose" type="button" aria-label="Kapat">✕</button>
+      </div>
+      <div class="settings-tabs">
+        <button type="button" class="settings-tab active" data-tab="characters">Karakterler</button>
+        <button type="button" class="settings-tab" data-tab="gifts">Hediyeler</button>
+      </div>
+      <div id="settingsContent" class="settings-content">
+        <div id="characterPanel" class="settings-tab-panel">
+          <p class="settings-panel-desc">Yarışçı görünümü için bir karakter paketi seçin.</p>
+          <div id="characterGrid"></div>
+        </div>
+        <div id="giftPanel" class="settings-tab-panel settings-hidden">
+          <p class="settings-panel-desc">693 hediye (Türkiye güncel katalog + ek panel). Elmas değerine göre küçükten büyüğe. Takıma tıklayarak seçin.</p>
+          <div id="giftTeamView">
+            <input id="giftSearch" class="gift-search" type="search" placeholder="Takım veya hediye ara..." autocomplete="off">
+            <div id="giftAssignmentGrid"></div>
+          </div>
+          <div id="giftPickerView" class="settings-hidden">
+            <div class="gift-picker-header">
+              <button id="giftPickerBack" type="button" class="gift-picker-back">← Geri</button>
+              <span id="giftPickerTitle" class="gift-picker-title"></span>
+            </div>
+            <input id="giftPickerSearch" class="gift-search" type="search" placeholder="Hediye ara..." autocomplete="off">
+            <div id="giftPickerGrid" class="gift-picker-grid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="gifts.js"></script>
+  <script src="tikfinity.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>

@@ -1,0 +1,4004 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Bos birakilir; TikFinity WS URL icin (localStorage ve window.TIKFINITY_WS_URL oncelikli) -->
+  <meta name="tikfinity-ws-url" content="" />
+  <title>Arena 5 Gen</title>
+  <script src="../../gemtok-web-host.js"></script>
+  <script src="../../sıra/gemtok-license.js"></script>
+  <script src="../../gemtok-game-license-gate.js"></script>
+  <script>GemtokGameLicenseGate("arena5gen");</script>
+  <style>
+    :root {
+      --bg: #000000;
+      --text: #f2f2f2;
+      --gold: #f0cf45;
+      --gold-soft: #fff0a0;
+      --scorebox-bg: rgba(10, 10, 12, 0.94);
+      --scorebox-border: rgba(110, 175, 235, 0.92);
+      --scorebox-glow: rgba(70, 150, 220, 0.22);
+      --team-leading-border: rgba(240, 207, 69, 0.98);
+      --team-leading-glow1: rgba(255, 215, 90, 0.5);
+      --team-leading-glow2: rgba(255, 200, 60, 0.38);
+      --team-leading-score: #fff0a0;
+      --team-leading-score-glow: rgba(255, 230, 120, 0.28);
+      --crest-border: rgba(200, 225, 255, 0.55);
+      --crest-leading-border: rgba(255, 235, 160, 0.75);
+      --timer-label-color: rgba(140, 200, 255, 0.9);
+      --app-frame-outer: rgb(5, 10, 20);
+      --app-frame-bevel: max(4px, min(1.1vmin, 8px));
+      --app-frame-radius: clamp(10px, 1.8vmin, 16px);
+      --app-frame-border: 2px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    html {
+      height: 100%;
+      background: var(--app-frame-outer);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      height: 100%;
+      background: var(--app-frame-outer);
+      color: var(--text);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: max(var(--app-frame-bevel), env(safe-area-inset-top, 0px));
+      padding-right: max(var(--app-frame-bevel), env(safe-area-inset-right, 0px));
+      padding-bottom: max(var(--app-frame-bevel), env(safe-area-inset-bottom, 0px));
+      padding-left: max(var(--app-frame-bevel), env(safe-area-inset-left, 0px));
+      overflow: hidden;
+    }
+
+    .app {
+      width: min(
+        calc(100dvw - 2 * var(--app-frame-bevel)),
+        calc((100dvh - 2 * var(--app-frame-bevel)) * 9 / 16)
+      );
+      aspect-ratio: 9 / 16;
+      max-height: calc(100dvh - 2 * var(--app-frame-bevel));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      background: var(--bg);
+      border-radius: var(--app-frame-radius);
+      border: var(--app-frame-border) solid rgba(100, 195, 255, 0.32);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07),
+        inset 0 -24px 48px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+    }
+
+    .round-timer-bar {
+      flex-shrink: 0;
+      align-self: center;
+      width: fit-content;
+      min-width: 124px;
+      max-width: calc(100% - 8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 6px 17px 8px;
+      border-radius: 10px;
+      background: var(--scorebox-bg);
+      border: 3px solid var(--scorebox-border);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.1),
+        0 0 14px var(--scorebox-glow),
+        0 4px 16px rgba(0, 0, 0, 0.38);
+      transition:
+        border-color 0.28s ease,
+        box-shadow 0.28s ease;
+    }
+
+    .round-timer-bar__inner {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1px;
+    }
+
+    .round-timer-bar__label {
+      font-size: clamp(8px, 1.9vw, 10px);
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--timer-label-color);
+      text-shadow: 0 0 10px var(--scorebox-glow);
+    }
+
+    .round-timer-bar__time {
+      font-size: clamp(15px, 3.5vw, 21px);
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.06em;
+      line-height: 1;
+      color: #f2f8ff;
+      text-shadow:
+        0 0 14px rgba(100, 180, 255, 0.45),
+        0 0 26px rgba(40, 120, 200, 0.2),
+        0 1px 0 rgba(0, 0, 0, 0.55);
+    }
+
+    .round-timer-bar--warn {
+      border-color: rgba(255, 210, 100, 0.88);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 245, 210, 0.14),
+        0 0 0 1px rgba(255, 215, 90, 0.35),
+        0 0 24px rgba(255, 200, 70, 0.38),
+        0 8px 28px rgba(0, 0, 0, 0.4);
+    }
+
+    .round-timer-bar--warn .round-timer-bar__label {
+      color: rgba(255, 232, 180, 0.95);
+      text-shadow: 0 0 16px rgba(255, 200, 100, 0.45);
+    }
+
+    .round-timer-bar--warn .round-timer-bar__time {
+      color: var(--gold-soft);
+      text-shadow:
+        0 0 20px rgba(255, 220, 130, 0.6),
+        0 0 36px rgba(255, 180, 40, 0.22),
+        0 1px 0 rgba(0, 0, 0, 0.45);
+    }
+
+    .round-timer-bar--ended {
+      border-color: rgba(90, 110, 130, 0.55);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        0 0 12px rgba(0, 0, 0, 0.35);
+    }
+
+    .round-timer-bar--ended .round-timer-bar__label {
+      color: rgba(150, 165, 185, 0.5);
+      text-shadow: none;
+    }
+
+    .round-timer-bar--ended .round-timer-bar__time {
+      color: rgba(185, 195, 210, 0.52);
+      text-shadow: none;
+    }
+
+    .scoreboard {
+      flex: 0 0 auto;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 7px;
+      align-items: stretch;
+      justify-content: stretch;
+      background: transparent;
+      border: none;
+      padding: 0;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .team {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 9px;
+      background: var(--scorebox-bg);
+      border: 3px solid var(--scorebox-border);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.08),
+        0 0 12px var(--scorebox-glow);
+      transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        color 0.2s ease;
+    }
+
+    .team.leading {
+      border: 3px solid var(--team-leading-border);
+      box-shadow:
+        0 0 0 1px var(--team-leading-glow1),
+        0 0 18px var(--team-leading-glow2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }
+
+    .team.leading:not(.is-leader-handoff) {
+      animation: arena5gen-leading-pulse 2.4s ease-in-out infinite;
+    }
+
+    .team .score {
+      margin-left: auto;
+      color: #f4f4f4;
+      font-size: clamp(13px, 3vw, 19px);
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: -0.02em;
+    }
+
+    .team.leading .score {
+      color: var(--team-leading-score);
+      text-shadow: 0 0 10px var(--team-leading-score-glow);
+    }
+
+    @keyframes arena5gen-leading-pulse {
+      0%,
+      100% {
+        box-shadow:
+          0 0 0 1px var(--team-leading-glow1),
+          0 0 18px var(--team-leading-glow2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      }
+      50% {
+        box-shadow:
+          0 0 0 2px rgba(255, 230, 140, 0.55),
+          0 0 26px rgba(255, 210, 90, 0.48),
+          inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      }
+    }
+
+    @keyframes arena5gen-leader-handoff {
+      from {
+        transform: scale(0.98);
+        filter: brightness(1.2);
+      }
+      to {
+        transform: scale(1);
+        filter: brightness(1);
+      }
+    }
+
+    .team.leading.is-leader-handoff {
+      animation: arena5gen-leader-handoff 0.5s ease-out;
+    }
+
+    .crest {
+      position: relative;
+      overflow: hidden;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: transparent;
+      border: 2px solid var(--crest-border);
+      box-shadow: none;
+    }
+
+    .team.leading .crest {
+      border-color: var(--crest-leading-border);
+    }
+
+    .team.team--off {
+      display: none !important;
+    }
+
+    .crest-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      display: none;
+    }
+
+    .crest.has-photo .crest-img {
+      display: block;
+    }
+
+    .arena-wrap {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    .round-end-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px;
+      text-align: center;
+      background: rgba(0, 0, 0, 0.72);
+      color: #f2f2f2;
+    }
+
+    .round-end-overlay[hidden] {
+      display: none;
+    }
+
+    .round-end-overlay .round-end-title {
+      margin: 0;
+      font-size: clamp(1.1rem, 4vw, 1.35rem);
+      font-weight: 700;
+      color: var(--gold-soft);
+    }
+
+    .round-end-overlay .round-end-winner {
+      margin: 0;
+      font-size: clamp(0.95rem, 3.5vw, 1.1rem);
+      font-weight: 600;
+    }
+
+    .round-end-overlay .round-end-hint {
+      margin: 0.35rem 0 0;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+    }
+
+    canvas {
+      width: 100%;
+      max-height: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      display: block;
+      background: #000000;
+    }
+
+    .settings-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      backdrop-filter: blur(6px);
+    }
+
+    .settings-backdrop[hidden] {
+      display: none;
+    }
+
+    .settings-panel {
+      width: min(420px, 100%);
+      max-height: min(90vh, 640px);
+      overflow-y: auto;
+      background: #121212;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      padding: 18px 18px 16px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    .settings-panel h2 {
+      margin: 0 0 6px;
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .settings-desc {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.4;
+    }
+
+    .settings-subtitle {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .settings-input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 9px 11px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .settings-input:focus {
+      outline: none;
+      border-color: rgba(100, 170, 255, 0.55);
+    }
+
+    .settings-select {
+      flex: 1 1 160px;
+      min-width: 0;
+      max-width: 100%;
+      margin-bottom: 0;
+      padding: 9px 11px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+    }
+
+    .settings-select:focus {
+      outline: none;
+      border-color: rgba(100, 170, 255, 0.55);
+    }
+
+    .settings-count {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .settings-count__val {
+      min-width: 2ch;
+      text-align: center;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-size: 16px;
+      color: #eaf4ff;
+    }
+
+    .settings-row--check {
+      align-items: center;
+    }
+
+    .settings-row--check .settings-label {
+      flex: 1 1 auto;
+    }
+
+    .settings-row--check input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+      cursor: pointer;
+      accent-color: rgba(100, 170, 255, 0.9);
+    }
+
+    .settings-row--speed {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+    }
+
+    .settings-speed-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      gap: 10px;
+    }
+
+    .settings-speed-val {
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-size: 14px;
+      color: rgba(180, 220, 255, 0.95);
+      flex-shrink: 0;
+    }
+
+    .settings-range {
+      width: 100%;
+      margin: 0;
+      height: 28px;
+      cursor: pointer;
+      accent-color: rgba(100, 170, 255, 0.9);
+    }
+
+    .settings-tikfinity-block {
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .settings-tikfinity-status {
+      font-size: 12px;
+      color: rgba(160, 200, 255, 0.65);
+      margin-top: 8px;
+      min-height: 1.2em;
+    }
+
+    .settings-row {
+      position: relative;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .settings-row .settings-label {
+      flex: 1 1 auto;
+      min-width: 120px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .settings-row input[type="file"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    .settings-row:last-of-type {
+      border-bottom: none;
+      margin-bottom: 8px;
+      padding-bottom: 0;
+    }
+
+    .settings-btn {
+      font: inherit;
+      font-size: 13px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .settings-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .settings-btn.danger {
+      border-color: rgba(255, 100, 100, 0.35);
+      color: #ffb4b4;
+    }
+
+    .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+    }
+
+    .settings-close {
+      font: inherit;
+      padding: 9px 18px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(80, 160, 255, 0.25);
+      color: #cfe6ff;
+      cursor: pointer;
+    }
+
+    .settings-close:hover {
+      background: rgba(80, 160, 255, 0.38);
+    }
+
+    .settings-gift-block {
+      margin-top: 10px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .settings-gift-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .settings-gift-toolbar .settings-input {
+      flex: 1 1 140px;
+      min-width: 0;
+      margin-bottom: 0;
+    }
+
+    .settings-gift-team-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: min(54vh, 420px);
+      overflow: auto;
+      padding: 4px 2px 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .settings-team-assign {
+      border-radius: 14px;
+      border: 1px solid rgba(88, 176, 255, 0.28);
+      background:
+        linear-gradient(180deg, rgba(4, 11, 24, 0.98), rgba(2, 8, 18, 0.96)),
+        rgba(255, 255, 255, 0.02);
+      box-shadow:
+        inset 0 1px 0 rgba(160, 220, 255, 0.08),
+        0 0 0 1px rgba(24, 86, 140, 0.22);
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .settings-team-assign[hidden] {
+      display: none;
+    }
+
+    .settings-team-assign-title {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(150, 195, 245, 0.82);
+    }
+
+    .settings-team-assign-head {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .settings-team-assign-select {
+      flex: 1 1 auto;
+      width: 100%;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(70, 175, 255, 0.45);
+      background: rgba(2, 10, 22, 0.92);
+      color: var(--text);
+      cursor: pointer;
+      box-shadow:
+        inset 0 0 0 1px rgba(90, 205, 255, 0.14),
+        0 0 0 1px rgba(34, 120, 180, 0.2);
+    }
+
+    .settings-team-assign-select:hover {
+      border-color: rgba(102, 205, 255, 0.68);
+      background: rgba(4, 14, 28, 0.96);
+    }
+
+    .settings-team-assign-select.is-open {
+      border-color: rgba(82, 205, 255, 0.95);
+      box-shadow:
+        inset 0 0 0 1px rgba(120, 228, 255, 0.24),
+        0 0 0 2px rgba(45, 160, 235, 0.22),
+        0 0 18px rgba(28, 120, 180, 0.32);
+    }
+
+    .settings-team-assign-clear {
+      flex: 0 0 auto;
+      min-width: 88px;
+    }
+
+    .settings-team-assign-thumb,
+    .settings-gift-option-thumb {
+      width: 40px;
+      height: 40px;
+      object-fit: cover;
+      border-radius: 10px;
+      flex-shrink: 0;
+      background: rgba(0, 0, 0, 0.35);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      color: rgba(180, 210, 245, 0.72);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .settings-team-assign-thumb img,
+    .settings-gift-option-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .settings-team-assign-meta {
+      min-width: 0;
+      flex: 1 1 auto;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      text-align: left;
+    }
+
+    .settings-team-assign-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: #f8fbff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      letter-spacing: 0.01em;
+    }
+
+    .settings-team-assign-diamond {
+      display: none;
+    }
+
+    .settings-team-assign-caret {
+      margin-left: auto;
+      font-size: 11px;
+      color: rgba(125, 195, 255, 0.76);
+      flex-shrink: 0;
+    }
+
+    .settings-gift-options {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 330px;
+      overflow: auto;
+      padding: 2px 2px 0;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .settings-gift-option {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 12px;
+      background: rgba(3, 11, 22, 0.9);
+      color: var(--text);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .settings-gift-option:hover {
+      border-color: rgba(88, 176, 255, 0.4);
+      background: rgba(6, 16, 30, 0.95);
+    }
+
+    .settings-gift-option.is-selected {
+      border-color: rgba(78, 205, 255, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(110, 225, 255, 0.18);
+    }
+
+    .settings-gift-option-meta {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1 1 auto;
+      width: 1%;
+    }
+
+    .settings-gift-option-name {
+      min-width: 0;
+      flex: 1 1 auto;
+      font-size: 14px;
+      font-weight: 700;
+      color: #f5f9ff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .settings-gift-option-diamond {
+      display: none;
+    }
+
+    .settings-music-block {
+      margin-top: 4px;
+    }
+
+    .settings-music-player-card {
+      margin-bottom: 14px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(110, 175, 235, 0.22);
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .settings-music-player-title {
+      margin: 0 0 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255, 240, 160, 0.95);
+    }
+
+    .settings-music-head {
+      margin: 8px 0 4px;
+      font-size: 12px;
+      font-weight: 600;
+      color: rgba(140, 200, 255, 0.88);
+    }
+
+    .settings-music-status {
+      margin: 0 0 8px;
+      font-size: 11px;
+      color: rgba(200, 220, 255, 0.72);
+      line-height: 1.35;
+    }
+
+    .settings-music-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .settings-music-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .settings-slot-name {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .settings-slot-btns {
+      display: flex;
+      flex-shrink: 0;
+      gap: 6px;
+    }
+
+    .settings-btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+      min-width: 0;
+    }
+
+    .settings-music-clear-all-wrap {
+      margin-top: 8px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .settings-gift-empty {
+      padding: 14px 12px;
+      border-radius: 12px;
+      border: 1px dashed rgba(120, 170, 220, 0.22);
+      background: rgba(255, 255, 255, 0.03);
+      color: rgba(180, 205, 230, 0.72);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .settings-gift-name {
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.25;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .settings-gift-diamond {
+      font-size: 11px;
+      color: rgba(200, 220, 255, 0.75);
+    }
+
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="round-timer-bar" id="round-timer-bar" aria-label="TIME" aria-live="polite">
+      <div class="round-timer-bar__inner">
+        <span class="round-timer-bar__label">TIME</span>
+        <span class="round-timer-bar__time" id="round-timer-hud">0:00</span>
+      </div>
+    </header>
+
+    <section class="scoreboard" aria-label="Skor cubugu">
+      <article class="team" id="team-fb">
+        <div class="crest" id="crest-fb" aria-hidden="true">
+          <img class="crest-img" id="crest-img-fb" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-fb">0</div>
+      </article>
+      <article class="team" id="team-amed">
+        <div class="crest" id="crest-amed" aria-hidden="true">
+          <img class="crest-img" id="crest-img-amed" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-amed">0</div>
+      </article>
+      <article class="team" id="team-bjk">
+        <div class="crest" id="crest-bjk" aria-hidden="true">
+          <img class="crest-img" id="crest-img-bjk" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-bjk">0</div>
+      </article>
+      <article class="team" id="team-gs">
+        <div class="crest" id="crest-gs" aria-hidden="true">
+          <img class="crest-img" id="crest-img-gs" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-gs">0</div>
+      </article>
+      <article class="team" id="team-ts">
+        <div class="crest" id="crest-ts" aria-hidden="true">
+          <img class="crest-img" id="crest-img-ts" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-ts">0</div>
+      </article>
+      <article class="team" id="team-p6">
+        <div class="crest" id="crest-p6" aria-hidden="true">
+          <img class="crest-img" id="crest-img-p6" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-p6">0</div>
+      </article>
+      <article class="team" id="team-p7">
+        <div class="crest" id="crest-p7" aria-hidden="true">
+          <img class="crest-img" id="crest-img-p7" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-p7">0</div>
+      </article>
+      <article class="team" id="team-p8">
+        <div class="crest" id="crest-p8" aria-hidden="true">
+          <img class="crest-img" id="crest-img-p8" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-p8">0</div>
+      </article>
+      <article class="team" id="team-p9">
+        <div class="crest" id="crest-p9" aria-hidden="true">
+          <img class="crest-img" id="crest-img-p9" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-p9">0</div>
+      </article>
+      <article class="team" id="team-p10">
+        <div class="crest" id="crest-p10" aria-hidden="true">
+          <img class="crest-img" id="crest-img-p10" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-p10">0</div>
+      </article>
+    </section>
+
+    <section class="arena-wrap">
+      <div id="round-end-overlay" class="round-end-overlay" hidden>
+        <p class="round-end-title">Tur bitti</p>
+        <p class="round-end-winner" id="round-end-winner"></p>
+        <p class="round-end-hint" id="round-end-hint">Yeni tur basliyor…</p>
+      </div>
+      <canvas id="arena" width="1000" height="1000"></canvas>
+    </section>
+  </main>
+
+  <button type="button" id="gemtok-open-settings" class="gemtok-game-settings-fab" aria-controls="settings-backdrop" aria-label="Ayarlar" title="Ayarlar" aria-haspopup="dialog" aria-expanded="false">
+    <svg class="gemtok-game-settings-fab__icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32a.51.51 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.51.51 0 0 0 9.25 2.4H5.41a.51.51 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.51.51 0 0 0-.59.22L.06 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.31-.09.63-.09.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>
+    <span class="gemtok-game-settings-fab__label">Ayarlar</span>
+  </button>
+
+  <div id="settings-backdrop" class="settings-overlay gemtok-settings-theme" hidden>
+    <div class="settings-overlay__backdrop" aria-hidden="true"></div>
+    <div
+      id="settings-panel"
+      class="settings-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
+    >
+      <h2 class="settings-panel__title" id="settings-title">Ayarlar</h2>
+      <div class="settings-panel__body">
+
+      <label class="settings-row" for="settings-round-min">
+        <span class="settings-label">Tur suresi (dakika)</span>
+        <input
+          class="settings-input"
+          style="max-width: 120px; margin-bottom: 0"
+          type="number"
+          id="settings-round-min"
+          min="1"
+          max="120"
+          step="1"
+          value="10"
+          inputmode="numeric"
+        />
+      </label>
+
+      <div class="settings-row">
+        <span class="settings-label">Oyuncu sayisi (aktif takim)</span>
+        <div class="settings-count">
+          <button type="button" class="settings-btn" id="settings-player-minus" aria-label="Azalt">-</button>
+          <span class="settings-count__val" id="settings-player-val">5</span>
+          <button type="button" class="settings-btn" id="settings-player-plus" aria-label="Arttir">+</button>
+        </div>
+      </div>
+
+      <div class="settings-row settings-row--speed">
+        <div class="settings-speed-head">
+          <span class="settings-label" id="settings-speed-label">Oyun hizi (fizik)</span>
+          <span class="settings-speed-val" id="settings-speed-val">1.00x</span>
+        </div>
+        <input
+          type="range"
+          class="settings-range"
+          id="settings-speed-range"
+          min="35"
+          max="300"
+          step="5"
+          value="100"
+          aria-labelledby="settings-speed-label"
+        />
+      </div>
+
+      <label class="settings-row settings-row--check" for="settings-shake">
+        <span class="settings-label">Arena sarsintisi (carpismada)</span>
+        <input type="checkbox" id="settings-shake" checked />
+      </label>
+
+      <label class="settings-row" for="settings-arena-theme">
+        <span class="settings-label">Arena renk temasi</span>
+        <select class="settings-select" id="settings-arena-theme">
+          <option value="default">Mavi (varsayilan)</option>
+          <option value="violet">Mor / gece</option>
+          <option value="emerald">Zumrut</option>
+          <option value="crimson">Kirmizi gece</option>
+          <option value="amber">Kehribar / altin</option>
+        </select>
+      </label>
+
+      <div class="settings-gift-block">
+        <p class="settings-subtitle">Hediye</p>
+        <div class="settings-gift-toolbar">
+          <input
+            type="search"
+            class="settings-input"
+            id="settings-gift-search"
+            placeholder="Hediye ara (isim veya #id)…"
+            autocomplete="off"
+          />
+          <button type="button" class="settings-btn" id="settings-gift-refresh">Listeyi yenile</button>
+        </div>
+        <p class="settings-tikfinity-status" id="settings-gift-assign-status"></p>
+        <div class="settings-gift-team-list" id="settings-gift-assign-grid" aria-label="Takim hediye atama listesi"></div>
+      </div>
+
+      <div class="settings-gift-block">
+        <p class="settings-subtitle">Gorsel</p>
+        <div id="settings-photo-grid" class="settings-team-bird-grid" aria-label="Takim gorsel ayarlari"></div>
+      </div>
+
+      <div class="settings-gift-block settings-music-block">
+        <p class="settings-subtitle">Muzik</p>
+        <div id="settings-music-grid" aria-label="Takim muzik ayarlari"></div>
+      </div>
+
+      </div>
+      <div class="settings-panel__actions">
+        <button type="button" class="settings-btn settings-btn--ghost" id="settings-close">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../gemtok-tikfinity-client.js"></script>
+  <script src="../../gemtok-gift-catalog-filter.js"></script>
+  <script src="../../gemtok-gift-client.js"></script>
+  <script src="../../sıra/gift-images/gift-list.loader.js"></script>
+  <script src="../../sıra/gemtok-tiktok-live-global.js"></script>
+  <script src="../../gemtok-live-game-bridge.js"></script>
+  <script src="../../gemtok-live-bootstrap.js"></script>
+  <script>
+    try {
+      window.__GEMTOK_GIFT_HUB_URL__ = window.__GEMTOK_GIFT_HUB_URL__ || "http://127.0.0.1:8787";
+    } catch (_e) {}
+  </script>
+  <script>
+    const canvas = document.getElementById("arena");
+    const ctx = canvas.getContext("2d");
+    if (ctx.imageSmoothingEnabled !== undefined) ctx.imageSmoothingEnabled = true;
+    if ("imageSmoothingQuality" in ctx) ctx.imageSmoothingQuality = "high";
+
+    const TEAM_IDS = ["fb", "amed", "bjk", "gs", "ts", "p6", "p7", "p8", "p9", "p10"];
+    /** Gift Hub `game_definitions` / admin eşlemeleri: `arena5gen` */
+    const GEMTOK_HUB_GAME_ID = "arena5gen";
+    /** Hub haritasinda `default` action: her olayda guncel ilk aktif oyuncu */
+    const GIFT_HUB_DEFAULT_TEAM_SENTINEL = "__arena5gen_default__";
+
+    /**
+     * Arena5Gen — tek yapılandırma (büyüme, fizik, efekt). Magic number burada toplanır.
+     */
+    const ARENA5GEN = {
+      growth: {
+        minRadius: 32,
+        maxRadius: 116,
+        blendRelative: 0.52,
+        sqrtTau: 22
+      },
+      smoothing: {
+        steps: 500,
+        easeOutCubic(t) {
+          const x = Math.min(1, Math.max(0, t));
+          return 1 - (1 - x) ** 3;
+        }
+      },
+      physics: {
+        collisionRestitution: 0.82,
+        tangentDampPair: 0.16,
+        wallRestitution: 0.86,
+        massExponent: 2,
+        maxSpeedBase: 520,
+        maxSpeedMassDivisor: 5200,
+        minSpeedBase: 92,
+        minSpeedRadiusFactor: 0.62,
+        minSpeedThreeScale: 0.88,
+        heavyPackRadius: 86,
+        wallPassesHeavy: 12,
+        wallPassesNormal: 9,
+        colPassesHeavy: 2,
+        colPassesNormal: 1
+      },
+      effects: {
+        giftParticlesBase: 8,
+        giftParticlesPerPoint: 0.42,
+        giftParticlesCap: 42,
+        shockwavePointThreshold: 16,
+        screenFlashPointThreshold: 12,
+        screenFlashLife: 0.2,
+        giftEffectCap: 200,
+        collisionShakeCap3: 0.42
+      },
+      scoreUi: {
+        lerpPerSec: 11
+      }
+    };
+
+    /** Arena arka plan / halka renkleri (drawArenaRing) */
+    const ARENA_THEME_COLORS = {
+      default: {
+        g0: "0, 3, 10",
+        g1: "4, 16, 36",
+        g2: "8, 42, 78",
+        g3: "14, 58, 102",
+        g4: "22, 72, 118",
+        wash85: "45, 95, 140",
+        wash100: "42, 88, 130",
+        strokeW: "22, 105, 168",
+        strokeN: "72, 148, 198",
+        shadow: "12, 70, 118"
+      },
+      violet: {
+        g0: "16, 4, 42",
+        g1: "38, 14, 72",
+        g2: "58, 22, 100",
+        g3: "78, 36, 128",
+        g4: "92, 48, 145",
+        wash85: "92, 58, 150",
+        wash100: "72, 48, 118",
+        strokeW: "130, 76, 200",
+        strokeN: "190, 150, 255",
+        shadow: "70, 36, 118"
+      },
+      emerald: {
+        g0: "0, 14, 18",
+        g1: "2, 40, 46",
+        g2: "6, 62, 58",
+        g3: "10, 86, 74",
+        g4: "14, 96, 82",
+        wash85: "28, 110, 96",
+        wash100: "24, 92, 82",
+        strokeW: "22, 140, 118",
+        strokeN: "90, 210, 190",
+        shadow: "12, 90, 76"
+      },
+      crimson: {
+        g0: "18, 0, 6",
+        g1: "52, 6, 18",
+        g2: "88, 14, 28",
+        g3: "118, 22, 38",
+        g4: "138, 32, 48",
+        wash85: "120, 40, 50",
+        wash100: "90, 28, 38",
+        strokeW: "160, 44, 58",
+        strokeN: "230, 120, 130",
+        shadow: "90, 22, 32"
+      },
+      amber: {
+        g0: "18, 12, 0",
+        g1: "52, 36, 6",
+        g2: "86, 58, 10",
+        g3: "110, 74, 14",
+        g4: "128, 88, 18",
+        wash85: "140, 100, 34",
+        wash100: "118, 84, 26",
+        strokeW: "200, 140, 40",
+        strokeN: "255, 210, 120",
+        shadow: "130, 88, 24"
+      }
+    };
+
+    const teamEls = Object.fromEntries(
+      TEAM_IDS.map((id) => [
+        id,
+        {
+          wrap: document.getElementById(`team-${id}`),
+          score: document.getElementById(`score-${id}`),
+          crest: document.getElementById(`crest-${id}`),
+          crestImg: document.getElementById(`crest-img-${id}`)
+        }
+      ])
+    );
+
+    const roundTimerBar = document.getElementById("round-timer-bar");
+    const roundTimerHud = document.getElementById("round-timer-hud");
+    const roundEndOverlay = document.getElementById("round-end-overlay");
+    const roundEndWinner = document.getElementById("round-end-winner");
+    const settingsRoundMin = document.getElementById("settings-round-min");
+    const settingsPlayerVal = document.getElementById("settings-player-val");
+    const settingsPlayerMinus = document.getElementById("settings-player-minus");
+    const settingsPlayerPlus = document.getElementById("settings-player-plus");
+    const settingsShake = document.getElementById("settings-shake");
+    const settingsArenaTheme = document.getElementById("settings-arena-theme");
+    const settingsSpeedRange = document.getElementById("settings-speed-range");
+    const settingsSpeedVal = document.getElementById("settings-speed-val");
+
+    const TEAM_DISPLAY_NAMES = Object.fromEntries(TEAM_IDS.map((id, i) => [id, "Oyuncu " + (i + 1)]));
+
+    const settingsBackdrop = document.getElementById("settings-backdrop");
+    const settingsClose = document.getElementById("settings-close");
+    const settingsPhotoGrid = document.getElementById("settings-photo-grid");
+    const settingsMusicGrid = document.getElementById("settings-music-grid");
+    const PHOTO_STORAGE_KEY = "arena5gen_teamPhotos_v1";
+    const ROUND_STORAGE_KEY = "arena5gen_roundMinutes_v1";
+    const SHAKE_STORAGE_KEY = "arena5gen_shake_v1";
+    const THEME_STORAGE_KEY = "arena5gen_arenaTheme_v1";
+    const ACTIVE_COUNT_STORAGE_KEY = "arena5gen_activeCount_v1";
+    const SPEED_STORAGE_KEY = "arena5gen_speedMult_v1";
+    const WS_STORAGE_KEY = "arena_tikfinity_ws_url";
+    const DEFAULT_WS_URL = "ws://127.0.0.1:21213";
+    const TIKFINITY_MAX_PER_FRAME = 8;
+    const GEMTOK_GIFT_LIST_JSON_URL = "../../sıra/gift-images/gift-list.json";
+    const GEMTOK_GIFT_LIST_IMAGE_BASE = "../../sıra/gift-images/";
+    /** Ayarlardan yapilan hediye→oyuncu (tarayici yerel) */
+    const LOCAL_GIFT_ASSIGN_STORAGE_KEY = "arena5gen_gift_assign_map_v1";
+
+    const state = {
+      scores: Object.fromEntries(TEAM_IDS.map((id) => [id, 0])),
+      audioReady: false,
+      currentLeader: "none",
+      lastFrameTime: 0,
+      speedMultiplier: 1,
+      balls: {},
+      teamPhotos: Object.fromEntries(TEAM_IDS.map((id) => [id, ""])),
+      teamCanvasImages: Object.fromEntries(TEAM_IDS.map((id) => [id, null])),
+      audios: Object.fromEntries(TEAM_IDS.map((id) => [id, new Audio()])),
+      collisionEffects: [],
+      dustEffects: [],
+      shockwaves: [],
+      giftEffects: [],
+      cameraShake: 0,
+      tikfinity: {
+        ws: null,
+        queue: [],
+        flushScheduled: false,
+        reconnectTimer: null,
+        intentionalClose: false,
+        bridgeUnsub: null,
+        portalHudTimer: null
+      },
+      roundEndTime: null,
+      roundFrozen: false,
+      roundRestartTimer: null,
+      shakeEnabled: true,
+      arenaTheme: "default",
+      activeTeamCount: 5,
+      smoothBallRadii: Object.fromEntries(TEAM_IDS.map((id) => [id, 0])),
+      ballRadiusRamp: Object.fromEntries(
+        TEAM_IDS.map((id) => [id, { from: 0, goal: 0, t: ARENA5GEN.smoothing.steps }])
+      ),
+      displayScores: Object.fromEntries(TEAM_IDS.map((id) => [id, 0])),
+      giftScreenFlash: null,
+      uiLastLeader: null,
+      renderLastLeader: null,
+      /** @type {Map<number, string>|null} gift_tiktok_id → TEAM_IDS */
+      giftHubGiftToTeam: null,
+      giftHubCatalogUnsub: null,
+      /** @type {Map<number, string>} yerel hediye→takim (localStorage); sunucu eslemesinden once bakilir */
+      localGiftToTeam: new Map(),
+      musicObjectUrls: Object.create(null),
+      musicPlaylistIndex: Object.fromEntries(TEAM_IDS.map((id) => [id, 0])),
+      musicPlaybackTime: Object.create(null),
+      leaderMusicPlayingId: null,
+      leaderEndedHandler: null,
+      leaderEndedAudio: null
+    };
+
+    function loadLocalGiftAssignmentsToState() {
+      state.localGiftToTeam = new Map();
+      try {
+        const raw = localStorage.getItem(LOCAL_GIFT_ASSIGN_STORAGE_KEY);
+        if (!raw) return;
+        const o = JSON.parse(raw);
+        if (!o || typeof o !== "object") return;
+        Object.keys(o).forEach((k) => {
+          const id = parseInt(k, 10);
+          const v = o[k];
+          if (!Number.isFinite(id)) return;
+          if (v === "__default__") state.localGiftToTeam.set(id, GIFT_HUB_DEFAULT_TEAM_SENTINEL);
+          else if (typeof v === "string" && TEAM_IDS.includes(v)) state.localGiftToTeam.set(id, v);
+        });
+      } catch (_e) {}
+    }
+
+    function saveLocalGiftAssignmentsFromState() {
+      const o = {};
+      state.localGiftToTeam.forEach((v, k) => {
+        o[String(k)] = v === GIFT_HUB_DEFAULT_TEAM_SENTINEL ? "__default__" : v;
+      });
+      try {
+        localStorage.setItem(LOCAL_GIFT_ASSIGN_STORAGE_KEY, JSON.stringify(o));
+      } catch (_e) {}
+    }
+
+    function sanitizeLocalGiftAssignmentsForTeamUi() {
+      let changed = false;
+      state.localGiftToTeam.forEach((teamId, giftId) => {
+        if (teamId === GIFT_HUB_DEFAULT_TEAM_SENTINEL) {
+          state.localGiftToTeam.delete(giftId);
+          changed = true;
+        }
+      });
+      if (changed) saveLocalGiftAssignmentsFromState();
+    }
+
+    function giftHubImageFullUrl(imageUrl) {
+      if (!imageUrl || typeof imageUrl !== "string") return "";
+      const s = imageUrl.trim();
+      if (/^[a-z][a-z0-9+.-]*:/i.test(s)) return s;
+      try {
+        if (window.__GEMTOK_GIFT_IMAGES_BASE__) {
+          return String(window.__GEMTOK_GIFT_IMAGES_BASE__).replace(/\/?$/, "/") + (s.startsWith("/") ? s.slice(1) : s);
+        }
+      } catch (_e0) {}
+      const base =
+        typeof GemtokGiftHub !== "undefined" && GemtokGiftHub.hubBase
+          ? GemtokGiftHub.hubBase()
+          : String(window.__GEMTOK_GIFT_HUB_URL__ || "http://127.0.0.1:8787").replace(/\/$/, "");
+      return base + (s.startsWith("/") ? s : "/" + s);
+    }
+
+    function bundledGiftImageFullUrl(fileName) {
+      const f = String(fileName || "").trim();
+      if (!f) return "";
+      try {
+        return new URL(GEMTOK_GIFT_LIST_IMAGE_BASE + f, window.location.href).href;
+      } catch (_e) {
+        return GEMTOK_GIFT_LIST_IMAGE_BASE + f;
+      }
+    }
+
+    function normalizeBundledGiftRow(row) {
+      if (!row || typeof row !== "object") return null;
+      const id = Math.floor(Number(row.code != null ? row.code : row.tiktok_id));
+      if (!Number.isFinite(id) || id <= 0) return null;
+      const fileName = String(row.file || "").trim();
+      return {
+        tiktok_id: id,
+        name: String(row.name || "").trim() || "Gift " + id,
+        diamond_count: Math.max(0, Math.floor(Number(row.coins != null ? row.coins : row.diamond_count) || 0)),
+        imageUrl: fileName ? bundledGiftImageFullUrl(fileName) : ""
+      };
+    }
+
+    async function loadBundledGiftList() {
+      try {
+        if (Array.isArray(window.__GEMTOK_GIFT_LIST__) && window.__GEMTOK_GIFT_LIST__.length) {
+          const src =
+            typeof GemtokGiftCatalogFilter !== "undefined"
+              ? GemtokGiftCatalogFilter.filterCatalogGifts(window.__GEMTOK_GIFT_LIST__)
+              : window.__GEMTOK_GIFT_LIST__;
+          return src.map(normalizeBundledGiftRow).filter(Boolean);
+        }
+      } catch (_e) {}
+      try {
+        const res = await fetch(GEMTOK_GIFT_LIST_JSON_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("gift_list_http_" + res.status);
+        const arr = await res.json();
+        if (!Array.isArray(arr)) return [];
+        const filtered =
+          typeof GemtokGiftCatalogFilter !== "undefined"
+            ? GemtokGiftCatalogFilter.filterCatalogGifts(arr)
+            : arr;
+        return filtered.map(normalizeBundledGiftRow).filter(Boolean);
+      } catch (_e2) {
+        return [];
+      }
+    }
+
+    async function getGiftAssignCatalog(opts) {
+      const force = !!(opts && opts.force);
+      if (typeof GemtokGiftHub !== "undefined" && GemtokGiftHub.getAllGifts) {
+        try {
+          const gifts = await GemtokGiftHub.getAllGifts({ force });
+          if (Array.isArray(gifts) && gifts.length) {
+            return { gifts, source: "hub" };
+          }
+        } catch (_e) {}
+      }
+      const fallback = await loadBundledGiftList();
+      return { gifts: fallback, source: fallback.length ? "bundled" : "none" };
+    }
+
+    let giftAssignSearchTimer = null;
+    let openGiftAssignTeamId = null;
+
+    function getAssignedGiftIdForTeam(teamId) {
+      for (const [giftId, mappedTeamId] of state.localGiftToTeam.entries()) {
+        if (mappedTeamId === teamId) return giftId;
+      }
+      return null;
+    }
+
+    function clearGiftAssignmentsForTeam(teamId) {
+      const toDelete = [];
+      state.localGiftToTeam.forEach((mappedTeamId, giftId) => {
+        if (mappedTeamId === teamId) toDelete.push(giftId);
+      });
+      toDelete.forEach((giftId) => state.localGiftToTeam.delete(giftId));
+    }
+
+    function setAssignedGiftForTeam(teamId, giftId) {
+      clearGiftAssignmentsForTeam(teamId);
+      if (Number.isFinite(giftId) && giftId > 0) {
+        state.localGiftToTeam.set(giftId, teamId);
+      }
+      saveLocalGiftAssignmentsFromState();
+    }
+
+    function getGiftCatalogImageUrl(giftRow) {
+      if (!giftRow || typeof giftRow !== "object") return "";
+      const d = giftRow.discoveredImageUrl;
+      if (typeof d === "string" && d.trim()) return giftHubImageFullUrl(d);
+      const u = giftRow.imageUrl || giftRow.image_url;
+      if (typeof u === "string" && u.trim()) return giftHubImageFullUrl(u);
+      const f = giftRow.image_file;
+      if (typeof f === "string" && f.trim()) {
+        return giftHubImageFullUrl("/gift-images/" + encodeURIComponent(f.trim()));
+      }
+      return "";
+    }
+
+    function giftDiamondCount(g) {
+      if (!g || typeof g !== "object") return 0;
+      const v = g.diamond_count != null ? g.diamond_count : g.diamond;
+      return Math.max(0, Math.floor(Number(v) || 0));
+    }
+
+    function giftDisplayNameDiamond(g) {
+      const name = g ? String(g.name || "").trim() : "";
+      const d = giftDiamondCount(g);
+      const base = name || (g && g.tiktok_id ? "Gift " + g.tiktok_id : "—");
+      return base + " (" + d + ")";
+    }
+
+    function buildGiftThumb(imageUrl, fallbackText, className) {
+      const wrap = document.createElement("span");
+      wrap.className = className;
+      const letter = (fallbackText || "G").slice(0, 1).toUpperCase();
+      if (imageUrl) {
+        const img = document.createElement("img");
+        img.alt = "";
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.referrerPolicy = "no-referrer";
+        img.src = imageUrl;
+        img.addEventListener("error", () => {
+          try {
+            img.replaceWith(document.createTextNode(letter));
+          } catch (_e) {
+            wrap.textContent = letter;
+          }
+        });
+        wrap.appendChild(img);
+      } else {
+        wrap.textContent = letter;
+      }
+      return wrap;
+    }
+
+    async function refreshGiftAssignGrid(opts) {
+      const force = opts && opts.force;
+      const grid = document.getElementById("settings-gift-assign-grid");
+      const stat = document.getElementById("settings-gift-assign-status");
+      if (!grid) return;
+      if (stat) stat.textContent = "";
+      try {
+        const searchEl = document.getElementById("settings-gift-search");
+        const search = (searchEl && searchEl.value) || "";
+        const q = search.normalize("NFC").toLowerCase().trim();
+        const catalog = await getGiftAssignCatalog({ force: !!force });
+        const gifts = Array.isArray(catalog.gifts) ? catalog.gifts : [];
+        const filtered = (!q
+          ? gifts
+          : gifts.filter((g) => {
+              const nm = String(g.name || "").toLowerCase();
+              const idStr = String(g.tiktok_id != null ? g.tiktok_id : "");
+              return nm.includes(q) || idStr.includes(q);
+            })
+        ).sort((a, b) => {
+          const da = giftDiamondCount(a);
+          const db = giftDiamondCount(b);
+          if (da !== db) return da - db;
+          return String(a && a.name ? a.name : "").localeCompare(String(b && b.name ? b.name : ""), "tr");
+        });
+        grid.innerHTML = "";
+        const frag = document.createDocumentFragment();
+        const maxRows = 240;
+        const filteredVisible = filtered.slice(0, maxRows);
+        const active = activeTeams();
+        if (openGiftAssignTeamId && !active.includes(openGiftAssignTeamId)) openGiftAssignTeamId = null;
+        const giftById = new Map();
+        gifts.forEach((giftRow) => {
+          const id = Number(giftRow && giftRow.tiktok_id);
+          if (Number.isFinite(id) && id > 0) giftById.set(id, giftRow);
+        });
+
+        active.forEach((teamId, idx) => {
+          const teamWrap = document.createElement("section");
+          teamWrap.className = "settings-team-assign";
+          teamWrap.setAttribute("data-team-id", teamId);
+
+          const title = document.createElement("div");
+          title.className = "settings-team-assign-title";
+          title.textContent = "TAKIM " + (idx + 1) + " → HEDİYE";
+
+          const head = document.createElement("div");
+          head.className = "settings-team-assign-head";
+
+          const selectedGiftId = getAssignedGiftIdForTeam(teamId);
+          const selectedGift = selectedGiftId != null ? giftById.get(selectedGiftId) || null : null;
+          const selectedButton = document.createElement("button");
+          selectedButton.type = "button";
+          selectedButton.className = "settings-team-assign-select";
+          selectedButton.setAttribute("aria-expanded", openGiftAssignTeamId === teamId ? "true" : "false");
+          if (openGiftAssignTeamId === teamId) selectedButton.classList.add("is-open");
+          selectedButton.addEventListener("click", () => {
+            openGiftAssignTeamId = openGiftAssignTeamId === teamId ? null : teamId;
+            void refreshGiftAssignGrid({ force: false });
+          });
+
+          selectedButton.appendChild(
+            buildGiftThumb(
+              selectedGift ? getGiftCatalogImageUrl(selectedGift) : "",
+              selectedGift ? String(selectedGift.name || "?").slice(0, 1).toUpperCase() : "+",
+              "settings-team-assign-thumb"
+            )
+          );
+
+          const meta = document.createElement("span");
+          meta.className = "settings-team-assign-meta";
+
+          const name = document.createElement("span");
+          name.className = "settings-team-assign-name";
+          name.textContent = selectedGift
+            ? giftDisplayNameDiamond(selectedGift)
+            : selectedGiftId != null
+              ? "Hediye #" + selectedGiftId + " (liste disi)"
+              : "Hediye seç";
+
+          const caret = document.createElement("span");
+          caret.className = "settings-team-assign-caret";
+          caret.setAttribute("aria-hidden", "true");
+          caret.textContent = openGiftAssignTeamId === teamId ? "▲" : "▼";
+
+          meta.appendChild(name);
+          selectedButton.append(meta, caret);
+          head.appendChild(selectedButton);
+
+          const clearBtn = document.createElement("button");
+          clearBtn.type = "button";
+          clearBtn.className = "settings-btn danger settings-team-assign-clear";
+          clearBtn.textContent = "Temizle";
+          clearBtn.disabled = selectedGiftId == null;
+          clearBtn.addEventListener("click", () => {
+            clearGiftAssignmentsForTeam(teamId);
+            saveLocalGiftAssignmentsFromState();
+            openGiftAssignTeamId = null;
+            if (stat) stat.textContent = "";
+            void refreshGiftAssignGrid({ force: false });
+          });
+          head.appendChild(clearBtn);
+
+          teamWrap.append(title, head);
+
+          if (openGiftAssignTeamId === teamId) {
+            const list = document.createElement("div");
+            list.className = "settings-gift-options";
+            if (!filteredVisible.length) {
+              const empty = document.createElement("div");
+              empty.className = "settings-gift-empty";
+              empty.textContent = "Aramaya uygun hediye bulunamadi.";
+              list.appendChild(empty);
+            } else {
+              filteredVisible.forEach((g) => {
+                const id = Number(g.tiktok_id);
+                if (!Number.isFinite(id) || id <= 0) return;
+                const option = document.createElement("button");
+                option.type = "button";
+                option.className = "settings-gift-option";
+                if (selectedGiftId === id) option.classList.add("is-selected");
+                option.appendChild(
+                  buildGiftThumb(
+                    getGiftCatalogImageUrl(g),
+                    String(g.name || "G").slice(0, 1).toUpperCase(),
+                    "settings-gift-option-thumb"
+                  )
+                );
+                const metaRow = document.createElement("span");
+                metaRow.className = "settings-gift-option-meta";
+                const nameRow = document.createElement("span");
+                nameRow.className = "settings-gift-option-name";
+                nameRow.textContent = giftDisplayNameDiamond(g);
+                metaRow.appendChild(nameRow);
+                option.appendChild(metaRow);
+                option.addEventListener("click", () => {
+                  setAssignedGiftForTeam(teamId, id);
+                  if (stat) stat.textContent = "";
+                  openGiftAssignTeamId = teamId;
+                  void refreshGiftAssignGrid({ force: false });
+                });
+                list.appendChild(option);
+              });
+            }
+            teamWrap.appendChild(list);
+          }
+
+          frag.appendChild(teamWrap);
+        });
+        grid.appendChild(frag);
+        if (stat) stat.textContent = "";
+      } catch (e) {
+        if (stat) {
+          stat.textContent =
+            "Hediye listesi alinamadi: " + (e && e.message ? e.message : "bilinmeyen hata");
+        }
+        grid.innerHTML = "";
+      }
+    }
+
+    function initGiftAssignPanelListeners() {
+      const ref = document.getElementById("settings-gift-refresh");
+      if (ref && !ref.dataset.bound) {
+        ref.dataset.bound = "1";
+        ref.addEventListener("click", () => void refreshGiftAssignGrid({ force: true }));
+      }
+      const sea = document.getElementById("settings-gift-search");
+      if (sea && !sea.dataset.bound) {
+        sea.dataset.bound = "1";
+        sea.addEventListener("input", () => {
+          if (giftAssignSearchTimer) clearTimeout(giftAssignSearchTimer);
+          giftAssignSearchTimer = setTimeout(() => void refreshGiftAssignGrid({ force: false }), 280);
+        });
+      }
+    }
+
+    loadLocalGiftAssignmentsToState();
+    sanitizeLocalGiftAssignmentsForTeamUi();
+
+    function applyArenaThemeCssVars() {
+      const d = ARENA_THEME_COLORS[state.arenaTheme] || ARENA_THEME_COLORS.default;
+      const r = document.documentElement.style;
+      const rb = (rgb, a) => `rgba(${rgb}, ${a})`;
+      r.setProperty("--scorebox-border", rb(d.strokeN, 0.9));
+      r.setProperty("--scorebox-glow", rb(d.shadow, 0.3));
+      r.setProperty("--team-leading-border", rb(d.strokeW, 0.95));
+      r.setProperty("--team-leading-glow1", rb(d.strokeN, 0.42));
+      r.setProperty("--team-leading-glow2", rb(d.shadow, 0.22));
+      r.setProperty("--team-leading-score", rb(d.strokeW, 0.98));
+      r.setProperty("--team-leading-score-glow", rb(d.strokeN, 0.38));
+      r.setProperty("--crest-border", rb(d.strokeN, 0.58));
+      r.setProperty("--crest-leading-border", rb(d.strokeW, 0.88));
+      r.setProperty("--timer-label-color", rb(d.strokeN, 0.88));
+    }
+
+    TEAM_IDS.forEach((id) => {
+      state.audios[id].loop = false;
+      state.audios[id].preload = "auto";
+      state.audios[id].volume = 1;
+      state.audios[id].src = "";
+    });
+
+    const cx0 = canvas.width / 2;
+    const cy0 = canvas.height / 2;
+    state.balls = Object.fromEntries(TEAM_IDS.map((id) => [id, { x: cx0, y: cy0, vx: 0, vy: 0 }]));
+
+    function randomVelocity(speed) {
+      const angle = Math.random() * Math.PI * 2;
+      return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
+    }
+
+    function getActiveTeamCount() {
+      return Math.min(10, Math.max(2, Math.floor(state.activeTeamCount) || 5));
+    }
+
+    function activeTeams() {
+      return TEAM_IDS.slice(0, getActiveTeamCount());
+    }
+
+    function loadArena5GenOptionsFromStorage() {
+      state.shakeEnabled = true;
+      try {
+        const s = localStorage.getItem(SHAKE_STORAGE_KEY);
+        if (s === "0" || s === "false") state.shakeEnabled = false;
+      } catch (_e) {}
+      state.arenaTheme = "default";
+      try {
+        const t = (localStorage.getItem(THEME_STORAGE_KEY) || "").trim();
+        if (ARENA_THEME_COLORS[t]) state.arenaTheme = t;
+      } catch (_e2) {}
+      state.activeTeamCount = 5;
+      try {
+        const n = parseInt(localStorage.getItem(ACTIVE_COUNT_STORAGE_KEY), 10);
+        if (Number.isFinite(n)) state.activeTeamCount = Math.min(10, Math.max(2, n));
+      } catch (_e3) {}
+      state.speedMultiplier = 1;
+      try {
+        const sp = parseFloat(localStorage.getItem(SPEED_STORAGE_KEY));
+        if (Number.isFinite(sp)) state.speedMultiplier = clampSpeedMultiplier(sp);
+      } catch (_e4) {}
+      applyArenaThemeCssVars();
+    }
+
+    function syncTeamVisibility() {
+      const n = getActiveTeamCount();
+      TEAM_IDS.forEach((id, i) => {
+        teamEls[id].wrap.classList.toggle("team--off", i >= n);
+      });
+    }
+
+    function layoutActiveBalls() {
+      const { cx, cy, radius } = getArenaGeometry();
+      const active = activeTeams();
+      const n = active.length;
+      const placeR = radius * 0.72;
+      const startSpeed = 300;
+      TEAM_IDS.forEach((id) => {
+        const ball = state.balls[id];
+        if (!active.includes(id)) {
+          ball.x = cx;
+          ball.y = cy;
+          ball.vx = 0;
+          ball.vy = 0;
+          return;
+        }
+        const idx = active.indexOf(id);
+        const a = -Math.PI / 2 + (idx * 2 * Math.PI) / Math.max(n, 1);
+        ball.x = cx + Math.cos(a) * placeR;
+        ball.y = cy + Math.sin(a) * placeR;
+        Object.assign(ball, randomVelocity(startSpeed));
+      });
+    }
+
+    loadArena5GenOptionsFromStorage();
+    syncTeamVisibility();
+    layoutActiveBalls();
+
+    function getRoundMinutes() {
+      let n = 10;
+      try {
+        const raw = localStorage.getItem(ROUND_STORAGE_KEY);
+        if (raw != null && raw !== "") {
+          const v = parseInt(raw, 10);
+          if (Number.isFinite(v)) n = v;
+        }
+      } catch (_e) {}
+      return Math.min(120, Math.max(1, n));
+    }
+
+    function persistRoundMinutes(v) {
+      const clamped = Math.min(120, Math.max(1, Math.floor(Number.isFinite(v) ? v : 10)));
+      try {
+        localStorage.setItem(ROUND_STORAGE_KEY, String(clamped));
+      } catch (_e) {}
+      return clamped;
+    }
+
+    function persistShake(enabled) {
+      state.shakeEnabled = !!enabled;
+      try {
+        localStorage.setItem(SHAKE_STORAGE_KEY, state.shakeEnabled ? "1" : "0");
+      } catch (_e) {}
+    }
+
+    function persistTheme(themeId) {
+      const t = ARENA_THEME_COLORS[themeId] ? themeId : "default";
+      state.arenaTheme = t;
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, t);
+      } catch (_e) {}
+      applyArenaThemeCssVars();
+    }
+
+    function clampSpeedMultiplier(v) {
+      const x = Number.isFinite(v) ? v : 1;
+      return Math.min(3, Math.max(0.35, Math.round(x * 100) / 100));
+    }
+
+    function persistSpeedToStorage() {
+      const v = clampSpeedMultiplier(state.speedMultiplier);
+      state.speedMultiplier = v;
+      try {
+        localStorage.setItem(SPEED_STORAGE_KEY, String(v));
+      } catch (_e) {}
+      syncSpeedSettingsUi();
+    }
+
+    function syncSpeedSettingsUi() {
+      if (!settingsSpeedRange || !settingsSpeedVal) return;
+      const v = clampSpeedMultiplier(state.speedMultiplier);
+      state.speedMultiplier = v;
+      const pct = Math.round(v * 100);
+      const snapped = Math.min(300, Math.max(35, Math.round(pct / 5) * 5));
+      settingsSpeedRange.value = String(snapped);
+      settingsSpeedVal.textContent = v.toFixed(2) + "x";
+    }
+
+    function setActiveTeamCount(n) {
+      const v = Math.min(10, Math.max(2, Math.floor(n)));
+      state.activeTeamCount = v;
+      try {
+        localStorage.setItem(ACTIVE_COUNT_STORAGE_KEY, String(v));
+      } catch (_e) {}
+      TEAM_IDS.forEach((id, i) => {
+        if (i >= v) state.scores[id] = 0;
+      });
+      syncTeamVisibility();
+      layoutActiveBalls();
+      syncSmoothBallRadiiToTargets();
+      if (settingsPlayerVal) settingsPlayerVal.textContent = String(v);
+      renderTeamPhotoSettingsRows();
+      renderTeamMusicSettingsRows();
+      if (settingsBackdrop && !settingsBackdrop.hidden) {
+        void refreshGiftAssignGrid({ force: false });
+      }
+      updateAll();
+    }
+
+    function formatRoundClock(ms) {
+      const s = Math.max(0, Math.floor(ms / 1000));
+      const m = Math.floor(s / 60);
+      const r = s % 60;
+      return m + ":" + String(r).padStart(2, "0");
+    }
+
+    function clearRoundRestartTimer() {
+      if (state.roundRestartTimer != null) {
+        clearTimeout(state.roundRestartTimer);
+        state.roundRestartTimer = null;
+      }
+    }
+
+    function getRoundWinnerLine() {
+      const ids = activeTeams();
+      const rows = ids.map((id) => ({ id, score: state.scores[id] }));
+      const maxS = rows.length ? Math.max(...rows.map((r) => r.score)) : 0;
+      if (maxS === 0) return "Skor yok.";
+      const tops = rows.filter((r) => r.score === maxS);
+      if (tops.length > 1) return "Beraberlik";
+      return "Kazanan: " + TEAM_DISPLAY_NAMES[tops[0].id];
+    }
+
+    function onRoundTimeExpired() {
+      if (state.roundFrozen) return;
+      state.roundFrozen = true;
+      state.roundEndTime = null;
+      if (roundEndWinner) roundEndWinner.textContent = getRoundWinnerLine();
+      if (roundEndOverlay) roundEndOverlay.hidden = false;
+      if (roundTimerHud) {
+        roundTimerHud.textContent = "0:00";
+      }
+      if (roundTimerBar) {
+        roundTimerBar.classList.remove("round-timer-bar--warn");
+        roundTimerBar.classList.add("round-timer-bar--ended");
+      }
+      clearRoundRestartTimer();
+      state.roundRestartTimer = setTimeout(() => {
+        state.roundRestartTimer = null;
+        beginNewRound();
+      }, 6500);
+    }
+
+    function beginNewRound() {
+      clearRoundRestartTimer();
+      state.roundFrozen = false;
+      state.roundEndTime = Date.now() + getRoundMinutes() * 60 * 1000;
+      TEAM_IDS.forEach((id) => {
+        state.scores[id] = 0;
+      });
+      if (roundEndOverlay) roundEndOverlay.hidden = true;
+      if (roundTimerBar) {
+        roundTimerBar.classList.remove("round-timer-bar--ended", "round-timer-bar--warn");
+      }
+      if (roundTimerHud && state.roundEndTime) {
+        roundTimerHud.textContent = formatRoundClock(state.roundEndTime - Date.now());
+      }
+      syncSmoothBallRadiiToTargets();
+      updateAll();
+    }
+
+    function tickRoundHud() {
+      if (!roundTimerHud) return;
+      if (state.roundFrozen) return;
+      if (!state.roundEndTime) {
+        roundTimerHud.textContent = "--:--";
+        return;
+      }
+      const rem = state.roundEndTime - Date.now();
+      if (rem <= 0) {
+        onRoundTimeExpired();
+        return;
+      }
+      roundTimerHud.textContent = formatRoundClock(rem);
+      if (roundTimerBar) roundTimerBar.classList.toggle("round-timer-bar--warn", rem <= 60 * 1000);
+    }
+
+    function isTikfinityAutoWsDisabled() {
+      const p = new URLSearchParams(location.search);
+      for (const k of ["tikfinity", "autows", "tikfinityWs"]) {
+        const v = p.get(k);
+        if (v === "0" || v === "false" || v === "off") return true;
+      }
+      return false;
+    }
+
+    function getTikfinityWsUrl() {
+      try {
+        const s = localStorage.getItem(WS_STORAGE_KEY);
+        if (s && /^wss?:\/\//i.test(s.trim())) return s.trim();
+      } catch (_e) {}
+      if (typeof window.TIKFINITY_WS_URL === "string") {
+        const g = window.TIKFINITY_WS_URL.trim();
+        if (/^wss?:\/\//i.test(g)) return g;
+      }
+      const meta = document.querySelector('meta[name="tikfinity-ws-url"]');
+      if (meta) {
+        const c = (meta.getAttribute("content") || "").trim();
+        if (/^wss?:\/\//i.test(c)) return c;
+      }
+      const qp = new URLSearchParams(location.search).get("ws");
+      if (qp && /^wss?:\/\//i.test(qp.trim())) return qp.trim();
+      return DEFAULT_WS_URL;
+    }
+
+    function setTikfinityStatus(text) {
+      const el = document.getElementById("tikfinity-ws-status");
+      if (el) el.textContent = text;
+    }
+
+    function teamIdFromActionKey(actionKey) {
+      const k = String(actionKey || "default").trim();
+      if (TEAM_IDS.includes(k)) return k;
+      if (k === "default") {
+        const act = activeTeams();
+        return act.length ? act[0] : null;
+      }
+      return null;
+    }
+
+    async function refreshGiftHubMappings() {
+      if (typeof GemtokGiftHub === "undefined" || !GemtokGiftHub.getMappingsMapCached) {
+        state.giftHubGiftToTeam = null;
+        return;
+      }
+      try {
+        const raw = await GemtokGiftHub.getMappingsMapCached(GEMTOK_HUB_GAME_ID);
+        const m = new Map();
+        raw.forEach((actionKey, giftTiktokId) => {
+          const ak = String(actionKey || "").trim();
+          if (ak === "default") {
+            m.set(giftTiktokId, GIFT_HUB_DEFAULT_TEAM_SENTINEL);
+            return;
+          }
+          const tid = teamIdFromActionKey(actionKey);
+          if (tid != null && TEAM_IDS.includes(tid)) m.set(giftTiktokId, tid);
+        });
+        state.giftHubGiftToTeam = m;
+      } catch (_e) {
+        state.giftHubGiftToTeam = null;
+      }
+    }
+
+    function detachGiftHubCatalogListener() {
+      if (typeof state.giftHubCatalogUnsub === "function") {
+        try {
+          state.giftHubCatalogUnsub();
+        } catch (_e) {}
+        state.giftHubCatalogUnsub = null;
+      }
+    }
+
+    function attachGiftHubCatalogListener() {
+      detachGiftHubCatalogListener();
+      if (typeof GemtokGiftHub === "undefined" || typeof GemtokGiftHub.subscribeGiftCatalog !== "function") return;
+      state.giftHubCatalogUnsub = GemtokGiftHub.subscribeGiftCatalog(() => {
+        void refreshGiftHubMappings();
+        try {
+          const bd = document.getElementById("settings-backdrop");
+          if (bd && !bd.hidden) void refreshGiftAssignGrid({ force: true });
+        } catch (_e2) {}
+      });
+    }
+
+    /** Hediye listesi / admin yoksa: sabit TikTok id ve isim eslemesi */
+    function teamIdFromGiftDataLegacy(data) {
+      const pick = (v) => (typeof v === "string" && v.trim() ? v.trim() : "");
+      const pickSentDescribe = (info) => {
+        const d = info && typeof info.describe === "string" ? info.describe.trim() : "";
+        if (!d) return "";
+        return d.replace(/^sent\s+/i, "").trim();
+      };
+
+      const rawGid =
+        data.giftId != null
+          ? data.giftId
+          : data.giftID != null
+            ? data.giftID
+            : data.gift_id != null
+              ? data.gift_id
+              : data.extendedGiftInfo && data.extendedGiftInfo.giftId != null
+                ? data.extendedGiftInfo.giftId
+                : data.giftDetails && data.giftDetails.giftId != null
+                  ? data.giftDetails.giftId
+                  : data.gift && (data.gift.gift_id != null ? data.gift.gift_id : data.gift.id);
+      const gid = rawGid != null && rawGid !== "" ? parseInt(String(rawGid), 10) : NaN;
+      const idToTeam = {
+        5655: "gs", // Rose
+        5269: "fb", // TikTok (1 coin)
+        5827: "amed", // Ice Cream Cone (TikTok catalog)
+        6064: "bjk" // GG (yaygin catalog)
+      };
+      if (Number.isFinite(gid) && idToTeam[gid]) return idToTeam[gid];
+
+      const raw =
+        pick(data.giftName) ||
+        pick(data.giftDetails && data.giftDetails.giftName) ||
+        pick(data.gift && (data.gift.name || data.gift.giftName || data.gift.gift_name)) ||
+        pickSentDescribe(data.extendedGiftInfo) ||
+        "";
+
+      const n = raw.normalize("NFC").toLowerCase();
+      if (!n) return null;
+      const spaced = n.replace(/\s+/g, " ").trim();
+      const compact = spaced.replace(/ /g, "");
+
+      if (spaced === "rose" || compact === "rose" || spaced === "gül" || compact === "gül") return "gs";
+      if (spaced === "gg" || compact === "gg") return "bjk";
+      if (spaced === "tiktok" || spaced === "tik tok" || compact === "tiktok") return "fb";
+      if (
+        spaced === "ice cream cone" ||
+        compact === "icecreamcone" ||
+        compact === "icecream" ||
+        spaced === "ice cream" ||
+        (spaced.includes("ice cream") && spaced.includes("cone")) ||
+        (spaced.includes("icecream") && spaced.includes("cone")) ||
+        n.includes("dondurma") ||
+        (n.includes("külah") && n.includes("dondurma")) ||
+        (n.includes("kulah") && n.includes("dondurma"))
+      ) {
+        return "amed";
+      }
+      if (spaced === "pop" || /^pop\b/i.test(raw)) return "ts";
+
+      return null;
+    }
+
+    /** Once yerel ayar, sonra Gift Hub `arena5gen` eslemesi; yoksa legacy. */
+    function teamIdFromGiftData(data) {
+      let gid = null;
+      if (typeof GemtokGiftHub !== "undefined" && GemtokGiftHub.extractGiftIdFromEvent) {
+        gid = GemtokGiftHub.extractGiftIdFromEvent(data);
+      }
+      if (gid != null && Number.isFinite(gid) && state.localGiftToTeam.has(gid)) {
+        let tid = state.localGiftToTeam.get(gid);
+        if (tid === GIFT_HUB_DEFAULT_TEAM_SENTINEL) {
+          const act = activeTeams();
+          if (act.length) return act[0];
+        } else if (activeTeams().includes(tid)) return tid;
+      }
+      if (
+        gid != null &&
+        Number.isFinite(gid) &&
+        state.giftHubGiftToTeam instanceof Map &&
+        state.giftHubGiftToTeam.has(gid)
+      ) {
+        let tid = state.giftHubGiftToTeam.get(gid);
+        if (tid === GIFT_HUB_DEFAULT_TEAM_SENTINEL) {
+          const act = activeTeams();
+          if (act.length) return act[0];
+        } else if (activeTeams().includes(tid)) return tid;
+      }
+      return teamIdFromGiftDataLegacy(data);
+    }
+
+    function applyTikfinityPoints(teamId, points, withBurst) {
+      if (state.roundFrozen) return;
+      if (!activeTeams().includes(teamId)) return;
+      const p = Math.max(0, Math.floor(points));
+      if (p < 1) return;
+      if (!state.audioReady) initAudio();
+      state.scores[teamId] += p;
+      if (withBurst !== false) spawnGiftBurst(teamId, p);
+      updateAll();
+    }
+
+    /** TikTok streak (giftType 1): yalnizca repeatEnd=true tek olay; ara combo tiklari sayilmaz */
+    function isTikfinityGiftEventInProgress(data) {
+      const giftType = Number(
+        data.giftType ?? data.gift_type ?? data.gift?.gift_type ?? data.gift?.giftType ?? 0
+      );
+      const repeatEnd = data.repeatEnd ?? data.repeat_end;
+      if (giftType === 1) {
+        return !(repeatEnd === true || repeatEnd === 1 || repeatEnd === "1");
+      }
+      return repeatEnd === false || repeatEnd === 0 || repeatEnd === "0";
+    }
+
+    function resolveGiftDiamondPerUnit(data) {
+      const direct = Math.floor(
+        Number(
+          data.diamondCount ??
+            data.diamond_count ??
+            data.gift?.diamond_count ??
+            data.gift?.diamondCount ??
+            data.extendedGiftInfo?.diamondCount ??
+            data.giftDetails?.diamondCount ??
+            0
+        )
+      );
+      if (direct > 0) return direct;
+      return 1;
+    }
+
+    function resolveGiftComboCount(data) {
+      const raw = Math.floor(
+        Number(
+          data.repeatCount ??
+            data.repeat_count ??
+            data.giftCombo ??
+            data.comboCount ??
+            data.groupCount ??
+            data.gift?.repeat_count ??
+            1
+        )
+      );
+      return Math.min(120, Math.max(1, Number.isFinite(raw) && raw > 0 ? raw : 1));
+    }
+
+    function computeTikfinityGiftPoints(data) {
+      const diamondPerUnit = resolveGiftDiamondPerUnit(data);
+      const combo = resolveGiftComboCount(data);
+      return Math.min(60, Math.max(1, diamondPerUnit * combo));
+    }
+
+    function handleGemTokPortalGift(p) {
+      if (!p || typeof p !== "object") return;
+      if (String(p.type || "").toLowerCase() !== "gift") return;
+      const msg = { event: "gift", data: p };
+      handleTikfinityParsed(msg);
+    }
+
+    function handleTikfinityParsed(msg) {
+      const ev = String(msg.event || msg.type || "").toLowerCase();
+      if (ev !== "gift") return;
+
+      const data = msg.data != null && typeof msg.data === "object" ? msg.data : msg;
+
+      if (isTikfinityGiftEventInProgress(data)) return;
+      const giftTeam = teamIdFromGiftData(data);
+      if (!giftTeam) return;
+
+      applyTikfinityPoints(giftTeam, computeTikfinityGiftPoints(data));
+    }
+
+    function handleTikfinityRawLine(line) {
+      let msg;
+      try {
+        msg = JSON.parse(line);
+      } catch (_e) {
+        return;
+      }
+      if (!msg || typeof msg !== "object") return;
+      handleTikfinityParsed(msg);
+    }
+
+    function scheduleTikfinityFlush() {
+      if (state.tikfinity.flushScheduled) return;
+      state.tikfinity.flushScheduled = true;
+      requestAnimationFrame(() => {
+        state.tikfinity.flushScheduled = false;
+        let n = 0;
+        while (n < TIKFINITY_MAX_PER_FRAME && state.tikfinity.queue.length) {
+          const raw = state.tikfinity.queue.shift();
+          if (typeof raw !== "string") {
+            n++;
+            continue;
+          }
+          const chunks = String(raw)
+            .split(/\r?\n/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          for (const c of chunks) handleTikfinityRawLine(c);
+          n++;
+        }
+        if (state.tikfinity.queue.length) scheduleTikfinityFlush();
+      });
+    }
+
+    function disconnectTikfinity(opts) {
+      const intentional = opts && opts.intentional;
+      if (state.tikfinity.bridgeUnsub) {
+        try {
+          state.tikfinity.bridgeUnsub();
+        } catch (_e) {}
+        state.tikfinity.bridgeUnsub = null;
+      }
+      if (state.tikfinity.portalHudTimer) {
+        clearInterval(state.tikfinity.portalHudTimer);
+        state.tikfinity.portalHudTimer = null;
+      }
+      if (state.tikfinity.reconnectTimer) {
+        clearTimeout(state.tikfinity.reconnectTimer);
+        state.tikfinity.reconnectTimer = null;
+      }
+      const w = state.tikfinity.ws;
+      state.tikfinity.ws = null;
+      state.tikfinity.intentionalClose = !!intentional;
+      if (w && (w.readyState === WebSocket.OPEN || w.readyState === WebSocket.CONNECTING)) {
+        try {
+          w.close();
+        } catch (_e) {}
+      }
+    }
+
+    function scheduleTikfinityReconnect() {
+      if (isTikfinityAutoWsDisabled()) return;
+      if (state.tikfinity.reconnectTimer) return;
+      const delay = 3000 + Math.random() * 2500;
+      state.tikfinity.reconnectTimer = setTimeout(() => {
+        state.tikfinity.reconnectTimer = null;
+        connectTikfinity({ bypassDisable: true });
+      }, delay);
+    }
+
+    function connectTikfinity(opts) {
+      const bypass = opts && opts.bypassDisable;
+      if (!bypass && isTikfinityAutoWsDisabled()) {
+        setTikfinityStatus("Otomatik WebSocket kapali (?tikfinity=0). Ayarlardan baglan.");
+        return;
+      }
+      if (typeof GemTokLiveGameBridge !== "undefined" && typeof GemTokTikTokLive !== "undefined") {
+        disconnectTikfinity({ intentional: true });
+        const hub = window.__GEMTOK_GIFT_HUB_URL__ || "http://127.0.0.1:8787";
+        if (GemTokLiveGameBridge.ensure({ hubBase: hub, showHud: false })) {
+          state.tikfinity.bridgeUnsub = GemTokLiveGameBridge.onPayload((p) => handleGemTokPortalGift(p));
+          if (state.tikfinity.portalHudTimer) clearInterval(state.tikfinity.portalHudTimer);
+          state.tikfinity.portalHudTimer = setInterval(() => {
+            try {
+              const st = GemTokTikTokLive.getConnectionState?.();
+              if (!st) return;
+              const u = st.url || getTikfinityWsUrl();
+              if (st.state === "connected") setTikfinityStatus("GemTok koprusu bagli: " + u);
+              else if (st.state === "reconnecting") setTikfinityStatus("GemTok koprusu yeniden baglaniyor…");
+              else if (st.state === "connecting") setTikfinityStatus("GemTok koprusu baglaniyor…");
+              else setTikfinityStatus("GemTok koprusu bekleniyor…");
+            } catch (_e2) {}
+          }, 600);
+          return;
+        }
+      }
+      disconnectTikfinity({ intentional: true });
+      const url = getTikfinityWsUrl();
+      setTikfinityStatus("Baglaniyor…");
+      let ws;
+      try {
+        ws = new WebSocket(url);
+      } catch (_e) {
+        setTikfinityStatus("Baglanti basarisiz, yeniden denenecek.");
+        scheduleTikfinityReconnect();
+        return;
+      }
+      state.tikfinity.ws = ws;
+      state.tikfinity.intentionalClose = false;
+      ws.onopen = () => {
+        setTikfinityStatus("Bagli: " + url);
+      };
+      ws.onmessage = (ev) => {
+        state.tikfinity.queue.push(ev.data);
+        scheduleTikfinityFlush();
+      };
+      ws.onclose = () => {
+        if (state.tikfinity.ws !== ws) return;
+        state.tikfinity.ws = null;
+        const skipReconnect = state.tikfinity.intentionalClose;
+        state.tikfinity.intentionalClose = false;
+        if (skipReconnect) return;
+        setTikfinityStatus("Baglanti koptu, yeniden deneniyor…");
+        scheduleTikfinityReconnect();
+      };
+      ws.onerror = () => {
+        try {
+          ws.close();
+        } catch (_e) {}
+      };
+    }
+
+    function openSettings() {
+      void initAudio();
+      settingsBackdrop.hidden = false;
+      settingsBackdrop.setAttribute("aria-hidden", "false");
+      renderTeamPhotoSettingsRows();
+      renderTeamMusicSettingsRows();
+      const inp = document.getElementById("tikfinity-ws-input");
+      if (inp) inp.value = getTikfinityWsUrl();
+      if (settingsRoundMin) settingsRoundMin.value = String(getRoundMinutes());
+      if (settingsPlayerVal) settingsPlayerVal.textContent = String(getActiveTeamCount());
+      if (settingsShake) settingsShake.checked = state.shakeEnabled;
+      if (settingsArenaTheme) {
+        const t = ARENA_THEME_COLORS[state.arenaTheme] ? state.arenaTheme : "default";
+        settingsArenaTheme.value = t;
+      }
+      syncSpeedSettingsUi();
+      initGiftAssignPanelListeners();
+      void refreshGiftAssignGrid({ force: false });
+    }
+
+    function closeSettings() {
+      settingsBackdrop.hidden = true;
+      settingsBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function loadPhotosFromStorage() {
+      try {
+        const raw = localStorage.getItem(PHOTO_STORAGE_KEY);
+        if (!raw) return;
+        const o = JSON.parse(raw);
+        TEAM_IDS.forEach((id) => {
+          if (typeof o[id] === "string" && o[id].length > 0) state.teamPhotos[id] = o[id];
+        });
+      } catch (_e) {}
+    }
+
+    function savePhotosToStorage() {
+      try {
+        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(state.teamPhotos));
+      } catch (_e) {}
+    }
+
+    function applyTeamPhoto(id, dataUrl) {
+      const url = dataUrl || "";
+      state.teamPhotos[id] = url;
+      savePhotosToStorage();
+      const input = document.getElementById(`teamPhotoUrl-${id}`);
+      if (input && input.value !== url) input.value = url;
+      const preview = document.getElementById(`teamPhotoPreview-${id}`);
+      if (preview) preview.src = url || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+      const crest = teamEls[id].crest;
+      const crestImg = teamEls[id].crestImg;
+      if (url) {
+        crestImg.src = url;
+        crest.classList.add("has-photo");
+      } else {
+        crestImg.removeAttribute("src");
+        crest.classList.remove("has-photo");
+        state.teamCanvasImages[id] = null;
+        render();
+        return;
+      }
+      const im = new Image();
+      state.teamCanvasImages[id] = im;
+      im.onload = () => render();
+      im.onerror = () => {
+        state.teamCanvasImages[id] = null;
+        render();
+      };
+      im.src = url;
+    }
+
+    function fileToResizedDataUrl(file, maxDim, cb) {
+      const reader = new FileReader();
+      reader.onerror = () => cb(null);
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => cb(null);
+        img.onload = () => {
+          const w = img.naturalWidth;
+          const h = img.naturalHeight;
+          const sc = Math.min(1, maxDim / Math.max(w, h));
+          const cw = Math.max(1, Math.round(w * sc));
+          const ch = Math.max(1, Math.round(h * sc));
+          const c = document.createElement("canvas");
+          c.width = cw;
+          c.height = ch;
+          c.getContext("2d").drawImage(img, 0, 0, cw, ch);
+          try {
+            cb(c.toDataURL("image/jpeg", 0.88));
+          } catch (_e) {
+            cb(null);
+          }
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderTeamPhotoSettingsRows() {
+      if (!settingsPhotoGrid) return;
+      settingsPhotoGrid.innerHTML = activeTeams()
+        .map((id, idx) => {
+          const url = String(state.teamPhotos[id] || "").replace(/"/g, "&quot;");
+          return `
+        <div class="settings-team-bird-row" data-team-photo-row="${id}">
+          <span class="settings-label settings-team-bird-row__label">Oyuncu ${idx + 1} gorseli</span>
+          <img class="settings-team-bird-row__preview" id="teamPhotoPreview-${id}" alt="" width="40" height="40" decoding="async" />
+          <input
+            type="text"
+            class="settings-input settings-team-bird-row__url"
+            id="teamPhotoUrl-${id}"
+            value="${url}"
+            placeholder="Bos = varsayilan"
+            spellcheck="false"
+            autocomplete="off"
+          />
+          <label class="settings-btn settings-btn--ghost settings-team-bird-row__filebtn" for="file-${id}">Dosya</label>
+          <button type="button" class="settings-btn settings-btn--ghost settings-team-bird-row__reset" data-clear="${id}">Sifirla</button>
+          <input type="file" class="settings-team-bird-row__file" id="file-${id}" accept="image/*" />
+        </div>`;
+        })
+        .join("");
+      activeTeams().forEach((id) => {
+        const preview = document.getElementById(`teamPhotoPreview-${id}`);
+        if (preview) preview.src = state.teamPhotos[id] || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+      });
+    }
+
+    const MUSIC_DB_NAME = "arena5gen_team_music_v1";
+    const MUSIC_STORE = "tracks";
+    const MUSIC_SLOT_COUNT = 4;
+    let musicDbPromise = null;
+
+    function openTeamMusicDB() {
+      if (!musicDbPromise) {
+        musicDbPromise = new Promise((resolve, reject) => {
+          const req = indexedDB.open(MUSIC_DB_NAME, 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(MUSIC_STORE)) {
+              db.createObjectStore(MUSIC_STORE, { keyPath: "teamId" });
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+      return musicDbPromise;
+    }
+
+    async function idbGetTeamBlobs(teamId) {
+      const base = [null, null, null, null];
+      const db = await openTeamMusicDB();
+      const row = await new Promise((resolve, reject) => {
+        const tx = db.transaction(MUSIC_STORE, "readonly");
+        const q = tx.objectStore(MUSIC_STORE).get(teamId);
+        q.onsuccess = () => resolve(q.result || null);
+        q.onerror = () => reject(q.error);
+      });
+      if (!row) return base;
+      if (Array.isArray(row.blobs)) {
+        for (let i = 0; i < MUSIC_SLOT_COUNT && i < row.blobs.length; i++) {
+          const b = row.blobs[i];
+          if (b instanceof Blob && b.size > 0) base[i] = b;
+        }
+        return base;
+      }
+      if (row.blob instanceof Blob && row.blob.size > 0) base[0] = row.blob;
+      return base;
+    }
+
+    async function idbPutTeamBlobs(teamId, blobs) {
+      const normalized = [0, 1, 2, 3].map((i) => {
+        const b = blobs[i];
+        return b instanceof Blob && b.size > 0 ? b : null;
+      });
+      if (!normalized.some(Boolean)) {
+        await idbDeleteTeamMusic(teamId);
+        return;
+      }
+      const db = await openTeamMusicDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(MUSIC_STORE, "readwrite");
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.objectStore(MUSIC_STORE).put({ teamId, blobs: normalized });
+      });
+    }
+
+    async function idbDeleteTeamMusic(teamId) {
+      const db = await openTeamMusicDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(MUSIC_STORE, "readwrite");
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.objectStore(MUSIC_STORE).delete(teamId);
+      });
+    }
+
+    function revokeTeamMusicUrls(teamId) {
+      const u = state.musicObjectUrls[teamId];
+      if (Array.isArray(u)) {
+        u.forEach((url) => {
+          if (url) {
+            try {
+              URL.revokeObjectURL(url);
+            } catch (_e) {}
+          }
+        });
+      } else if (typeof u === "string") {
+        try {
+          URL.revokeObjectURL(u);
+        } catch (_e) {}
+      }
+      delete state.musicObjectUrls[teamId];
+    }
+
+    function bindTeamMusic(teamId, blobs) {
+      const a = state.audios[teamId];
+      revokeTeamMusicUrls(teamId);
+      a.pause();
+      const slots = [0, 1, 2, 3].map((i) =>
+        blobs[i] instanceof Blob && blobs[i].size > 0 ? blobs[i] : null
+      );
+      const urls = slots.map((b) => (b ? URL.createObjectURL(b) : null));
+      state.musicObjectUrls[teamId] = urls;
+      const filled = [];
+      urls.forEach((url, j) => {
+        if (url) filled.push(j);
+      });
+      if (filled.length === 0) {
+        a.removeAttribute("src");
+        a.src = "";
+        a.loop = false;
+        delete state.musicPlaylistIndex[teamId];
+        if (state.musicPlaybackTime) delete state.musicPlaybackTime[teamId];
+        return;
+      }
+      const firstIdx = filled[Math.floor(Math.random() * filled.length)];
+      a.src = urls[firstIdx];
+      state.musicPlaylistIndex[teamId] = firstIdx;
+      a.loop = false;
+      a.load();
+      if (!state.musicPlaybackTime) state.musicPlaybackTime = Object.create(null);
+      state.musicPlaybackTime[teamId] = { t: 0, key: urls[firstIdx] || "" };
+    }
+
+    function audioTrackKey(a) {
+      if (!a) return "";
+      return String(a.currentSrc || a.src || "");
+    }
+
+    function saveMusicPlaybackPosition(teamId) {
+      const a = state.audios[teamId];
+      if (!a || !a.src) return;
+      const key = audioTrackKey(a);
+      if (!key) return;
+      if (!state.musicPlaybackTime) state.musicPlaybackTime = Object.create(null);
+      state.musicPlaybackTime[teamId] = {
+        t: Math.max(0, Number(a.currentTime) || 0),
+        key
+      };
+    }
+
+    function restoreMusicPlaybackPosition(teamId) {
+      const a = state.audios[teamId];
+      const saved = state.musicPlaybackTime?.[teamId];
+      if (!a || !saved || !saved.key) return;
+      if (audioTrackKey(a) !== saved.key) return;
+      if (saved.t < 0.02) return;
+      const applySeek = () => {
+        try {
+          const dur = Number(a.duration);
+          let t = saved.t;
+          if (Number.isFinite(dur) && dur > 0) t = Math.min(t, Math.max(0, dur - 0.05));
+          a.currentTime = t;
+        } catch (_e) {}
+      };
+      if (a.readyState >= 1) applySeek();
+      else a.addEventListener("loadedmetadata", applySeek, { once: true });
+    }
+
+    function renderTeamMusicSettingsRows() {
+      if (!settingsMusicGrid) return;
+      settingsMusicGrid.innerHTML = activeTeams()
+        .map((id, idx) => {
+          const musicLines = [0, 1, 2, 3]
+            .map(
+              (slot) => `
+        <div class="settings-music-line">
+          <span class="settings-slot-name">Sarki ${slot + 1}</span>
+          <div class="settings-slot-btns">
+            <button type="button" class="settings-btn settings-btn-sm" data-music-browse="${id}" data-music-slot="${slot}">Sec</button>
+            <button type="button" class="settings-btn settings-btn-sm danger" data-music-clear-slot="${id}" data-music-slot="${slot}" title="Bu sarkiyi kaldir">Sil</button>
+          </div>
+        </div>`
+            )
+            .join("");
+          return `
+      <section class="settings-music-player-card" aria-label="Oyuncu ${idx + 1} muzigi">
+        <h3 class="settings-music-player-title">Oyuncu ${idx + 1}</h3>
+        <div class="settings-music-list">${musicLines}</div>
+        <div class="settings-music-clear-all-wrap">
+          <button type="button" class="settings-btn settings-btn-sm danger" data-music-clear-all="${id}" title="Tum sarkilari kaldir">Tum sarkilari temizle</button>
+        </div>
+        ${[0, 1, 2, 3]
+          .map(
+            (slot) =>
+              `<input type="file" id="file-music-${id}-${slot}" accept="audio/*,.mp3,.m4a,.ogg,.wav,.webm" hidden />`
+          )
+          .join("")}
+      </section>`;
+        })
+        .join("");
+    }
+
+    function teardownLeaderEndedListener() {
+      const la = state.leaderEndedAudio;
+      const lh = state.leaderEndedHandler;
+      if (la && lh) {
+        try {
+          la.removeEventListener("ended", lh);
+        } catch (_e) {}
+      }
+      state.leaderEndedAudio = null;
+      state.leaderEndedHandler = null;
+    }
+
+    function wireLeaderMusicEndedHandler(leader, a) {
+      teardownLeaderEndedListener();
+      const uArr = state.musicObjectUrls[leader];
+      const trackCount = Array.isArray(uArr) ? uArr.filter(Boolean).length : 0;
+      if (trackCount <= 1) {
+        a.loop = trackCount === 1;
+        return;
+      }
+      a.loop = false;
+      const handler = () => {
+        const arr = state.musicObjectUrls[leader];
+        if (!Array.isArray(arr)) return;
+        let cur = state.musicPlaylistIndex[leader];
+        if (typeof cur !== "number" || cur < 0) cur = 0;
+        const filled = [];
+        arr.forEach((url, j) => {
+          if (url) filled.push(j);
+        });
+        if (filled.length === 0) return;
+        let nextIdx;
+        if (filled.length === 1) {
+          nextIdx = filled[0];
+        } else {
+          const others = filled.filter((j) => j !== cur);
+          const pool = others.length ? others : filled;
+          nextIdx = pool[Math.floor(Math.random() * pool.length)];
+        }
+        state.musicPlaylistIndex[leader] = nextIdx;
+        a.src = arr[nextIdx];
+        if (!state.musicPlaybackTime) state.musicPlaybackTime = Object.create(null);
+        state.musicPlaybackTime[leader] = { t: 0, key: arr[nextIdx] || "" };
+        a.load();
+        void a.play();
+      };
+      state.leaderEndedHandler = handler;
+      state.leaderEndedAudio = a;
+      a.addEventListener("ended", handler);
+    }
+
+    async function applyTeamMusicSlot(teamId, slotIndex, fileOrNull) {
+      const idx = Math.max(0, Math.min(MUSIC_SLOT_COUNT - 1, Number(slotIndex) || 0));
+      let blobs = await idbGetTeamBlobs(teamId);
+      if (fileOrNull instanceof Blob && fileOrNull.size > 0) blobs[idx] = fileOrNull;
+      else blobs[idx] = null;
+      await idbPutTeamBlobs(teamId, blobs);
+      blobs = await idbGetTeamBlobs(teamId);
+      bindTeamMusic(teamId, blobs);
+      if (!state.audioReady) await initAudio();
+      else await playLeaderSong(getLeader(), { forceRestart: getLeader() === teamId });
+    }
+
+    async function applyTeamMusicClearAll(teamId) {
+      try {
+        await idbDeleteTeamMusic(teamId);
+      } catch (_e) {}
+      bindTeamMusic(teamId, [null, null, null, null]);
+      if (!state.audioReady) await initAudio();
+      else if (getLeader() === teamId) await playLeaderSong("none");
+      else await playLeaderSong(getLeader());
+    }
+
+    async function loadTeamMusicFromIDB() {
+      for (const id of TEAM_IDS) {
+        try {
+          const blobs = await idbGetTeamBlobs(id);
+          if (blobs.some(Boolean)) bindTeamMusic(id, blobs);
+        } catch (_e) {}
+      }
+      if (state.audioReady) void playLeaderSong(getLeader());
+    }
+
+    const ARENA_SIDES = 8;
+    /** drawTeamBadge uses octagon frame circum ≈ r+6; physics must use same outer extent + pad or avatars clip past the ring. */
+    const ARENA_BADGE_FRAME_OUT = 6;
+    const ARENA_BADGE_PHYS_PAD = 4;
+    function badgeWallRadius(r) {
+      return r + ARENA_BADGE_FRAME_OUT + ARENA_BADGE_PHYS_PAD;
+    }
+
+    function getArenaGeometry() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const radius = Math.min(canvas.width, canvas.height) / 2 - 16;
+      return { cx, cy, radius };
+    }
+
+    function getArenaVertices(cx, cy, circumRadius) {
+      const verts = [];
+      for (let i = 0; i < ARENA_SIDES; i++) {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / ARENA_SIDES;
+        verts.push({
+          x: cx + Math.cos(a) * circumRadius,
+          y: cy + Math.sin(a) * circumRadius
+        });
+      }
+      return verts;
+    }
+
+    function pointInConvexPolygon(px, py, verts) {
+      let sign = 0;
+      const n = verts.length;
+      for (let i = 0; i < n; i++) {
+        const a = verts[i];
+        const b = verts[(i + 1) % n];
+        const cross = (b.x - a.x) * (py - a.y) - (b.y - a.y) * (px - a.x);
+        if (Math.abs(cross) < 1e-8) continue;
+        const s = cross > 0 ? 1 : -1;
+        if (sign === 0) sign = s;
+        else if (s !== sign) return false;
+      }
+      return sign !== 0;
+    }
+
+    function resolveArenaWall(ball, r, verts, cx, cy, wallPasses = 9) {
+      const n = verts.length;
+      for (let pass = 0; pass < wallPasses; pass++) {
+        for (let i = 0; i < n; i++) {
+          const a = verts[i];
+          const b = verts[(i + 1) % n];
+          const ex = b.x - a.x;
+          const ey = b.y - a.y;
+          const elen = Math.hypot(ex, ey) || 1;
+          const edx = ex / elen;
+          const edy = ey / elen;
+          let nx = -edy;
+          let ny = edx;
+          const midx = (a.x + b.x) * 0.5;
+          const midy = (a.y + b.y) * 0.5;
+          if ((cx - midx) * nx + (cy - midy) * ny < 0) {
+            nx = -nx;
+            ny = -ny;
+          }
+          const apx = ball.x - a.x;
+          const apy = ball.y - a.y;
+          const along = apx * edx + apy * edy;
+          if (along < 0 || along > elen) continue;
+          const perp = apx * nx + apy * ny;
+          if (perp >= r) continue;
+          const push = r - perp;
+          ball.x += nx * push;
+          ball.y += ny * push;
+          const vn = ball.vx * nx + ball.vy * ny;
+          if (vn < 0) {
+            const e = ARENA5GEN.physics.wallRestitution;
+            ball.vx -= (1 + e) * vn * nx;
+            ball.vy -= (1 + e) * vn * ny;
+          }
+        }
+      }
+      if (!pointInConvexPolygon(ball.x, ball.y, verts)) {
+        ball.x += (cx - ball.x) * 0.08;
+        ball.y += (cy - ball.y) * 0.08;
+      }
+    }
+
+    function getLeader() {
+      const ids = activeTeams();
+      const rows = ids.map((id) => ({ id, score: state.scores[id] }));
+      const maxScore = Math.max(0, ...rows.map((t) => t.score));
+      const leaders = rows.filter((t) => t.score === maxScore);
+      if (leaders.length !== 1) return "none";
+      return leaders[0].id;
+    }
+
+    /** Skora göre anında hedef yarıçap (çizim/fizik hedefi). */
+    function getTargetBallRadii() {
+      const ids = activeTeams();
+      const rawScores = ids.map((id) => state.scores[id]);
+      const maxS = rawScores.length ? Math.max(...rawScores) : 0;
+      const G = ARENA5GEN.growth;
+      const minR = G.minRadius;
+      const maxR = G.maxRadius;
+      const leader = getLeader();
+
+      if (maxS === 0) {
+        const na = Math.max(2, ids.length);
+        const idleR = na >= 10 ? 40 : na >= 9 ? 44 : na >= 8 ? 48 : na >= 7 ? 52 : na >= 6 ? 58 : 72;
+        return {
+          leader,
+          radii: Object.fromEntries(
+            TEAM_IDS.map((id) => [id, ids.includes(id) ? idleR : 0])
+          )
+        };
+      }
+
+      const ms = Math.max(1, maxS);
+      const toR = (raw) => {
+        const s = Math.max(0, raw);
+        const rel = Math.sqrt((s + 1) / (ms + 1));
+        const dim = 1 - Math.exp(-Math.sqrt(s + 1) / G.sqrtTau);
+        const t = G.blendRelative * rel + (1 - G.blendRelative) * dim;
+        return minR + (maxR - minR) * Math.min(1, Math.max(0, t));
+      };
+      const radii = Object.fromEntries(
+        TEAM_IDS.map((id) => [id, ids.includes(id) ? toR(state.scores[id]) : 0])
+      );
+      return { leader, radii };
+    }
+
+    function syncDisplayScoresFromState() {
+      TEAM_IDS.forEach((id) => {
+        state.displayScores[id] = state.scores[id];
+        if (teamEls[id] && teamEls[id].score) {
+          teamEls[id].score.textContent = String(state.scores[id]);
+        }
+      });
+    }
+
+    function syncSmoothBallRadiiToTargets() {
+      const t = getTargetBallRadii();
+      const n = ARENA5GEN.smoothing.steps;
+      TEAM_IDS.forEach((id) => {
+        const g = t.radii[id];
+        state.smoothBallRadii[id] = g;
+        const rm = state.ballRadiusRamp[id];
+        rm.from = g;
+        rm.goal = g;
+        rm.t = n;
+      });
+      syncDisplayScoresFromState();
+    }
+
+    /** Skor hedefi değişince yumuşak easing ile ~500 karede hedef boy. */
+    function tickSmoothBallRadii(_dtSec) {
+      const { radii: targetMap } = getTargetBallRadii();
+      const active = new Set(activeTeams());
+      const n = ARENA5GEN.smoothing.steps;
+      TEAM_IDS.forEach((id) => {
+        const rm = state.ballRadiusRamp[id];
+        const target = active.has(id) ? targetMap[id] : 0;
+        if (!active.has(id)) {
+          state.smoothBallRadii[id] = 0;
+          rm.from = 0;
+          rm.goal = 0;
+          rm.t = n;
+          return;
+        }
+        if (Math.abs(rm.goal - target) > 1e-4) {
+          rm.from = state.smoothBallRadii[id] || 0;
+          rm.goal = target;
+          rm.t = 0;
+        }
+        rm.t = Math.min(rm.t + 1, n);
+        const uLin = rm.t / n;
+        const u = ARENA5GEN.smoothing.easeOutCubic(uLin);
+        state.smoothBallRadii[id] = rm.from + (rm.goal - rm.from) * u;
+      });
+    }
+
+    function getBallRadii() {
+      const t = getTargetBallRadii();
+      const ids = activeTeams();
+      const radii = Object.fromEntries(
+        TEAM_IDS.map((id) => [id, ids.includes(id) ? state.smoothBallRadii[id] : 0])
+      );
+      return { leader: t.leader, radii };
+    }
+
+    function drawArenaPath(verts) {
+      ctx.beginPath();
+      ctx.moveTo(verts[0].x, verts[0].y);
+      for (let i = 1; i < verts.length; i++) ctx.lineTo(verts[i].x, verts[i].y);
+      ctx.closePath();
+    }
+
+    function drawArenaRing() {
+      const { cx, cy, radius } = getArenaGeometry();
+      const verts = getArenaVertices(cx, cy, radius);
+      const pulse = (Math.sin(performance.now() * 0.006) + 1) / 2;
+      const glowBlur = 14 + pulse * 30;
+      const lineAlpha = 0.5 + pulse * 0.45;
+      const d = ARENA_THEME_COLORS[state.arenaTheme] || ARENA_THEME_COLORS.default;
+
+      ctx.save();
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Kenardan ice dogru ambient isik (ic arena)
+      ctx.save();
+      drawArenaPath(verts);
+      ctx.clip();
+      const rim = 0.06 + pulse * 0.04;
+      const innerGlow = ctx.createRadialGradient(cx, cy, radius * 0.12, cx, cy, radius * 0.98);
+      innerGlow.addColorStop(0, `rgba(${d.g0}, 1)`);
+      innerGlow.addColorStop(0.38, `rgba(${d.g1}, 0.94)`);
+      innerGlow.addColorStop(0.68, `rgba(${d.g2}, ${0.42 + pulse * 0.1})`);
+      innerGlow.addColorStop(0.9, `rgba(${d.g3}, ${0.28 + pulse * 0.12})`);
+      innerGlow.addColorStop(1, `rgba(${d.g4}, ${0.16 + rim})`);
+      ctx.fillStyle = innerGlow;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const wash = ctx.createRadialGradient(cx, cy, radius * 0.55, cx, cy, radius * 1.02);
+      wash.addColorStop(0, "rgba(255, 255, 255, 0)");
+      wash.addColorStop(0.85, `rgba(${d.wash85}, 0)`);
+      wash.addColorStop(1, `rgba(${d.wash100}, ${0.07 + pulse * 0.04})`);
+      ctx.globalCompositeOperation = "screen";
+      ctx.fillStyle = wash;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.globalCompositeOperation = "source-over";
+      ctx.restore();
+
+      drawArenaPath(verts);
+      ctx.lineJoin = "round";
+      ctx.lineCap = "round";
+      ctx.strokeStyle = `rgba(${d.strokeW}, ${lineAlpha * 0.42})`;
+      ctx.lineWidth = 24;
+      ctx.shadowColor = `rgba(${d.shadow}, 0.92)`;
+      ctx.shadowBlur = glowBlur;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      drawArenaPath(verts);
+      ctx.strokeStyle = `rgba(${d.strokeN}, ${0.78 + pulse * 0.12})`;
+      ctx.lineWidth = 5.5;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawStar(cx, cy, outerR, color) {
+      const innerR = outerR * 0.42;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const angle = -Math.PI / 2 + (Math.PI * i) / 5;
+        const rr = i % 2 === 0 ? outerR : innerR;
+        const x = cx + Math.cos(angle) * rr;
+        const y = cy + Math.sin(angle) * rr;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawRegularOctagonPath(cx, cy, circumRadius) {
+      const verts = getArenaVertices(cx, cy, circumRadius);
+      ctx.beginPath();
+      ctx.moveTo(verts[0].x, verts[0].y);
+      for (let i = 1; i < verts.length; i++) {
+        ctx.lineTo(verts[i].x, verts[i].y);
+      }
+      ctx.closePath();
+    }
+
+    function drawEmptyOctagonFrame(x, y, r) {
+      const frameCircum = r + 6;
+      ctx.save();
+      ctx.strokeStyle = "rgba(255,255,255,0.9)";
+      ctx.lineWidth = 2;
+      drawRegularOctagonPath(x, y, frameCircum);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTeamBadge(id, x, y, r, isLeader) {
+      const pulse = isLeader ? 1 + 0.035 * Math.sin(performance.now() * 0.0038) : 1;
+      const clipCircum = (r + 6) * 0.9 * pulse;
+      const im = state.teamCanvasImages[id];
+      if (isLeader) {
+        ctx.save();
+        const g = ctx.createRadialGradient(x, y, r * 0.2, x, y, (r + 10) * pulse);
+        g.addColorStop(0, "rgba(255, 230, 140, 0.22)");
+        g.addColorStop(0.55, "rgba(255, 200, 60, 0.12)");
+        g.addColorStop(1, "rgba(255, 180, 40, 0)");
+        ctx.fillStyle = g;
+        drawRegularOctagonPath(x, y, (r + 8) * pulse);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 215, 90, 0.92)";
+        ctx.lineWidth = 3;
+        ctx.shadowColor = "rgba(255, 200, 80, 0.75)";
+        ctx.shadowBlur = 18;
+        drawRegularOctagonPath(x, y, (r + 6) * pulse);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+      if (im && im.complete && im.naturalWidth > 0) {
+        ctx.save();
+        drawRegularOctagonPath(x, y, clipCircum);
+        ctx.clip();
+        const R = clipCircum;
+        const iw = im.naturalWidth;
+        const ih = im.naturalHeight;
+        const scale = Math.max((2 * R) / iw, (2 * R) / ih);
+        const dw = iw * scale;
+        const dh = ih * scale;
+        ctx.drawImage(im, x - dw / 2, y - dh / 2, dw, dh);
+        ctx.restore();
+      }
+      drawEmptyOctagonFrame(x, y, r * pulse);
+      if (isLeader) drawLeaderCrown(x, y, r * pulse);
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const nt = activeTeams().length;
+      const shakeScale = nt >= 3 ? 2.6 : 6;
+      const shakeAmt =
+        state.shakeEnabled && state.cameraShake > 0 ? state.cameraShake * shakeScale : 0;
+      const phase = performance.now() * 0.001;
+      const offsetX =
+        shakeAmt > 0 ? Math.sin(phase * 14.1) * shakeAmt * 0.48 : 0;
+      const offsetY =
+        shakeAmt > 0 ? Math.cos(phase * 11.9) * shakeAmt * 0.48 : 0;
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+      drawArenaRing();
+      drawGiftScreenFlashOverlay();
+
+      const { leader, radii } = getBallRadii();
+      if (state.uiLastLeader !== null && state.uiLastLeader !== leader) {
+        TEAM_IDS.forEach((tid) => teamEls[tid].wrap.classList.remove("is-leader-handoff"));
+        if (leader !== "none" && teamEls[leader]) {
+          teamEls[leader].wrap.classList.add("is-leader-handoff");
+          const lid = leader;
+          setTimeout(() => {
+            teamEls[lid]?.wrap.classList.remove("is-leader-handoff");
+          }, 520);
+        }
+      }
+      state.uiLastLeader = leader;
+
+      drawShockwaves();
+      drawDustEffects();
+      drawGiftEffects();
+      drawCollisionEffects();
+
+      const order = activeTeams()
+        .map((id) => ({ id, r: radii[id] }))
+        .filter((o) => o.r > 0)
+        .sort((a, b) => a.r - b.r);
+      order.forEach(({ id }) => {
+        const b = state.balls[id];
+        drawTeamBadge(id, b.x, b.y, radii[id], leader === id);
+      });
+      ctx.restore();
+
+      if (state.renderLastLeader !== leader) {
+        TEAM_IDS.forEach((id) => {
+          teamEls[id].wrap.classList.toggle("leading", leader === id);
+        });
+        state.renderLastLeader = leader;
+      }
+    }
+
+    function spawnCollisionEffect(x, y, intensity) {
+      const particleCount = Math.min(22, 10 + Math.floor(intensity * 18));
+      for (let i = 0; i < particleCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 120 + Math.random() * 260 + intensity * 140;
+        state.collisionEffects.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0.26 + Math.random() * 0.22,
+          maxLife: 0.26 + Math.random() * 0.22,
+          size: 2 + Math.random() * 4
+        });
+      }
+      state.collisionEffects.push({
+        x,
+        y,
+        vx: 0,
+        vy: 0,
+        life: 0.12,
+        maxLife: 0.12,
+        size: 20 + intensity * 28,
+        flash: true
+      });
+    }
+
+    function spawnDustTrail(x, y, speed) {
+      const count = speed > 260 ? 2 : 1;
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const drift = 14 + Math.random() * 28;
+        state.dustEffects.push({
+          x: x + (Math.random() - 0.5) * 10,
+          y: y + (Math.random() - 0.5) * 10,
+          vx: Math.cos(angle) * drift,
+          vy: Math.sin(angle) * drift,
+          life: 0.24 + Math.random() * 0.24,
+          maxLife: 0.24 + Math.random() * 0.24,
+          size: 4 + Math.random() * 8
+        });
+      }
+      if (state.dustEffects.length > 160) {
+        state.dustEffects.splice(0, state.dustEffects.length - 160);
+      }
+    }
+
+    function spawnShockwave(x, y, intensity) {
+      state.shockwaves.push({
+        x,
+        y,
+        radius: 8,
+        growth: 220 + intensity * 220,
+        life: 0.18,
+        maxLife: 0.18,
+        width: 2 + intensity * 2
+      });
+      if (state.shockwaves.length > 12) {
+        state.shockwaves.splice(0, state.shockwaves.length - 12);
+      }
+    }
+
+    function getTeamBall(teamId) {
+      return state.balls[teamId];
+    }
+
+    const giftStyles = {
+      fb: { color: "#f4c400", icon: "star" },
+      amed: { color: "#1e8f3e", icon: "heart" },
+      bjk: { color: "#ffffff", icon: "coin" },
+      gs: { color: "#fcb514", icon: "star" },
+      ts: { color: "#7ec8ff", icon: "rose" },
+      p6: { color: "#c8a8ff", icon: "star" },
+      p7: { color: "#ff9ec8", icon: "heart" },
+      p8: { color: "#88f0d0", icon: "coin" },
+      p9: { color: "#ffb454", icon: "star" },
+      p10: { color: "#9ec0ff", icon: "rose" }
+    };
+
+    function spawnGiftScreenFlash(points) {
+      const E = ARENA5GEN.effects;
+      if (points < E.screenFlashPointThreshold) return;
+      state.giftScreenFlash = {
+        life: E.screenFlashLife,
+        strength: Math.min(1, points / 36)
+      };
+    }
+
+    function tickGiftScreenFlash(dtSec) {
+      const f = state.giftScreenFlash;
+      if (!f || f.life <= 0) return;
+      f.life -= dtSec;
+      if (f.life <= 0) state.giftScreenFlash = null;
+    }
+
+    function drawGiftScreenFlashOverlay() {
+      const f = state.giftScreenFlash;
+      if (!f || f.life <= 0) return;
+      const a = Math.min(0.42, f.strength * 0.55 * (f.life / ARENA5GEN.effects.screenFlashLife));
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = `rgba(255, 248, 220, ${a})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    function drawLeaderCrown(cx, cy, r) {
+      const cr = r * 0.42;
+      const y0 = cy - r - cr * 0.35;
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 220, 120, 0.95)";
+      ctx.fillStyle = "rgba(255, 210, 60, 0.88)";
+      ctx.lineWidth = 2;
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(cx - cr * 1.1, y0 + cr * 0.55);
+      ctx.lineTo(cx - cr * 0.55, y0 - cr * 0.15);
+      ctx.lineTo(cx - cr * 0.2, y0 + cr * 0.25);
+      ctx.lineTo(cx, y0 - cr * 0.55);
+      ctx.lineTo(cx + cr * 0.2, y0 + cr * 0.25);
+      ctx.lineTo(cx + cr * 0.55, y0 - cr * 0.15);
+      ctx.lineTo(cx + cr * 1.1, y0 + cr * 0.55);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function spawnGiftBurst(teamId, points) {
+      const E = ARENA5GEN.effects;
+      const pts = Math.max(1, Math.floor(points || 1));
+      const intensity = Math.min(1, pts / 40);
+      const n = Math.min(
+        E.giftParticlesCap,
+        Math.floor(E.giftParticlesBase + pts * E.giftParticlesPerPoint)
+      );
+      const source = getTeamBall(teamId);
+      const style = giftStyles[teamId] || giftStyles.fb;
+      for (let i = 0; i < n; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = 90 + Math.random() * 160 + intensity * 200;
+        state.giftEffects.push({
+          x: source.x + (Math.random() - 0.5) * (36 + pts * 0.6),
+          y: source.y + (Math.random() - 0.5) * (28 + pts * 0.45),
+          vx: Math.cos(ang) * sp * 0.55 + (Math.random() - 0.5) * 70,
+          vy: -(110 + Math.random() * 140 + intensity * 160),
+          life: 0.72 + Math.random() * 0.55 + intensity * 0.35,
+          maxLife: 0.72 + Math.random() * 0.55 + intensity * 0.35,
+          size: 11 + Math.random() * 9 + intensity * 10,
+          icon: style.icon,
+          color: style.color
+        });
+      }
+      if (state.giftEffects.length > E.giftEffectCap) {
+        state.giftEffects.splice(0, state.giftEffects.length - E.giftEffectCap);
+      }
+      if (pts >= E.shockwavePointThreshold) {
+        spawnShockwave(source.x, source.y, Math.min(1, intensity * 1.1));
+      }
+      if (state.shakeEnabled && pts >= 10) {
+        state.cameraShake = Math.min(1, state.cameraShake + 0.08 + intensity * 0.35);
+      }
+      spawnGiftScreenFlash(pts);
+    }
+
+    function updateCollisionEffects(dtSec) {
+      for (let i = state.collisionEffects.length - 1; i >= 0; i--) {
+        const p = state.collisionEffects[i];
+        p.life -= dtSec;
+        if (p.life <= 0) {
+          state.collisionEffects.splice(i, 1);
+          continue;
+        }
+        if (!p.flash) {
+          p.x += p.vx * dtSec;
+          p.y += p.vy * dtSec;
+          p.vx *= 0.94;
+          p.vy *= 0.94;
+        }
+      }
+    }
+
+    function updateDustEffects(dtSec) {
+      for (let i = state.dustEffects.length - 1; i >= 0; i--) {
+        const p = state.dustEffects[i];
+        p.life -= dtSec;
+        if (p.life <= 0) {
+          state.dustEffects.splice(i, 1);
+          continue;
+        }
+        p.x += p.vx * dtSec;
+        p.y += p.vy * dtSec;
+        p.vx *= 0.9;
+        p.vy *= 0.9;
+      }
+    }
+
+    function updateShockwaves(dtSec) {
+      for (let i = state.shockwaves.length - 1; i >= 0; i--) {
+        const s = state.shockwaves[i];
+        s.life -= dtSec;
+        if (s.life <= 0) {
+          state.shockwaves.splice(i, 1);
+          continue;
+        }
+        s.radius += s.growth * dtSec;
+      }
+    }
+
+    function updateGiftEffects(dtSec) {
+      for (let i = state.giftEffects.length - 1; i >= 0; i--) {
+        const g = state.giftEffects[i];
+        g.life -= dtSec;
+        if (g.life <= 0) {
+          state.giftEffects.splice(i, 1);
+          continue;
+        }
+        g.x += g.vx * dtSec;
+        g.y += g.vy * dtSec;
+        g.vx *= 0.96;
+        g.vy += 80 * dtSec;
+      }
+    }
+
+    function drawCollisionEffects() {
+      state.collisionEffects.forEach((p) => {
+        const alpha = Math.max(0, p.life / p.maxLife);
+        ctx.save();
+        if (p.flash) {
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+          g.addColorStop(0, `rgba(255, 245, 200, ${alpha * 0.9})`);
+          g.addColorStop(1, "rgba(255, 210, 120, 0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = `rgba(255, 210, 130, ${alpha * 0.9})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function drawDustEffects() {
+      state.dustEffects.forEach((p) => {
+        const alpha = Math.max(0, p.life / p.maxLife);
+        ctx.fillStyle = `rgba(80, 80, 80, ${alpha * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawShockwaves() {
+      state.shockwaves.forEach((s) => {
+        const alpha = Math.max(0, s.life / s.maxLife);
+        ctx.strokeStyle = `rgba(255, 214, 150, ${alpha * 0.55})`;
+        ctx.lineWidth = s.width;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    }
+
+    function drawGiftIcon(gift) {
+      const alpha = Math.max(0, gift.life / gift.maxLife);
+      const age = 1 - alpha;
+      const pop = 0.78 + 0.28 * (1 - age * age);
+      const s = gift.size * pop;
+      ctx.save();
+      ctx.translate(gift.x, gift.y);
+      ctx.globalAlpha = alpha;
+
+      if (gift.icon === "coin") {
+        ctx.fillStyle = gift.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s * 0.85, s * 0.65, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.75)";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+      } else if (gift.icon === "heart") {
+        ctx.fillStyle = gift.color;
+        ctx.beginPath();
+        ctx.moveTo(0, s * 0.5);
+        ctx.bezierCurveTo(-s * 1.1, -s * 0.2, -s * 0.65, -s * 1.15, 0, -s * 0.55);
+        ctx.bezierCurveTo(s * 0.65, -s * 1.15, s * 1.1, -s * 0.2, 0, s * 0.5);
+        ctx.fill();
+      } else if (gift.icon === "star") {
+        drawStar(0, 0, s * 0.72, gift.color);
+      } else {
+        ctx.strokeStyle = gift.color;
+        ctx.lineWidth = 2.1;
+        ctx.beginPath();
+        ctx.arc(0, 0, s * 0.4, Math.PI * 0.2, Math.PI * 1.8);
+        ctx.stroke();
+        ctx.fillStyle = gift.color;
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.45, s * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawGiftEffects() {
+      state.giftEffects.forEach(drawGiftIcon);
+    }
+
+    function reflectOnArenaWall(ball, r, arena, wallPasses = 9) {
+      const { cx, cy, radius } = arena;
+      const verts = getArenaVertices(cx, cy, radius);
+      resolveArenaWall(ball, r, verts, cx, cy, wallPasses);
+    }
+
+    function resolveBallCollision(ballA, rA, ballB, rB, playEffects = true) {
+      const dx = ballB.x - ballA.x;
+      const dy = ballB.y - ballA.y;
+      const dist = Math.hypot(dx, dy) || 0.0001;
+      const minDist = rA + rB;
+      if (dist >= minDist) return;
+
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const overlap = minDist - dist;
+
+      ballA.x -= nx * (overlap / 2);
+      ballA.y -= ny * (overlap / 2);
+      ballB.x += nx * (overlap / 2);
+      ballB.y += ny * (overlap / 2);
+
+      const relVel = (ballB.vx - ballA.vx) * nx + (ballB.vy - ballA.vy) * ny;
+      if (relVel <= 0) {
+        if (playEffects) {
+          const impact = Math.min(1, Math.abs(relVel) / 600);
+          const contactX = ballA.x + nx * rA;
+          const contactY = ballA.y + ny * rA;
+          spawnCollisionEffect(contactX, contactY, impact);
+          spawnShockwave(contactX, contactY, impact);
+          if (state.shakeEnabled) {
+            const nta = activeTeams().length;
+            const add = nta >= 3 ? 0.08 + impact * 0.12 : 0.28 + impact * 0.32;
+            const cap = nta >= 3 ? ARENA5GEN.effects.collisionShakeCap3 : 1;
+            state.cameraShake = Math.min(cap, state.cameraShake + add);
+          }
+        }
+
+        const e = ARENA5GEN.physics.collisionRestitution;
+        const mA = Math.max(1, rA ** ARENA5GEN.physics.massExponent);
+        const mB = Math.max(1, rB ** ARENA5GEN.physics.massExponent);
+        const invSum = 1 / mA + 1 / mB;
+        const j = -(1 + e) * relVel / invSum;
+        ballA.vx -= (j / mA) * nx;
+        ballA.vy -= (j / mA) * ny;
+        ballB.vx += (j / mB) * nx;
+        ballB.vy += (j / mB) * ny;
+
+        const tx = -ny;
+        const ty = nx;
+        const relT = (ballB.vx - ballA.vx) * tx + (ballB.vy - ballA.vy) * ty;
+        const tDamp = ARENA5GEN.physics.tangentDampPair;
+        const jt = relT * tDamp * 0.5;
+        ballA.vx += tx * jt;
+        ballA.vy += ty * jt;
+        ballB.vx -= tx * jt;
+        ballB.vy -= ty * jt;
+      }
+    }
+
+    function stepPhysics(dtSec) {
+      const arena = getArenaGeometry();
+      const { radii } = getBallRadii();
+      const scaledDt = dtSec * state.speedMultiplier;
+      const balls = activeTeams().map((id) => ({ ball: state.balls[id], radius: radii[id] }));
+      const maxRAll = Math.max(...balls.map((b) => b.radius), 36);
+      const nt = balls.length;
+      const P = ARENA5GEN.physics;
+      const heavyPack = nt >= 3 && maxRAll >= P.heavyPackRadius;
+      const wallPasses = heavyPack ? P.wallPassesHeavy : P.wallPassesNormal;
+      const colPasses = heavyPack ? P.colPassesHeavy : P.colPassesNormal;
+
+      balls.forEach(({ ball }) => {
+        ball.x += ball.vx * scaledDt;
+        ball.y += ball.vy * scaledDt;
+        spawnDustTrail(ball.x, ball.y, Math.hypot(ball.vx, ball.vy));
+      });
+
+      balls.forEach(({ ball, radius }) => {
+        reflectOnArenaWall(ball, badgeWallRadius(radius), arena, wallPasses);
+      });
+
+      for (let pass = 0; pass < colPasses; pass++) {
+        for (let i = 0; i < balls.length; i++) {
+          for (let j = i + 1; j < balls.length; j++) {
+            resolveBallCollision(
+              balls[i].ball,
+              badgeWallRadius(balls[i].radius),
+              balls[j].ball,
+              badgeWallRadius(balls[j].radius),
+              pass === 0
+            );
+          }
+        }
+      }
+
+      balls.forEach(({ ball, radius }) => {
+        reflectOnArenaWall(ball, badgeWallRadius(radius), arena, wallPasses);
+      });
+      updateCollisionEffects(scaledDt);
+      updateDustEffects(scaledDt);
+      updateShockwaves(scaledDt);
+      updateGiftEffects(scaledDt);
+      state.cameraShake = Math.max(
+        0,
+        state.cameraShake - scaledDt * (activeTeams().length >= 3 ? 3.6 : 2.2)
+      );
+
+      let minSpeed = Math.max(
+        P.minSpeedBase,
+        Math.min(210, 312 - maxRAll * P.minSpeedRadiusFactor)
+      );
+      if (nt >= 3) minSpeed *= P.minSpeedThreeScale;
+      const maxSpeedGlobal = Math.max(minSpeed + 45, Math.min(P.maxSpeedBase, 1580 / (1 + maxRAll * 0.011)));
+
+      activeTeams().forEach((id) => {
+        const ball = state.balls[id];
+        const rad = radii[id] || 36;
+        const mass = Math.max(1, rad ** P.massExponent);
+        const maxSp = maxSpeedGlobal / (1 + mass / P.maxSpeedMassDivisor);
+        let speed = Math.hypot(ball.vx, ball.vy);
+        if (speed < minSpeed) {
+          const factor = minSpeed / (speed || 1);
+          ball.vx *= factor;
+          ball.vy *= factor;
+          speed = minSpeed;
+        }
+        if (speed > maxSp) {
+          const f = maxSp / speed;
+          ball.vx *= f;
+          ball.vy *= f;
+        }
+      });
+    }
+
+    function tickDisplayScores(dtSec) {
+      const k = Math.min(1, dtSec * ARENA5GEN.scoreUi.lerpPerSec);
+      const act = new Set(activeTeams());
+      TEAM_IDS.forEach((id) => {
+        if (!act.has(id)) {
+          state.displayScores[id] = state.scores[id];
+          teamEls[id].score.textContent = String(state.scores[id]);
+          return;
+        }
+        const tgt = state.scores[id];
+        let d = state.displayScores[id];
+        d += (tgt - d) * k;
+        if (Math.abs(tgt - d) < 0.48) d = tgt;
+        state.displayScores[id] = d;
+        teamEls[id].score.textContent = String(Math.round(d));
+      });
+    }
+
+    function animate(ts) {
+      if (document.hidden) {
+        state.lastFrameTime = 0;
+        requestAnimationFrame(animate);
+        return;
+      }
+      if (!state.lastFrameTime) state.lastFrameTime = ts;
+      const dtSec = Math.min((ts - state.lastFrameTime) / 1000, 0.04);
+      state.lastFrameTime = ts;
+      tickRoundHud();
+      tickSmoothBallRadii(dtSec);
+      tickGiftScreenFlash(dtSec);
+      stepPhysics(dtSec);
+      tickDisplayScores(dtSec);
+      render();
+      requestAnimationFrame(animate);
+    }
+
+    function stopLeadSong() {
+      if (state.leaderMusicPlayingId) saveMusicPlaybackPosition(state.leaderMusicPlayingId);
+      teardownLeaderEndedListener();
+      TEAM_IDS.forEach((id) => {
+        state.audios[id].pause();
+      });
+      state.leaderMusicPlayingId = null;
+    }
+
+    async function playLeaderSong(leader, opts = {}) {
+      if (!state.audioReady) return;
+      const forceRestart = opts.forceRestart === true;
+      const prevPlaying = state.leaderMusicPlayingId;
+
+      if (leader === "none") {
+        if (prevPlaying) saveMusicPlaybackPosition(prevPlaying);
+        TEAM_IDS.forEach((id) => state.audios[id].pause());
+        teardownLeaderEndedListener();
+        state.leaderMusicPlayingId = null;
+        return;
+      }
+
+      const a = state.audios[leader];
+      if (!a || !a.src) {
+        if (prevPlaying) saveMusicPlaybackPosition(prevPlaying);
+        TEAM_IDS.forEach((id) => state.audios[id].pause());
+        teardownLeaderEndedListener();
+        state.leaderMusicPlayingId = null;
+        return;
+      }
+
+      if (!forceRestart && prevPlaying === leader && !a.paused && !a.ended) {
+        wireLeaderMusicEndedHandler(leader, a);
+        return;
+      }
+
+      if (prevPlaying && prevPlaying !== leader) {
+        saveMusicPlaybackPosition(prevPlaying);
+      }
+
+      TEAM_IDS.forEach((id) => {
+        if (id !== leader) state.audios[id].pause();
+      });
+
+      teardownLeaderEndedListener();
+
+      if (forceRestart) {
+        try {
+          a.currentTime = 0;
+        } catch (_e) {}
+        if (!state.musicPlaybackTime) state.musicPlaybackTime = Object.create(null);
+        state.musicPlaybackTime[leader] = { t: 0, key: audioTrackKey(a) };
+      } else {
+        restoreMusicPlaybackPosition(leader);
+      }
+
+      wireLeaderMusicEndedHandler(leader, a);
+
+      try {
+        await a.play();
+        state.leaderMusicPlayingId = leader;
+      } catch (_e) {}
+    }
+
+    async function initAudio() {
+      if (state.audioReady) return;
+      state.audioReady = true;
+      await playLeaderSong(getLeader());
+    }
+
+    function refreshScoreboardOrder() {
+      const ids = activeTeams();
+      const ranked = ids
+        .map((id) => ({
+          id,
+          score: state.scores[id],
+          el: teamEls[id].wrap
+        }))
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return TEAM_IDS.indexOf(a.id) - TEAM_IDS.indexOf(b.id);
+        });
+      ranked.forEach((row, index) => {
+        row.el.style.order = String(index);
+      });
+      TEAM_IDS.forEach((id) => {
+        if (!ids.includes(id)) teamEls[id].wrap.style.order = "99";
+      });
+    }
+
+    function updateAll() {
+      refreshScoreboardOrder();
+      const leader = getLeader();
+      if (leader !== state.currentLeader) {
+        state.currentLeader = leader;
+        playLeaderSong(leader);
+      }
+      render();
+    }
+
+    if (typeof GemtokGameSettingsFab !== "undefined") {
+      GemtokGameSettingsFab.wire(openSettings, { backdropId: "settings-backdrop" });
+    } else {
+      document.getElementById("gemtok-open-settings")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openSettings();
+      });
+    }
+
+    if (roundEndOverlay) {
+      roundEndOverlay.addEventListener("click", (ev) => ev.stopPropagation());
+    }
+
+    settingsBackdrop.addEventListener("click", (e) => {
+      if (e.target === settingsBackdrop || e.target.classList.contains("settings-overlay__backdrop")) closeSettings();
+    });
+    settingsClose.addEventListener("click", closeSettings);
+
+    if (settingsRoundMin) {
+      settingsRoundMin.addEventListener("change", () => {
+        const fixed = persistRoundMinutes(parseInt(settingsRoundMin.value, 10));
+        settingsRoundMin.value = String(fixed);
+      });
+    }
+
+    if (settingsPlayerMinus) {
+      settingsPlayerMinus.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        setActiveTeamCount(getActiveTeamCount() - 1);
+      });
+    }
+    if (settingsPlayerPlus) {
+      settingsPlayerPlus.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        setActiveTeamCount(getActiveTeamCount() + 1);
+      });
+    }
+    if (settingsShake) {
+      settingsShake.addEventListener("change", () => {
+        persistShake(settingsShake.checked);
+      });
+    }
+    if (settingsArenaTheme) {
+      settingsArenaTheme.addEventListener("change", () => {
+        persistTheme(settingsArenaTheme.value);
+        render();
+      });
+    }
+
+    if (settingsSpeedRange) {
+      settingsSpeedRange.addEventListener("input", () => {
+        const raw = parseInt(settingsSpeedRange.value, 10);
+        if (!Number.isFinite(raw)) return;
+        state.speedMultiplier = clampSpeedMultiplier(raw / 100);
+        persistSpeedToStorage();
+      });
+    }
+
+    const tikfinityWsSave = document.getElementById("tikfinity-ws-save");
+    if (tikfinityWsSave) {
+      tikfinityWsSave.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const inp = document.getElementById("tikfinity-ws-input");
+        const v = (inp && inp.value.trim()) || "";
+        if (v && /^wss?:\/\//i.test(v)) {
+          try {
+            localStorage.setItem(WS_STORAGE_KEY, v);
+          } catch (_e) {}
+        } else if (inp) {
+          try {
+            localStorage.removeItem(WS_STORAGE_KEY);
+          } catch (_e) {}
+        }
+        connectTikfinity({ bypassDisable: true });
+      });
+    }
+
+    settingsBackdrop?.addEventListener("click", (ev) => {
+      const browseMusic = ev.target.closest("[data-music-browse]");
+      if (browseMusic) {
+        ev.stopPropagation();
+        const id = browseMusic.getAttribute("data-music-browse");
+        const slot = browseMusic.getAttribute("data-music-slot") || "0";
+        document.getElementById(`file-music-${id}-${slot}`)?.click();
+        return;
+      }
+      const clearMusicSlot = ev.target.closest("[data-music-clear-slot]");
+      if (clearMusicSlot) {
+        ev.stopPropagation();
+        const id = clearMusicSlot.getAttribute("data-music-clear-slot");
+        const slot = clearMusicSlot.getAttribute("data-music-slot") || "0";
+        void applyTeamMusicSlot(id, slot, null);
+        return;
+      }
+      const clearMusicAll = ev.target.closest("[data-music-clear-all]");
+      if (clearMusicAll) {
+        ev.stopPropagation();
+        void applyTeamMusicClearAll(clearMusicAll.getAttribute("data-music-clear-all"));
+        return;
+      }
+      const clearBtn = ev.target instanceof Element ? ev.target.closest("[data-clear]") : null;
+      if (!clearBtn) return;
+      ev.stopPropagation();
+      applyTeamPhoto(clearBtn.getAttribute("data-clear"), "");
+    });
+
+    settingsBackdrop?.addEventListener("change", (ev) => {
+      const t = ev.target;
+      if (!(t instanceof HTMLInputElement)) return;
+      const mfm = /^file-music-(.+)-(\d)$/.exec(t.id);
+      if (mfm) {
+        const id = mfm[1];
+        const slot = mfm[2];
+        const f = t.files && t.files[0];
+        t.value = "";
+        if (!f) return;
+        if (!f.type.startsWith("audio/") && !/\.(mp3|m4a|aac|ogg|wav|webm|flac)$/i.test(f.name)) return;
+        void applyTeamMusicSlot(id, slot, f);
+        return;
+      }
+      const mt = /^teamPhotoUrl-(.+)$/.exec(t.id);
+      if (mt && t.type === "text") {
+        applyTeamPhoto(mt[1], t.value.trim());
+        return;
+      }
+      const mf = /^file-(.+)$/.exec(t.id);
+      if (!mf || t.type !== "file") return;
+      const id = mf[1];
+      const f = t.files && t.files[0];
+      t.value = "";
+      if (!f || !f.type.startsWith("image/")) return;
+      fileToResizedDataUrl(f, 320, (dataUrl) => {
+        if (dataUrl) applyTeamPhoto(id, dataUrl);
+      });
+    });
+
+    settingsBackdrop?.addEventListener("input", (ev) => {
+      const t = ev.target;
+      if (!(t instanceof HTMLInputElement)) return;
+      const mt = /^teamPhotoUrl-(.+)$/.exec(t.id);
+      if (!mt) return;
+      const preview = document.getElementById(`teamPhotoPreview-${mt[1]}`);
+      if (preview) preview.src = t.value.trim() || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+    });
+
+    function handleKeyScore(event) {
+      if (event.key === "Escape" && settingsBackdrop && !settingsBackdrop.hidden) {
+        event.preventDefault();
+        closeSettings();
+        return;
+      }
+      const keys = activeTeams();
+      let teamId = null;
+      if (event.key === "0") teamId = keys[9] || null;
+      else {
+        const ix = "123456789".indexOf(event.key);
+        if (ix >= 0) teamId = keys[ix] || null;
+      }
+      if (teamId) {
+        if (state.roundFrozen) return;
+        if (!state.audioReady) initAudio();
+        state.scores[teamId] += 1;
+        spawnGiftBurst(teamId, 1);
+        updateAll();
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        state.speedMultiplier = clampSpeedMultiplier(state.speedMultiplier + 0.15);
+        persistSpeedToStorage();
+      } else if (event.key === "ArrowDown") {
+        state.speedMultiplier = clampSpeedMultiplier(state.speedMultiplier - 0.15);
+        persistSpeedToStorage();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyScore);
+    window.addEventListener("beforeunload", () => {
+      stopLeadSong();
+      clearRoundRestartTimer();
+      detachGiftHubCatalogListener();
+      disconnectTikfinity({ intentional: true });
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      if (isTikfinityAutoWsDisabled()) return;
+      const w = state.tikfinity.ws;
+      if (!w || w.readyState === WebSocket.CLOSED) connectTikfinity({ bypassDisable: true });
+    });
+    window.addEventListener("pageshow", (ev) => {
+      if (!ev.persisted) return;
+      if (isTikfinityAutoWsDisabled()) return;
+      connectTikfinity({ bypassDisable: true });
+    });
+
+    loadPhotosFromStorage();
+    renderTeamPhotoSettingsRows();
+    renderTeamMusicSettingsRows();
+    void loadTeamMusicFromIDB();
+    TEAM_IDS.forEach((id) => {
+      if (state.teamPhotos[id]) applyTeamPhoto(id, state.teamPhotos[id]);
+    });
+    if (settingsRoundMin) settingsRoundMin.value = String(getRoundMinutes());
+    if (settingsPlayerVal) settingsPlayerVal.textContent = String(getActiveTeamCount());
+    if (settingsShake) settingsShake.checked = state.shakeEnabled;
+    if (settingsArenaTheme) {
+      settingsArenaTheme.value = ARENA_THEME_COLORS[state.arenaTheme] ? state.arenaTheme : "default";
+    }
+    syncSpeedSettingsUi();
+
+    initGiftAssignPanelListeners();
+    attachGiftHubCatalogListener();
+    void refreshGiftHubMappings();
+
+    beginNewRound();
+    if (!isTikfinityAutoWsDisabled()) connectTikfinity();
+    requestAnimationFrame(animate);
+  </script>
+  <link rel="stylesheet" href="../../sıra/gemtok-settings-theme.css" />
+  <style>
+    /* GemTok tema column + label flex-grow → dev bosluk; arena5gen kompakt yatay satir */
+    .gemtok-settings-theme .settings-panel__body {
+      gap: 6px !important;
+    }
+
+    .gemtok-settings-theme .settings-row {
+      flex-direction: row !important;
+      flex-wrap: wrap !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      gap: 8px !important;
+      margin-bottom: 0 !important;
+      padding-bottom: 7px !important;
+    }
+
+    .gemtok-settings-theme .settings-row .settings-label {
+      flex: 1 1 auto !important;
+      min-width: 0;
+      margin: 0 !important;
+    }
+
+    .gemtok-settings-theme .settings-row--speed {
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 6px !important;
+    }
+
+    .gemtok-settings-theme .settings-row--check {
+      flex-direction: row !important;
+      align-items: center !important;
+    }
+
+    .gemtok-settings-theme .settings-row--check .settings-label {
+      flex: 1 1 auto !important;
+    }
+
+    .gemtok-settings-theme .settings-row .settings-input,
+    .gemtok-settings-theme .settings-row .settings-select,
+    .gemtok-settings-theme .settings-row .settings-count {
+      flex: 0 0 auto !important;
+      margin-bottom: 0 !important;
+      max-width: min(168px, 46vw) !important;
+    }
+
+    .gemtok-settings-theme .settings-gift-block,
+    .gemtok-settings-theme .settings-music-block {
+      padding: 10px 12px !important;
+      margin-top: 2px;
+    }
+
+    .gemtok-settings-theme .settings-subtitle {
+      margin-top: 6px !important;
+      margin-bottom: 4px !important;
+      padding-bottom: 5px !important;
+    }
+
+    .gemtok-settings-theme .settings-desc {
+      margin-bottom: 6px !important;
+    }
+
+    .gemtok-settings-theme .settings-music-player-card {
+      padding: 10px 12px !important;
+      margin-bottom: 8px !important;
+    }
+  </style>
+  <script src="../../gemtok-game-settings-fab.js"></script>
+</body>
+</html>

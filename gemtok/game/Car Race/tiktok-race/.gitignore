@@ -1,0 +1,3 @@
+node_modules/
+# Sunucunun HEIC → PNG dönüşüm önbelleği (otomatik üretilir)
+assets/cars/.heic-png-cache/

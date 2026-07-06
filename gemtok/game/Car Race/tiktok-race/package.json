@@ -1,0 +1,20 @@
+{
+  "name": "tiktok-race",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js",
+    "http": "node server.js --static",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "sharp": "^0.34.5",
+    "tiktok-live-connector": "^2.1.1-beta1",
+    "ws": "^8.21.0"
+  }
+}

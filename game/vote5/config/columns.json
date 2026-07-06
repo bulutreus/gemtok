@@ -1,0 +1,43 @@
+{
+  "tiktokUsername": "",
+  "roundDurationSec": 600,
+  "comment": "Yönlendirme: sütun üstündeki 2 TikTok hediye ID’si (routingGiftIds). Sonraki giftKeywords yalnız canlı isim eşlemesi. GS=tiktok, FB=gül/rose+gg.",
+  "demoRouteUnmatchedGifts": false,
+  "smallGiftDiamondMin": 1,
+  "smallGiftDiamondMax": 99,
+  "largeGiftMinDiamonds": 100,
+  "scaleAvatarsWithRepeat": false,
+  "comment_repeat": "scaleAvatarsWithRepeat true ise büyük hediyelerde 2×streak büyük profil; küçük hediyelerde jeton=profil kuralı değişmez.",
+  "columns": [
+    {
+      "giftIds": [],
+      "giftKeywords": ["tiktok", "tik tok", "confetti"],
+      "stripeColors": ["#c8102e", "#fdb913"],
+      "icons": ["", ""]
+    },
+    {
+      "giftIds": [],
+      "giftKeywords": ["gül", "rose", "kalp", "heart", "ellerimde", "finger heart"],
+      "stripeColors": ["#1d3557", "#ffd60a"],
+      "icons": ["", ""]
+    },
+    {
+      "giftIds": [],
+      "giftKeywords": ["gg", "good game", "aycık", "moon", "crescent"],
+      "stripeColors": ["#1a1a1a", "#e8e8e8"],
+      "icons": ["", ""]
+    },
+    {
+      "giftIds": [],
+      "giftKeywords": ["dondurma", "ice cream", "oyun kumandası", "gamepad", "controller"],
+      "stripeColors": ["#6a0f2e", "#003d82"],
+      "icons": ["", ""]
+    },
+    {
+      "giftIds": [],
+      "giftKeywords": ["buz", "ice cube", "elle kalp", "finger heart", "heart"],
+      "stripeColors": ["#0d6b3a", "#c41e1e"],
+      "icons": ["", ""]
+    }
+  ]
+}

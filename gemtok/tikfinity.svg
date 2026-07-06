@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="TikFinity">
+  <defs>
+    <linearGradient id="tf" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f472b6"/>
+      <stop offset="55%" stop-color="#ec4899"/>
+      <stop offset="100%" stop-color="#a855f7"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="#1a0a18" stroke="url(#tf)" stroke-width="2"/>
+  <path d="M18 32c0-7.7 6.3-14 14-14 4.2 0 8 1.9 10.5 4.9-2.2 2.4-3.5 5.6-3.5 9.1 0 7.7 6.3 14 14 14 4.2 0 8-1.9 10.5-4.9-2.2-2.4-3.5-5.6-3.5-9.1 0-7.7-6.3-14-14-14-4.2 0-8 1.9-10.5 4.9 2.2-2.4 3.5-5.6 3.5-9.1z" fill="none" stroke="url(#tf)" stroke-width="3.2" stroke-linecap="round"/>
+</svg>

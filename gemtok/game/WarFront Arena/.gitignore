@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+.env
+*.log
+public/assets/streamxt-bg-left.*
+public/assets/streamxt-bg-right.*

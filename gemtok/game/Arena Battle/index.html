@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Arena Battle — TikTok Live</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet" />
+    <script src="../../../sıra/gemtok-license.js"></script>
+    <script>
+      (function () {
+        try {
+          var p = String(location.port || "");
+          var h = String(location.hostname || "")
+            .toLowerCase()
+            .replace(/^\[|\]$/g, "");
+          if (p === "5173" || h === "127.0.0.1" || h === "localhost" || h === "::1") return;
+        } catch (e0) {}
+        var portal = "";
+        try {
+          portal =
+            localStorage.getItem("gemtok_sira_portal") ||
+            localStorage.getItem("hottok_sira_portal") ||
+            "";
+        } catch (e) {}
+        var HUB = (function () {
+          if (portal) return portal + "OYUN MERKEZI.html";
+          try {
+            return new URL("../../../sıra/OYUN MERKEZI.html", location.href).href;
+          } catch (eH) {
+            return "../../../sıra/OYUN MERKEZI.html";
+          }
+        })();
+        function block(message, url) {
+          alert(message);
+          location.replace(url);
+          throw new Error("game_access_blocked");
+        }
+        try {
+          if (window.GemtokLicense && GemtokLicense.isGameAllowedInSession("arenaBattle")) return;
+        } catch (eLic) {}
+        block(
+          "Bu oyun için geçerli bir lisans anahtarı gerekir. Anahtar silindi veya süresi dolduysa Oyun Merkezi'nde yeni anahtar girin.",
+          HUB
+        );
+      })();
+    </script>
+    <script src="../../../gemtok-tikfinity-client.js"></script>
+    <script src="../../../sıra/gemtok-tiktok-live-global.js"></script>
+    <script src="../../../gemtok-live-game-bridge.js"></script>
+    <script>
+      try {
+        window.__GEMTOK_GIFT_HUB_URL__ = window.__GEMTOK_GIFT_HUB_URL__ || "http://127.0.0.1:8787";
+      } catch (_e) {}
+    </script>
+  </head>
+  <body style="margin:0;background:#020817">
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

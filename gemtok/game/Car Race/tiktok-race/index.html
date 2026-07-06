@@ -1,0 +1,3500 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>CAR RACE — neon 5 şerit</title>
+  <script src="../../../sıra/hottok-license.js"></script>
+  <script>
+    (function () {
+      /* Giriş file:// sırasında; oyun http://127.0.0.1:port — farklı köken, depolama paylaşılmaz. TikTok köprü portlarında kontrol atlanır. */
+      try {
+        var p = String(location.port || "");
+        var h = String(location.hostname || "")
+          .toLowerCase()
+          .replace(/^\[|\]$/g, "");
+        if (p === "21213" || p === "3847" || h === "127.0.0.1" || h === "localhost" || h === "::1") return;
+      } catch (e0) {}
+      var portal = "";
+      try {
+        portal =
+          localStorage.getItem("hottok_sira_portal") ||
+          localStorage.getItem("gemtok_sira_portal") ||
+          "";
+      } catch (e) {}
+      var HUB = portal ? portal + "OYUN MERKEZI.html" : "../../../sıra/OYUN MERKEZI.html";
+      function block(message, url) {
+        alert(message);
+        location.replace(url);
+        throw new Error("game_access_blocked");
+      }
+      try {
+        if (window.HottokLicense && HottokLicense.isGameAllowedInSession("carRace")) return;
+      } catch (eLic) {}
+      block(
+        "Bu oyun için geçerli bir lisans anahtarı gerekir. Anahtar silindi veya süresi dolduysa Oyun Merkezi'nde yeni anahtar girin.",
+        HUB
+      );
+    })();
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;900&family=Oswald:wght@600;700&family=Press+Start+2P&display=swap');
+
+    :root {
+      /* Sahne: .stage, araç menüsü dışındaki alanı tamamen doldurur. */
+      --road-scroll: 1.85s;
+      /* Kesik şerit / neon alt çizgi kayma hızı (küçük = daha hızlı) */
+      --lane-stripe-scroll: 0.82s;
+      --lane-pad: 0px;
+      --car-w: min(40%, 152px);
+      --car-w-photo: min(48%, 182px);
+      --car-min: 64px;
+      /* Gündüz → gece → gündüz (gökyüzü katmanları) */
+      --day-cycle: 96s;
+      /* Atmosfer / yol (gerçekçi grafik ayarı) */
+      --sky-zenith: #3d5a80;
+      --sky-horizon-glow: #e8f2ff;
+      --mountain-base: rgba(55, 68, 84, 0.97);
+      --haze-top: rgba(220, 235, 252, 0.14);
+    }
+
+    /* Şerit satırları: --row (JS) ile ton farkı için kullanılabilir */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      width: 100%;
+      background: #0a0a12;
+      font-family: 'Nunito', system-ui, sans-serif;
+      overflow: hidden;
+    }
+
+    .stage-wrap {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      height: 100%;
+      display: flex;
+      align-items: stretch;
+      justify-content: stretch;
+      padding: 0;
+    }
+
+    .stage {
+      flex: 1;
+      align-self: stretch;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
+      max-width: none;
+      max-height: none;
+      position: relative;
+      background: #000;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 3px #1a1a2e,
+        inset 0 0 120px rgba(0, 15, 35, 0.22);
+    }
+    /* Hafif renk derecesi: soğuk üst, hafif sıcak alt ışık */
+    .stage::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 21;
+      pointer-events: none;
+      background:
+        linear-gradient(185deg, rgba(30, 55, 90, 0.18) 0%, transparent 42%),
+        linear-gradient(12deg, transparent 55%, rgba(255, 248, 235, 0.06) 100%);
+      mix-blend-mode: soft-light;
+    }
+    /* Köşe kararması + derinlik */
+    .stage::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 24;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 78% 68% at 50% 44%, transparent 42%, rgba(0, 0, 0, 0.18) 100%),
+        linear-gradient(180deg, rgba(0, 0, 0, 0.12) 0%, transparent 12%, transparent 88%, rgba(0, 0, 0, 0.28) 100%);
+    }
+
+    @keyframes snowSkyShimmer {
+      0%, 100% { opacity: 0.55; }
+      50% { opacity: 0.72; }
+    }
+
+    /* Yol ile aynı yön: sola kayma = ileri sürüş */
+    @keyframes driftSlow {
+      0% { transform: translate3d(2%, 0, 0); }
+      100% { transform: translate3d(-7%, 0, 0); }
+    }
+    @keyframes driftMid {
+      0% { transform: translate3d(1.5%, 0, 0); }
+      100% { transform: translate3d(-10%, 0, 0); }
+    }
+    @keyframes hillsTx {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-192px, 0, 0); }
+    }
+
+    @keyframes snowShimmer {
+      0%, 100% { opacity: 0.85; }
+      50% { opacity: 1; }
+    }
+    @keyframes sunPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+    @keyframes sunDayNight {
+      0%, 26% { opacity: 0.95; }
+      38%, 58% { opacity: 0.06; }
+      70%, 100% { opacity: 0.95; }
+    }
+    @keyframes moonDayNight {
+      0%, 26% { opacity: 0.05; transform: scale(0.92); }
+      38%, 58% { opacity: 1; transform: scale(1); }
+      70%, 100% { opacity: 0.05; transform: scale(0.92); }
+    }
+    @keyframes skyNightVeil {
+      0%, 26% { opacity: 0; }
+      38%, 58% { opacity: 0.82; }
+      70%, 100% { opacity: 0; }
+    }
+    @keyframes snowLayerDayNight {
+      0%, 26% { opacity: 0.88; }
+      38%, 58% { opacity: 1; }
+      70%, 100% { opacity: 0.88; }
+    }
+    @keyframes flakeFall {
+      0% { transform: translate3d(0, -20%, 0); opacity: 0; }
+      8% { opacity: 0.85; }
+      92% { opacity: 0.75; }
+      100% { transform: translate3d(var(--drift, -12px), 120vh, 0); opacity: 0; }
+    }
+
+    .snow-layer {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 19;
+      pointer-events: none;
+      overflow: hidden;
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 1) 0%,
+        rgba(0, 0, 0, 0.75) 22%,
+        rgba(0, 0, 0, 0.35) 40%,
+        rgba(0, 0, 0, 0.12) 52%,
+        rgba(0, 0, 0, 0.04) 62%,
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 1) 0%,
+        rgba(0, 0, 0, 0.75) 22%,
+        rgba(0, 0, 0, 0.35) 40%,
+        rgba(0, 0, 0, 0.12) 52%,
+        rgba(0, 0, 0, 0.04) 62%,
+        transparent 100%
+      );
+      animation: snowLayerDayNight var(--day-cycle) ease-in-out infinite;
+    }
+    .snow-flake {
+      position: absolute;
+      top: -4%;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.92);
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+      filter: blur(0.35px);
+      animation: flakeFall linear infinite;
+    }
+    .snow-flake:nth-child(1) { left: 6%; --drift: -18px; animation-duration: 7.5s; animation-delay: 0s; }
+    .snow-flake:nth-child(2) { left: 18%; --drift: 10px; animation-duration: 9.2s; animation-delay: -2s; width: 2px; height: 2px; }
+    .snow-flake:nth-child(3) { left: 32%; --drift: -14px; animation-duration: 8.1s; animation-delay: -4s; }
+    .snow-flake:nth-child(4) { left: 44%; --drift: 16px; animation-duration: 11s; animation-delay: -1s; width: 2.5px; height: 2.5px; }
+    .snow-flake:nth-child(5) { left: 55%; --drift: -22px; animation-duration: 8.8s; animation-delay: -3.5s; }
+    .snow-flake:nth-child(6) { left: 68%; --drift: 8px; animation-duration: 10.4s; animation-delay: -5s; width: 2px; height: 2px; }
+    .snow-flake:nth-child(7) { left: 78%; --drift: -10px; animation-duration: 7.9s; animation-delay: -2.8s; }
+    .snow-flake:nth-child(8) { left: 88%; --drift: 20px; animation-duration: 9.6s; animation-delay: -6s; }
+    .snow-flake:nth-child(9) { left: 12%; --drift: -6px; animation-duration: 12s; animation-delay: -7s; width: 2px; height: 2px; top: 8%; }
+    .snow-flake:nth-child(10) { left: 92%; --drift: -24px; animation-duration: 8.4s; animation-delay: -4.2s; }
+
+    /* --- Karlı gökyüzü + gündüz/gece (--day-cycle) — daha derin zenith, yumuşak sis --- */
+    .sky {
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 17%;
+      z-index: 0;
+      overflow: hidden;
+      isolation: isolate;
+      background:
+        radial-gradient(ellipse 90% 70% at 50% -15%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0.12) 35%, transparent 58%),
+        radial-gradient(ellipse 55% 40% at 15% 25%, rgba(255, 255, 255, 0.42) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 38% at 88% 18%, rgba(230, 242, 255, 0.38) 0%, transparent 52%),
+        radial-gradient(ellipse 120% 80% at 50% 110%, rgba(255, 255, 255, 0.25) 0%, transparent 45%),
+        linear-gradient(
+          180deg,
+          var(--sky-zenith) 0%,
+          #5c7aa0 8%,
+          #8aa4c4 22%,
+          #b8cce8 38%,
+          #d4e6f5 52%,
+          var(--sky-horizon-glow) 78%,
+          #f8fbff 100%
+        );
+    }
+    /* Uzak dağ silueti + atmosferik perspektif (saf CSS) */
+    .sky-mountains-far {
+      position: absolute;
+      left: -18%;
+      right: -18%;
+      bottom: 0;
+      height: 52%;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.94;
+      background:
+        linear-gradient(to top, rgba(200, 218, 235, 0.42) 0%, rgba(180, 200, 220, 0.12) 18%, transparent 42%),
+        radial-gradient(ellipse 26% 20% at 6% 100%, var(--mountain-base) 0%, transparent 68%),
+        radial-gradient(ellipse 32% 24% at 20% 100%, rgba(62, 76, 92, 0.98) 0%, transparent 72%),
+        radial-gradient(ellipse 28% 22% at 38% 100%, rgba(70, 84, 100, 0.96) 0%, transparent 70%),
+        radial-gradient(ellipse 36% 26% at 55% 100%, rgba(58, 72, 88, 0.99) 0%, transparent 74%),
+        radial-gradient(ellipse 30% 23% at 72% 100%, rgba(65, 78, 94, 0.97) 0%, transparent 71%),
+        radial-gradient(ellipse 34% 25% at 90% 100%, rgba(52, 64, 80, 0.98) 0%, transparent 73%),
+        radial-gradient(ellipse 24% 18% at 48% 100%, rgba(78, 92, 108, 0.55) 0%, transparent 65%),
+        linear-gradient(to top, rgba(95, 110, 128, 0.85) 0%, rgba(120, 138, 158, 0.35) 28%, transparent 62%);
+      filter: saturate(1.12);
+      -webkit-mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
+      mask-image: linear-gradient(to top, #000 0%, #000 55%, transparent 100%);
+    }
+    .sky-horizon-haze {
+      position: absolute;
+      left: -5%;
+      right: -5%;
+      bottom: 0;
+      height: 28%;
+      z-index: 5;
+      pointer-events: none;
+      background: linear-gradient(
+        to top,
+        rgba(255, 255, 255, 0.5) 0%,
+        rgba(230, 240, 252, 0.22) 35%,
+        transparent 100%
+      );
+      mix-blend-mode: soft-light;
+      opacity: 0.55;
+      animation: snowLayerDayNight var(--day-cycle) ease-in-out infinite;
+    }
+    .sky-snow-field {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(118deg, transparent 0 22px, rgba(255, 255, 255, 0.045) 22px 23px, transparent 23px 48px),
+        repeating-linear-gradient(92deg, transparent 0 31px, rgba(255, 255, 255, 0.035) 31px 32px, transparent 32px 64px),
+        radial-gradient(ellipse 130% 70% at 50% 0%, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.08) 45%, transparent 68%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.42) 0%, rgba(248, 252, 255, 0.15) 42%, transparent 78%);
+    }
+    .sky-night-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      pointer-events: none;
+      mix-blend-mode: multiply;
+      opacity: 0;
+      animation: skyNightVeil var(--day-cycle) ease-in-out infinite;
+      background:
+        radial-gradient(1.2px 1.2px at 8% 14%, rgba(255, 255, 255, 0.95) 50%, transparent 52%),
+        radial-gradient(1px 1px at 22% 8%, rgba(255, 255, 255, 0.85) 50%, transparent 52%),
+        radial-gradient(1px 1px at 35% 18%, rgba(255, 255, 255, 0.75) 50%, transparent 52%),
+        radial-gradient(1px 1px at 48% 10%, rgba(255, 255, 255, 0.9) 50%, transparent 52%),
+        radial-gradient(1px 1px at 62% 16%, rgba(255, 255, 255, 0.7) 50%, transparent 52%),
+        radial-gradient(1px 1px at 76% 9%, rgba(255, 255, 255, 0.88) 50%, transparent 52%),
+        radial-gradient(1px 1px at 90% 20%, rgba(255, 255, 255, 0.65) 50%, transparent 52%),
+        radial-gradient(1px 1px at 15% 28%, rgba(255, 255, 255, 0.55) 50%, transparent 52%),
+        radial-gradient(1px 1px at 55% 26%, rgba(255, 255, 255, 0.6) 50%, transparent 52%),
+        radial-gradient(1px 1px at 82% 28%, rgba(255, 255, 255, 0.5) 50%, transparent 52%),
+        linear-gradient(180deg, #1a2840 0%, #243552 28%, rgba(45, 65, 95, 0.55) 55%, rgba(120, 145, 175, 0) 100%);
+    }
+    .moon-glow {
+      position: absolute;
+      top: 10%;
+      left: 10%;
+      width: min(16vw, 56px);
+      height: min(16vw, 56px);
+      border-radius: 50%;
+      z-index: 8;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 42% 42%, rgba(255, 255, 255, 0.98) 0%, rgba(240, 248, 255, 0.45) 28%, transparent 58%),
+        radial-gradient(circle at 50% 50%, rgba(220, 235, 255, 0.35) 0%, transparent 55%);
+      box-shadow:
+        0 0 20px rgba(200, 230, 255, 0.45),
+        0 0 48px rgba(180, 210, 255, 0.22);
+      filter: blur(0.4px);
+      opacity: 0.06;
+      animation: moonDayNight var(--day-cycle) ease-in-out infinite;
+    }
+    .sun-halo {
+      position: absolute;
+      top: 8%;
+      right: 14%;
+      width: min(22vw, 88px);
+      height: min(22vw, 88px);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 45% 42%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 245, 210, 0.35) 28%, transparent 62%),
+        radial-gradient(circle at 50% 50%, rgba(255, 230, 180, 0.5) 0%, transparent 55%);
+      filter: blur(0.5px);
+      pointer-events: none;
+      z-index: 5;
+      animation:
+        sunPulse 14s ease-in-out infinite,
+        sunDayNight var(--day-cycle) ease-in-out infinite;
+    }
+    .sky::before {
+      content: '';
+      position: absolute;
+      inset: -5%;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 120% 80% at 20% 0%, rgba(255, 255, 255, 0.55) 0%, transparent 55%),
+        radial-gradient(ellipse 90% 60% at 85% 10%, rgba(255, 255, 255, 0.28) 0%, transparent 50%),
+        linear-gradient(185deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+      animation: snowSkyShimmer 14s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .sky-hills-scroll {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 42%;
+      z-index: 2;
+      pointer-events: none;
+      opacity: 0.72;
+      overflow: hidden;
+      mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+      -webkit-mask-image: linear-gradient(to top, rgba(0, 0, 0, 0.95) 0%, rgba(0, 0, 0, 0.35) 55%, transparent 100%);
+    }
+    .sky-hills-scroll::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: calc(100% + 384px);
+      background-image: repeating-linear-gradient(
+        90deg,
+        transparent 0,
+        transparent 44px,
+        rgba(38, 52, 66, 0.55) 44px,
+        rgba(38, 52, 66, 0.55) 46px,
+        transparent 46px,
+        transparent 96px,
+        rgba(32, 46, 58, 0.42) 96px,
+        rgba(32, 46, 58, 0.42) 98px,
+        transparent 98px,
+        transparent 192px
+      );
+      background-size: 192px 100%;
+      animation: hillsTx var(--road-scroll) linear infinite;
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+    .sky-clouds {
+      position: absolute;
+      inset: 0;
+      width: 118%;
+      left: -6%;
+      z-index: 3;
+      animation: driftSlow calc(var(--road-scroll) * 15) linear infinite;
+       will-change: transform;
+    }
+    .sky-land {
+      position: absolute;
+      left: -8%;
+      right: -8%;
+      bottom: 0;
+      top: 14%;
+      width: 118%;
+      animation: driftMid calc(var(--road-scroll) * 12) linear infinite;
+      z-index: 4;
+      will-change: transform;
+    }
+    .sky-land::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 42%;
+      z-index: 3;
+      pointer-events: none;
+      background: linear-gradient(
+        to top,
+        rgba(248, 252, 255, 0.55) 0%,
+        rgba(220, 235, 248, 0.22) 38%,
+        transparent 100%
+      );
+    }
+    .sky-horizon {
+      position: absolute;
+      left: -12%;
+      right: -12%;
+      bottom: 0;
+      height: 42%;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(to top, rgba(180, 200, 218, 0.25) 0%, transparent 28%),
+        radial-gradient(ellipse 48% 26% at 12% 100%, rgba(45, 58, 72, 0.95) 0%, transparent 72%),
+        radial-gradient(ellipse 42% 22% at 38% 100%, rgba(55, 70, 86, 0.92) 0%, transparent 70%),
+        radial-gradient(ellipse 55% 28% at 62% 100%, rgba(42, 58, 74, 0.96) 0%, transparent 74%),
+        radial-gradient(ellipse 50% 24% at 88% 100%, rgba(48, 62, 78, 0.94) 0%, transparent 72%),
+        linear-gradient(to top, rgba(75, 92, 110, 0.45) 0%, transparent 58%);
+      filter: saturate(1.08) contrast(1.04);
+    }
+    .sky-horizon::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 18%;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.42) 0%,
+        rgba(255, 255, 255, 0.12) 45%,
+        transparent 100%
+      );
+      mix-blend-mode: screen;
+      opacity: 0.75;
+      pointer-events: none;
+    }
+    .cloud {
+      position: absolute;
+      background:
+        radial-gradient(ellipse 80% 70% at 30% 40%, rgba(255, 255, 255, 0.65) 0%, transparent 55%),
+        radial-gradient(ellipse 100% 80% at 70% 50%, rgba(210, 225, 238, 0.98) 0%, rgba(150, 168, 188, 0.78) 100%);
+      border-radius: 50%;
+      filter: blur(0.35px) drop-shadow(0 10px 18px rgba(40, 60, 85, 0.28)) drop-shadow(0 2px 4px rgba(255, 255, 255, 0.15));
+      box-shadow:
+        inset 0 -8px 14px rgba(100, 120, 140, 0.18),
+        inset 0 4px 10px rgba(255, 255, 255, 0.35),
+        0 2px 0 rgba(255, 255, 255, 0.22);
+    }
+    .cloud::before, .cloud::after {
+      content: '';
+      position: absolute;
+      background: inherit;
+      border-radius: 50%;
+    }
+    .c1 { width: 18%; height: 8%; top: 18%; left: 8%; }
+    .c1::before { width: 60%; height: 100%; left: -25%; top: 10%; }
+    .c1::after { width: 55%; height: 90%; right: -20%; top: 5%; }
+    .c2 { width: 22%; height: 9%; top: 8%; right: 12%; }
+    .c2::before { width: 50%; height: 95%; left: -15%; top: 0; }
+    .c2::after { width: 45%; height: 85%; right: -18%; top: 15%; }
+
+    .ground-snow {
+      position: absolute;
+      left: 0; right: 0;
+      top: 20%;
+      height: 8%;
+      z-index: 2;
+      background:
+        radial-gradient(ellipse 120% 80% at 50% 0%, rgba(255, 255, 255, 0.65) 0%, transparent 55%),
+        linear-gradient(180deg, #e8f4fc 0%, #fbfeff 55%, #fff 100%);
+      border-radius: 0 0 40% 40% / 0 0 80% 80%;
+      animation: snowShimmer 6s ease-in-out infinite;
+      box-shadow:
+        0 4px 24px rgba(255, 255, 255, 0.28),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+    .ground-snow::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background-image:
+        radial-gradient(circle at 12% 40%, rgba(255, 255, 255, 0.9) 0, rgba(255, 255, 255, 0.9) 1px, transparent 1.5px),
+        radial-gradient(circle at 88% 55%, rgba(255, 255, 255, 0.75) 0, rgba(255, 255, 255, 0.75) 1px, transparent 1.5px),
+        radial-gradient(circle at 44% 70%, rgba(255, 255, 255, 0.6) 0, rgba(255, 255, 255, 0.6) 0.8px, transparent 1.2px),
+        radial-gradient(circle at 72% 30%, rgba(255, 255, 255, 0.55) 0, rgba(255, 255, 255, 0.55) 0.8px, transparent 1.2px);
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .pine {
+      position: absolute;
+      bottom: 0;
+      z-index: 1;
+      width: 8vw;
+      height: 11vh;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0.15) 10%, transparent 26%),
+        linear-gradient(100deg, rgba(0, 0, 0, 0.28) 0%, transparent 38%, rgba(255, 255, 255, 0.14) 72%, rgba(0, 0, 0, 0.12) 100%),
+        linear-gradient(180deg, #3d8a5c 0%, #2d7a4d 42%, #1a5c38 78%, #143d28 100%);
+      clip-path: polygon(50% 0%, 100% 100%, 0 100%);
+      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.28)) saturate(1.08);
+    }
+    .pine::before {
+      content: '';
+      position: absolute;
+      left: 38%;
+      right: 38%;
+      top: 0;
+      height: 22%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 100%);
+      clip-path: polygon(15% 100%, 50% 0, 85% 100%);
+      pointer-events: none;
+    }
+    .pine.s1 { left: 5%; width: 8vw; height: 11vh; filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.3)) brightness(1.04); }
+    .pine.s2 { left: 18%; width: 6vw; height: 8vh; opacity: 0.94; }
+    .pine.s3 { right: 22%; left: auto; width: 7vw; height: 9vh; }
+    .pine.s4 { right: 6%; left: auto; width: 10vw; height: 12vh; }
+
+    .round-tree {
+      position: absolute;
+      bottom: 0;
+      z-index: 1;
+      width: 10%;
+      aspect-ratio: 1;
+      background:
+        radial-gradient(ellipse 55% 45% at 38% 28%, rgba(255, 255, 255, 0.35) 0%, transparent 50%),
+        radial-gradient(circle at 38% 38%, #8fd67e 0%, #4aaf52 38%, #2d8438 72%, #1e5c28 100%);
+      border-radius: 50%;
+      box-shadow:
+        inset -6px -8px 14px rgba(0, 0, 0, 0.22),
+        inset 4px 6px 10px rgba(255, 255, 255, 0.12),
+        0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+    .round-tree::after {
+      content: '';
+      position: absolute;
+      left: 28%; right: 28%; top: -12%;
+      height: 28%;
+      background: radial-gradient(ellipse at 50% 100%, #fff 0%, rgba(255, 255, 255, 0.85) 45%, transparent 72%);
+      border-radius: 50%;
+    }
+    .rt1 { left: 32%; height: 11%; width: auto; aspect-ratio: 1; bottom: -1%; }
+    .rt2 { right: 38%; height: 9%; width: auto; aspect-ratio: 1; bottom: 0; }
+
+    .church {
+      position: absolute;
+      right: 28%; bottom: 0;
+      z-index: 1;
+      width: 8%;
+      height: 7%;
+      background:
+        linear-gradient(90deg, rgba(0, 0, 0, 0.12) 0%, transparent 25%, rgba(255, 255, 255, 0.15) 55%, rgba(0, 0, 0, 0.1) 100%),
+        linear-gradient(180deg, #e8ecef 0%, #b0bec5 55%, #7a8a94 100%);
+      clip-path: polygon(50% 0%, 100% 35%, 100% 100%, 0 100%, 0 35%);
+      box-shadow: 2px 4px 12px rgba(0, 0, 0, 0.25);
+    }
+    .church::before {
+      content: '';
+      position: absolute;
+      left: 38%;
+      right: 38%;
+      top: 38%;
+      bottom: 18%;
+      background: linear-gradient(180deg, rgba(30, 40, 50, 0.55) 0%, rgba(15, 22, 30, 0.75) 100%);
+      border-radius: 1px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+    }
+    .barn {
+      position: absolute;
+      right: 10%; bottom: 0;
+      z-index: 1;
+      width: 12%;
+      height: 6%;
+      background:
+        repeating-linear-gradient(90deg, transparent 0, transparent 3px, rgba(0, 0, 0, 0.04) 3px, rgba(0, 0, 0, 0.04) 4px),
+        linear-gradient(180deg, #c0392b 0%, #922b21 100%);
+      border-radius: 2px 2px 0 0;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 2px 4px 10px rgba(0, 0, 0, 0.28);
+    }
+    .barn::before {
+      content: '';
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 40%;
+      background: linear-gradient(180deg, #f5f7fa 0%, #dce3e8 100%);
+      clip-path: polygon(0 100%, 50% 0, 100% 100%);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    /* Şerit kesikleri: transform ile GPU (background-position takılması yok) */
+    @keyframes laneDashTx {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-48px, 0, 0); }
+    }
+    /* Arcade: neon alt çizgi + kesik şerit — 40px döngü (sık kesik) */
+    @keyframes arcadeLaneNeonTx {
+      from { background-position: 0 0; }
+      to { background-position: -40px 0; }
+    }
+    @keyframes arcadeLaneDashTx {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-40px, 0, 0); }
+    }
+    @keyframes arcadeMountainLoop {
+      from { transform: translate3d(0, 0, 0); }
+      to { transform: translate3d(-50%, 0, 0); }
+    }
+    @keyframes roadGleamMove {
+      0% { transform: translate3d(-42%, 0, 0) skewX(-8deg); opacity: 0.2; }
+      50% { opacity: 0.42; }
+      100% { transform: translate3d(38%, 0, 0) skewX(-8deg); opacity: 0.22; }
+    }
+    /* --- Yol: gerçekçi asfalt, kenar çizgileri, kesikli şerit ayracı --- */
+    .track {
+      position: absolute;
+      left: 0; right: 0;
+      top: 17%;
+      height: 72%;
+      z-index: 2;
+      overflow: hidden;
+      transform: translateZ(0);
+      backface-visibility: hidden;
+      background:
+        linear-gradient(180deg, rgba(55, 58, 64, 0.45) 0%, transparent 8%),
+        linear-gradient(0deg, rgba(0, 0, 0, 0.35) 0%, transparent 12%),
+        #3a3d44;
+      border-top: 2px solid #5c6068;
+      border-bottom: 2px solid #1a1c20;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        inset 0 -2px 8px rgba(0, 0, 0, 0.35),
+        inset 0 0 72px rgba(0, 0, 0, 0.14),
+        0 4px 14px rgba(0, 0, 0, 0.45);
+    }
+    .track-road {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .track-asphalt {
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          118deg,
+          transparent 0,
+          transparent 2px,
+          rgba(255, 255, 255, 0.012) 2px,
+          rgba(255, 255, 255, 0.012) 3px,
+          transparent 3px,
+          transparent 5px
+        ),
+        linear-gradient(
+          90deg,
+          transparent 0%,
+          rgba(255, 255, 255, 0.035) 44%,
+          rgba(255, 255, 255, 0.07) 50%,
+          rgba(255, 255, 255, 0.035) 56%,
+          transparent 100%
+        ),
+        /* Sol sürekli kenar çizgisi + zemin şeridi */
+        linear-gradient(90deg,
+          rgba(200, 200, 195, 0.97) 0,
+          rgba(236, 236, 232, 1) 3px,
+          rgba(236, 236, 232, 1) 5px,
+          rgba(180, 182, 188, 0.55) 5px,
+          rgba(120, 122, 128, 0.35) 22px,
+          transparent 22px
+        ),
+        /* Sağ kenar */
+        linear-gradient(270deg,
+          rgba(200, 200, 195, 0.95) 0,
+          rgba(236, 236, 232, 1) 3px,
+          rgba(236, 236, 232, 1) 5px,
+          rgba(160, 162, 168, 0.45) 5px,
+          rgba(100, 102, 108, 0.28) 20px,
+          transparent 20px
+        ),
+        /* Işık / gövde tonu (yalnızca yumuşak geçişler, dikey şerit yok) */
+        linear-gradient(180deg, rgba(75, 78, 86, 0.35) 0%, transparent 22%, transparent 78%, rgba(0, 0, 0, 0.2) 100%),
+        linear-gradient(
+          90deg,
+          #2a2c31 0%,
+          #383b44 12%,
+          #40444e 50%,
+          #373a42 88%,
+          #2d2f34 100%
+        );
+      background-size: 5px 5px, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%;
+      background-repeat: repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat;
+    }
+    .track-asphalt::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+      opacity: 0.52;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(0, 0, 0, 0.08) 0%, transparent 45%),
+        radial-gradient(ellipse 120% 40% at 18% 55%, rgba(0, 0, 0, 0.06) 0%, transparent 55%),
+        radial-gradient(ellipse 90% 35% at 78% 40%, rgba(255, 255, 255, 0.05) 0%, transparent 50%);
+    }
+    .track-asphalt::after {
+      content: '';
+      position: absolute;
+      top: 0; bottom: 0; right: 0;
+      z-index: 2;
+      width: 6px;
+      background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.45));
+      pointer-events: none;
+    }
+    /* Yüzeyde yavaş hareket eden ışık bandı (ıslak asfalt hissi) */
+    .track-gleam {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+      overflow: hidden;
+      mix-blend-mode: soft-light;
+    }
+    .track-gleam::before {
+      content: '';
+      position: absolute;
+      inset: -25% -50%;
+      background: linear-gradient(
+        102deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0) 40%,
+        rgba(255, 255, 255, 0.09) 49%,
+        rgba(255, 255, 255, 0.16) 50%,
+        rgba(255, 255, 255, 0.09) 51%,
+        rgba(255, 255, 255, 0) 60%,
+        transparent 100%
+      );
+      animation: roadGleamMove 18s ease-in-out infinite alternate;
+    }
+    .track-dividers {
+      position: absolute;
+      left: var(--lane-pad);
+      right: 0;
+      top: 0;
+      bottom: 0;
+      z-index: 2;
+      pointer-events: none;
+      transform: translateZ(0);
+    }
+    .lane-divider {
+      --n: 1;
+      position: absolute;
+      left: 22px;
+      right: 22px;
+      top: calc(100% * var(--n) / 5 - 1px);
+      height: 2px;
+      overflow: hidden;
+      background: transparent;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.55);
+      pointer-events: none;
+    }
+    .lane-divider::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: calc(100% + 144px);
+      background-image:
+        repeating-linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.95) 0 22px,
+          transparent 22px 48px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          rgba(255, 255, 255, 0.35) 0 22px,
+          transparent 22px 48px
+        );
+      background-size: 48px 100%;
+      background-position: 0 0, 3px 0;
+      animation: laneDashTx var(--lane-stripe-scroll) linear infinite;
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+
+    .lane {
+      --row: 0;
+      position: relative;
+      z-index: 3;
+      height: calc(100% / 5);
+      background: transparent;
+      border: none;
+    }
+    .lane:nth-child(odd) {
+      background: rgba(0, 0, 0, 0.04);
+    }
+    .lane:nth-child(even) {
+      background: rgba(255, 255, 255, 0.015);
+    }
+    .lane:last-of-type {
+      box-shadow: none;
+    }
+
+    .lane-inner {
+      position: absolute;
+      left: 0; right: 0; top: 0; bottom: 0;
+      margin-left: 0;
+      z-index: 3;
+      overflow: visible;
+    }
+    .lane-num {
+      position: absolute;
+      left: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 2;
+      font-weight: 800;
+      font-size: clamp(14px, 2.2vw, 22px);
+      color: rgba(255, 255, 255, 0.52);
+      text-shadow: 0 0 8px rgba(0, 0, 0, 0.55);
+      pointer-events: none;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @keyframes carBob {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-2px); }
+    }
+    .car-wrap {
+      position: absolute;
+      left: 0;
+      width: 100%;
+      top: 50%;
+      transform: translate(calc(var(--pos, 0) * 78%), -50%);
+      transition: transform 0.38s cubic-bezier(0.18, 0.82, 0.22, 1);
+      z-index: 3;
+    }
+    /* Far: projektör + düşük hüzme — beyaz/soğuk kenar, hafif nabız */
+    .headlight-beam {
+      position: absolute;
+      left: 96%;
+      right: auto;
+      top: 50%;
+      width: 38%;
+      height: 32%;
+      transform: translate(calc(1px + 0.9%), -50%);
+      pointer-events: none;
+      z-index: 6;
+      opacity: 0.94;
+      mix-blend-mode: screen;
+      filter:
+        blur(0.45px)
+        drop-shadow(0 0 4px rgba(255, 255, 255, 0.78))
+        drop-shadow(0 0 10px rgba(230, 240, 255, 0.32))
+        drop-shadow(0 0 18px rgba(195, 215, 245, 0.1));
+      background:
+        radial-gradient(ellipse 34% 56% at 2% 52%, rgba(255, 255, 255, 1) 0%, rgba(245, 249, 255, 0.72) 16%, rgba(215, 228, 250, 0.18) 40%, transparent 54%),
+        linear-gradient(
+          92deg,
+          rgba(255, 255, 255, 0.52) 0%,
+          rgba(232, 242, 255, 0.22) 28%,
+          rgba(185, 205, 235, 0.07) 52%,
+          rgba(110, 135, 175, 0.02) 72%,
+          transparent 88%
+        );
+      clip-path: polygon(-4px 40%, 100% 10%, 100% 90%, -4px 60%);
+      animation: beamPulse 4.2s ease-in-out infinite;
+    }
+    .car--photo .headlight-beam {
+      left: 96%;
+      top: 52%;
+      width: 40%;
+      height: 26%;
+      transform: translate(calc(0px + 0.6%), -50%);
+    }
+    .headlight-beam::before {
+      content: '';
+      position: absolute;
+      left: -4%;
+      top: 50%;
+      width: min(14%, 11px);
+      aspect-ratio: 1;
+      transform: translateY(-50%);
+      border-radius: 50%;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 52%, rgba(42, 50, 62, 0.5) 54%, rgba(22, 28, 36, 0.72) 60%, rgba(12, 14, 18, 0.9) 72%, transparent 74%),
+        radial-gradient(circle at 42% 40%, #ffffff 0%, rgba(255, 255, 255, 0.9) 26%, rgba(228, 236, 255, 0.48) 52%, rgba(175, 192, 220, 0.18) 70%, transparent 80%);
+      box-shadow:
+        inset 0 1px 2px rgba(255, 255, 255, 0.38),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.48),
+        0 0 4px rgba(255, 255, 255, 0.88),
+        0 0 12px rgba(220, 235, 255, 0.52),
+        0 0 22px rgba(185, 210, 245, 0.22);
+      pointer-events: none;
+    }
+    .headlight-beam::after {
+      content: '';
+      position: absolute;
+      left: 2%;
+      top: 50%;
+      width: min(8%, 6px);
+      aspect-ratio: 1;
+      transform: translate(25%, -125%);
+      border-radius: 50%;
+      background: radial-gradient(circle at 40% 36%, rgba(255, 255, 255, 0.95) 0%, rgba(255, 246, 232, 0.38) 48%, transparent 70%);
+      box-shadow:
+        0 0 4px rgba(255, 255, 255, 0.68),
+        0 0 10px rgba(255, 236, 215, 0.22);
+      opacity: 0.85;
+      pointer-events: none;
+    }
+    @keyframes beamPulse {
+      0%, 100% {
+        opacity: 0.93;
+        filter:
+          blur(0.45px)
+          drop-shadow(0 0 3px rgba(255, 255, 255, 0.65))
+          drop-shadow(0 0 8px rgba(232, 242, 255, 0.22))
+          drop-shadow(0 0 16px rgba(200, 220, 250, 0.07));
+      }
+      50% {
+        opacity: 0.99;
+        filter:
+          blur(0.32px)
+          drop-shadow(0 0 6px rgba(255, 255, 255, 0.9))
+          drop-shadow(0 0 12px rgba(238, 248, 255, 0.36))
+          drop-shadow(0 0 22px rgba(210, 228, 255, 0.12));
+      }
+    }
+    .car {
+      position: relative;
+      width: var(--car-w);
+      min-width: var(--car-min);
+      max-width: 132px;
+      aspect-ratio: 2.05 / 1;
+      margin-left: 1%;
+      filter: drop-shadow(0 5px 10px rgba(0, 0, 0, 0.5));
+      overflow: visible;
+      animation: carBob 2.85s ease-in-out infinite;
+    }
+    .car-stack {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+    .car:not(.car--photo) .car-stack {
+      min-height: 0;
+    }
+    .car::before {
+      content: '';
+      position: absolute;
+      left: -4%;
+      right: -12%;
+      bottom: -6px;
+      height: 18px;
+      background: radial-gradient(ellipse 78% 100% at 42% 0%, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.35) 45%, transparent 72%);
+      filter: blur(4px);
+      opacity: 0.92;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .car.car--photo {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      width: auto;
+      max-width: var(--car-w-photo);
+      min-width: 64px;
+      aspect-ratio: unset;
+      min-height: 36px;
+      filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.55));
+      overflow: visible;
+    }
+    .car--photo .car-stack {
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      display: inline-block;
+      line-height: 0;
+      position: relative;
+      overflow: visible;
+    }
+    .car-img {
+      display: none;
+      width: auto;
+      max-width: 100%;
+      height: auto;
+      max-height: min(19vh, 142px);
+      object-fit: contain;
+      object-position: left bottom;
+      filter:
+        drop-shadow(0 5px 12px rgba(0, 0, 0, 0.65))
+        drop-shadow(0 1px 2px rgba(255, 255, 255, 0.06))
+        contrast(1.06)
+        saturate(1.14);
+      position: relative;
+      z-index: 1;
+    }
+    .car-img.is-loaded {
+      display: block;
+    }
+    /* Türkiye (AB tipi): plaka aracın solunda (yön: sol = arka taraf) */
+    .car-plate {
+      position: absolute;
+      left: 0;
+      right: auto;
+      bottom: 3%;
+      transform: translateX(calc(-1 * clamp(16px, 5vw, 44px)));
+      z-index: 5;
+      display: inline-flex;
+      flex-direction: row;
+      align-items: stretch;
+      max-width: 94%;
+      border: 1px solid #0a0a0a;
+      border-radius: 2px;
+      background: #ececec;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.75),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.06),
+        0 2px 8px rgba(0, 0, 0, 0.55),
+        0 0 0 1px rgba(30, 30, 30, 0.4);
+      pointer-events: none;
+      overflow: hidden;
+      font-family: 'Arial Narrow', 'Helvetica Neue Condensed', 'Nimbus Sans Narrow', Arial, sans-serif;
+    }
+    .car-plate-tr {
+      flex: 0 0 clamp(10px, 2.45vw, 14px);
+      display: flex;
+      flex-direction: row;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0;
+      padding: 2px 1px 2px 1px;
+      background: linear-gradient(180deg, #004aad 0%, #003580 45%, #002a66 100%);
+      border-right: 1px solid #001d4a;
+      box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.12);
+    }
+    .car-plate-tr > span {
+      display: block;
+      color: #fff;
+      font-weight: 900;
+      font-size: clamp(2.8px, 0.68vw, 5px);
+      line-height: 1;
+      letter-spacing: 0;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.4);
+    }
+    .car-plate-text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 1 1 auto;
+      min-width: 0;
+      padding: 3px 7px 3px 6px;
+      background: linear-gradient(180deg, #fafafa 0%, #f0f0f0 35%, #e8e8e8 100%);
+      font-family: 'Oswald', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+      font-weight: 700;
+      font-size: clamp(6px, 1.3vw, 12px);
+      letter-spacing: 0.14em;
+      color: #0d0d0d;
+      text-shadow:
+        0.18px 0 0 currentColor,
+        -0.18px 0 0 currentColor,
+        0 0.14px 0 currentColor,
+        0 -0.14px 0 currentColor;
+      text-align: center;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      overflow: hidden;
+      line-height: 1.1;
+    }
+    .car--photo .car-plate {
+      bottom: 1%;
+    }
+    .theme-arcade .car-plate {
+      border-color: #0d0d0d;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.5),
+        0 0 12px rgba(0, 200, 255, 0.12),
+        0 2px 10px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(0, 0, 0, 0.35);
+    }
+    .theme-arcade .car-plate-tr {
+      background: linear-gradient(180deg, #0056c8 0%, #003d99 50%, #002d73 100%);
+    }
+    .car--photo .car-fallback {
+      display: none !important;
+    }
+    .car-fallback {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+    .car-body {
+      position: absolute;
+      inset: 16% 0 10% 0;
+      border-radius: 28% 42% 18% 14%;
+      background: linear-gradient(
+        105deg,
+        #45454e 0%,
+        #2e2e36 18%,
+        #23232a 52%,
+        #1a1a22 82%,
+        #303038 100%
+      );
+      box-shadow:
+        inset 0 -8px 14px rgba(0, 0, 0, 0.5),
+        inset 0 4px 8px rgba(255, 255, 255, 0.1),
+        inset -2px 0 6px rgba(0, 0, 0, 0.25),
+        0 6px 18px rgba(0, 0, 0, 0.45),
+        0 1px 0 rgba(255, 255, 255, 0.07);
+    }
+    .car-body::after {
+      content: '';
+      position: absolute;
+      left: 28%;
+      right: 22%;
+      top: 8%;
+      height: 38%;
+      border-radius: 40% 50% 30% 25%;
+      background: linear-gradient(
+        165deg,
+        rgba(140, 190, 255, 0.35) 0%,
+        rgba(80, 100, 130, 0.2) 45%,
+        transparent 100%
+      );
+      pointer-events: none;
+    }
+    .car-top {
+      position: absolute;
+      left: 20%; right: 16%; top: 0;
+      height: 46%;
+      border-radius: 38% 48% 0 0;
+      background: linear-gradient(
+        155deg,
+        rgba(100, 150, 210, 0.4) 0%,
+        rgba(55, 65, 85, 0.55) 35%,
+        #2c2c34 90%
+      );
+      box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.15);
+    }
+    @keyframes waterShift {
+      0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+      100% { background-position: 180px 40px, -120px 0, 90px 20px, 0 0; }
+    }
+    @keyframes sharkSwim {
+      0%, 100% { transform: translateX(0) rotate(-5deg) translateY(0); }
+      50% { transform: translateX(-8%) rotate(-2deg) translateY(-6%); }
+    }
+
+    @keyframes waterCaustic {
+      0% { opacity: 0.35; transform: translate3d(0, 0, 0); }
+      100% { opacity: 0.55; transform: translate3d(-24px, 2px, 0); }
+    }
+
+    /* --- Su + köpekbalığı --- */
+    .water {
+      position: absolute;
+      left: 0; right: 0;
+      bottom: 0;
+      height: 11%;
+      z-index: 4;
+      border-top: 3px solid rgba(35, 45, 58, 0.85);
+      background:
+        linear-gradient(180deg, rgba(240, 248, 255, 0.18) 0%, transparent 16%),
+        linear-gradient(180deg, rgba(15, 28, 42, 0.78) 0%, transparent 24%),
+        linear-gradient(180deg, rgba(18, 92, 158, 0.98) 0%, rgba(28, 118, 188, 1) 38%, rgba(12, 72, 128, 1) 100%),
+        repeating-linear-gradient(
+          -32deg,
+          transparent 0,
+          transparent 7px,
+          rgba(255, 255, 255, 0.08) 7px,
+          rgba(255, 255, 255, 0.08) 8px
+        ),
+        radial-gradient(ellipse 100% 55% at 50% 100%, rgba(0, 18, 42, 0.62) 0%, transparent 58%),
+        radial-gradient(ellipse 45% 25% at 30% 55%, rgba(255, 255, 255, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse 40% 22% at 72% 48%, rgba(200, 235, 255, 0.1) 0%, transparent 50%);
+      background-size: 100% 100%, 100% 100%, 100% 100%, auto, 100% 100%, 120% 100%, 120% 100%;
+      animation: waterShift calc(var(--road-scroll) * 8) linear infinite;
+      box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.08),
+        inset 0 -12px 24px rgba(0, 20, 45, 0.45);
+    }
+    .water::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      opacity: 0.4;
+      background: repeating-linear-gradient(
+        52deg,
+        transparent 0,
+        transparent 14px,
+        rgba(255, 255, 255, 0.04) 14px,
+        rgba(255, 255, 255, 0.04) 15px
+      );
+      mix-blend-mode: overlay;
+      animation: waterCaustic 5s ease-in-out infinite alternate;
+    }
+    .water::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 14px;
+      z-index: 2;
+      background: linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.35) 0%,
+        rgba(230, 245, 255, 0.12) 45%,
+        transparent 100%
+      );
+      opacity: 0.65;
+      pointer-events: none;
+    }
+    .shark {
+      position: absolute;
+      right: 18%;
+      top: 42%;
+      width: 12%;
+      height: 22%;
+      z-index: 1;
+      background:
+        radial-gradient(ellipse 70% 55% at 35% 40%, rgba(180, 195, 205, 0.5) 0%, transparent 55%),
+        linear-gradient(165deg, #aab4bc 0%, #7f8c8d 38%, #5d6d7e 72%, #4a5a62 100%);
+      border-radius: 60% 40% 55% 45%;
+      transform: rotate(-5deg);
+      box-shadow:
+        inset -4px -3px 8px rgba(0, 0, 0, 0.28),
+        inset 3px 4px 6px rgba(255, 255, 255, 0.12),
+        0 6px 14px rgba(0, 20, 40, 0.35);
+      animation: sharkSwim 10s ease-in-out infinite;
+    }
+    .shark::before {
+      content: '';
+      position: absolute;
+      top: -8%;
+      left: 42%;
+      width: 22%;
+      height: 32%;
+      background: linear-gradient(180deg, #8a969e 0%, #6d7a82 100%);
+      clip-path: polygon(50% 0, 100% 100%, 0 100%);
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+    }
+    .shark::after {
+      content: '';
+      position: absolute;
+      right: -25%; top: 20%;
+      border: 6px solid transparent;
+      border-left: 14px solid #5d6d7e;
+      filter: drop-shadow(1px 2px 2px rgba(0, 0, 0, 0.25));
+    }
+
+    /* --- Kazanan + konfeti (metin yok) --- */
+    .winner-overlay:not(.on) .winner-confetti .confetti {
+      animation: none;
+      opacity: 0;
+      transform: translate3d(0, -25%, 0) rotate(0deg) scale(0.5);
+    }
+    .winner-confetti {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .winner-confetti .confetti {
+      position: absolute;
+      display: block;
+      width: 8px;
+      height: 11px;
+      top: -6%;
+      border-radius: 2px;
+      opacity: 0;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    .winner-overlay.on .winner-confetti .confetti {
+      animation: confettiDrop 2.6s cubic-bezier(0.2, 0.55, 0.2, 1) forwards;
+    }
+    @keyframes confettiDrop {
+      0% { opacity: 0; transform: translate3d(0, -20%, 0) rotate(0deg) scale(0.6); }
+      10% { opacity: 1; transform: translate3d(0, 0, 0) rotate(40deg) scale(1); }
+      100% { opacity: 0.9; transform: translate3d(var(--dx, 0), 92vh, 0) rotate(540deg) scale(0.95); }
+    }
+    .winner-confetti .c0 { left: 7%; background: #e74c3c; --dx: -8px; animation-delay: 0s; }
+    .winner-confetti .c1 { left: 14%; background: #f1c40f; --dx: 12px; animation-delay: 0.05s; }
+    .winner-confetti .c2 { left: 22%; background: #3498db; --dx: -14px; animation-delay: 0.02s; }
+    .winner-confetti .c3 { left: 30%; background: #2ecc71; --dx: 6px; animation-delay: 0.08s; }
+    .winner-confetti .c4 { left: 38%; background: #9b59b6; --dx: -5px; animation-delay: 0.03s; }
+    .winner-confetti .c5 { left: 46%; background: #e67e22; --dx: 18px; animation-delay: 0.06s; }
+    .winner-confetti .c6 { left: 54%; background: #1abc9c; --dx: -20px; animation-delay: 0.04s; }
+    .winner-confetti .c7 { left: 62%; background: #e91e63; --dx: 4px; animation-delay: 0.09s; }
+    .winner-confetti .c8 { left: 70%; background: #fff; --dx: -10px; animation-delay: 0.01s; }
+    .winner-confetti .c9 { left: 78%; background: #3498db; --dx: 15px; animation-delay: 0.07s; }
+    .winner-confetti .c10 { left: 86%; background: #f39c12; --dx: -7px; animation-delay: 0.055s; }
+    .winner-confetti .c11 { left: 11%; background: #8e44ad; --dx: 9px; animation-delay: 0.11s; }
+    .winner-confetti .c12 { left: 25%; background: #c0392b; --dx: -16px; animation-delay: 0.12s; }
+    .winner-confetti .c13 { left: 58%; background: #16a085; --dx: 11px; animation-delay: 0.065s; }
+    .winner-confetti .c14 { left: 91%; background: #ecf0f1; --dx: -12px; animation-delay: 0.045s; }
+    .winner-confetti .c15 { left: 50%; background: #ffd54f; --dx: 3px; animation-delay: 0.035s; }
+
+    @keyframes winPulse {
+      0%, 100% { transform: scale(0.88); opacity: 0.65; }
+      50% { transform: scale(1.08); opacity: 1; }
+    }
+    .winner-glow {
+      width: min(72vw, 240px);
+      height: min(72vw, 240px);
+      border-radius: 50%;
+      position: relative;
+      z-index: 2;
+      background: radial-gradient(circle at 45% 40%, rgba(255, 220, 120, 0.55) 0%, rgba(255, 160, 40, 0.25) 40%, transparent 68%);
+      filter: blur(12px);
+      animation: winPulse 1.15s ease-in-out infinite;
+      pointer-events: none;
+    }
+    .btn-reset-round {
+      margin-top: 32px;
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      border: 3px solid rgba(255, 255, 255, 0.35);
+      background: linear-gradient(180deg, #6c5ce7, #5b4cdb);
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+      position: relative;
+      flex-shrink: 0;
+      z-index: 3;
+    }
+    .btn-reset-round::before {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 26px;
+      height: 26px;
+      margin: -13px 0 0 -13px;
+      border: 3px solid rgba(255, 255, 255, 0.95);
+      border-right-color: transparent;
+      border-bottom-color: transparent;
+      border-radius: 50%;
+      transform: rotate(75deg);
+    }
+    .btn-reset-round::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 0;
+      height: 0;
+      margin: -14px 0 0 6px;
+      border: 7px solid transparent;
+      border-left: 10px solid rgba(255, 255, 255, 0.95);
+    }
+    .btn-reset-round:active { transform: scale(0.96); }
+
+    .winner-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.72);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.35s;
+    }
+    .winner-overlay.on {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* --- Sağ: araç + şerit seçici --- */
+    .app-shell {
+      display: flex;
+      flex-direction: row;
+      align-items: stretch;
+      width: 100%;
+      height: 100vh;
+      height: 100dvh;
+      max-height: 100vh;
+      max-height: 100dvh;
+      min-height: 0;
+    }
+    .car-picker {
+      width: min(288px, 30vw);
+      flex-shrink: 0;
+      align-self: stretch;
+      min-height: 0;
+      max-height: 100vh;
+      max-height: 100dvh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+      background: linear-gradient(180deg, #141428 0%, #0e0e18 100%);
+      border-left: 2px solid #2a2a42;
+      display: flex;
+      flex-direction: column;
+      z-index: 50;
+      box-shadow: -6px 0 24px rgba(0, 0, 0, 0.35);
+    }
+    .car-picker-inner {
+      display: flex;
+      flex-direction: column;
+      padding: 12px 12px 14px;
+      gap: 10px;
+    }
+    .car-picker-title {
+      font-size: 0.95rem;
+      font-weight: 900;
+      letter-spacing: 0.04em;
+      color: #e8e8f2;
+      text-transform: uppercase;
+    }
+    .car-picker-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .picker-refresh {
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #3a3a58;
+      background: #252538;
+      color: #c8c8e0;
+      cursor: pointer;
+    }
+    .picker-refresh:hover {
+      background: #32324a;
+      color: #fff;
+    }
+    .picker-car-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      overflow: visible;
+      padding: 2px 0;
+    }
+    .picker-car-btn {
+      position: relative;
+      border: 2px solid #333348;
+      border-radius: 10px;
+      background: #1a1a28;
+      padding: 6px 6px 8px;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.12s;
+      min-height: 102px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 5px;
+    }
+    .picker-car-btn:hover {
+      border-color: #5a7ab8;
+      transform: scale(1.02);
+    }
+    .picker-car-btn:active {
+      transform: scale(0.98);
+    }
+    .picker-car-btn img {
+      flex-shrink: 0;
+      max-width: 100%;
+      max-height: 70px;
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+    }
+    .picker-car-name {
+      width: 100%;
+      font-family: 'Oswald', 'Arial Narrow', 'Helvetica Neue', Arial, sans-serif;
+      font-weight: 700;
+      font-size: 0.62rem;
+      letter-spacing: 0.05em;
+      color: #d8e0ff;
+      text-align: center;
+      line-height: 1.2;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.45);
+    }
+    .picker-lane-step {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 0 0 auto;
+      min-height: 0;
+    }
+    .picker-lane-step[hidden] {
+      display: none !important;
+    }
+    .picker-back {
+      font: inherit;
+      font-size: 0.78rem;
+      font-weight: 800;
+      align-self: flex-start;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #44445c;
+      background: #222232;
+      color: #b8b8d8;
+      cursor: pointer;
+    }
+    .picker-back:hover {
+      color: #fff;
+      border-color: #666688;
+    }
+    .picker-hint {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #a0a8c8;
+    }
+    .picker-hint-note {
+      font-size: 0.64rem;
+      font-weight: 600;
+      color: #6c7494;
+      line-height: 1.35;
+      margin: -2px 0 0;
+    }
+    .picker-tiktok-block {
+      padding-bottom: 10px;
+      margin-bottom: 2px;
+      border-bottom: 1px solid #35354a;
+    }
+    .picker-tiktok-block .car-picker-title {
+      margin-bottom: 6px;
+    }
+    .picker-tiktok-line {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #8890b0;
+      line-height: 1.45;
+      margin: 0 0 4px;
+    }
+    .picker-tiktok-line:last-of-type {
+      margin-bottom: 0;
+    }
+    .picker-tiktok-line--ok {
+      color: #7dcea0;
+    }
+    .picker-tiktok-user-row {
+      margin-top: 6px;
+    }
+    .picker-tiktok-user-label {
+      display: block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #8c94b8;
+      margin-bottom: 4px;
+    }
+    .picker-tiktok-user-actions {
+      display: flex;
+      gap: 6px;
+      align-items: stretch;
+    }
+    .picker-tiktok-user-input {
+      flex: 1;
+      min-width: 0;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #45456a;
+      background: #12121c;
+      color: #eef0ff;
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+      font-size: 0.76rem;
+    }
+    .picker-tiktok-user-apply {
+      flex-shrink: 0;
+      font: inherit;
+      font-size: 0.72rem;
+      font-weight: 800;
+      padding: 6px 10px;
+      border-radius: 8px;
+      border: 1px solid #3d5a80;
+      background: #252538;
+      color: #c8c8e0;
+      cursor: pointer;
+    }
+    .picker-tiktok-user-apply:hover {
+      background: #32324a;
+      color: #fff;
+    }
+    .picker-tiktok-feedback {
+      font-size: 0.62rem;
+      font-weight: 600;
+      color: #7dcea0;
+      margin: 4px 0 0;
+      min-height: 0;
+    }
+    .picker-tiktok-feedback:empty {
+      display: none;
+    }
+    .picker-plate-block {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #35354a;
+    }
+    .picker-plate-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 8px 0 10px;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .picker-plate-row {
+      display: grid;
+      grid-template-columns: 52px 1fr;
+      align-items: center;
+      gap: 8px;
+    }
+    .picker-plate-row label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      color: #8c94b8;
+    }
+    .picker-plate-row input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid #45456a;
+      background: #12121c;
+      color: #eef0ff;
+      font-family: ui-monospace, monospace;
+      font-weight: 700;
+      font-size: 0.76rem;
+    }
+    .picker-plate-save {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 2px solid #3d5a80;
+      background: #243552;
+      color: #e3f2fd;
+      font-weight: 800;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+    .picker-plate-save:hover {
+      background: #2c4260;
+    }
+    body.plates-hidden #track .car-plate {
+      display: none !important;
+    }
+    .picker-plate-toggle {
+      width: 100%;
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 2px solid #45456a;
+      background: #1c1c2c;
+      color: #c8cce8;
+      font-weight: 800;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .picker-plate-toggle:hover {
+      border-color: #5a6a8a;
+      background: #252538;
+    }
+    body.plates-hidden .picker-plate-toggle {
+      border-color: #3d5a4a;
+      color: #9dd4a4;
+    }
+    .picker-lane-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow-y: auto;
+    }
+    .picker-lane-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 2px solid #35354a;
+      background: #1c1c2c;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      font-size: 0.85rem;
+      color: #e4e4f4;
+      text-align: left;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .picker-lane-btn:hover {
+      border-color: #6a8ec8;
+      background: #252538;
+    }
+    .picker-lane-num {
+      font-size: 1.05rem;
+      font-weight: 900;
+      font-variant-numeric: tabular-nums;
+      min-width: 1.5em;
+      color: #9ab8ff;
+    }
+    .picker-status {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #7ab87a;
+      min-height: 1.2em;
+      line-height: 1.3;
+    }
+    .picker-empty {
+      font-size: 0.78rem;
+      color: #8888a8;
+      line-height: 1.4;
+      padding: 8px 4px;
+    }
+    .picker-step-wrap {
+      flex: 0 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+    }
+    #pickerCarStep {
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      overflow: visible;
+    }
+    #pickerCarStep[hidden] {
+      display: none !important;
+    }
+
+    /* ========= Neon arcade (referans: piksel arka plan + gerçekçi araç + neon) ========= */
+    .stage.theme-arcade {
+      --car-w: min(44%, 168px);
+      --car-w-photo: min(54%, 200px);
+    }
+    .theme-arcade .snow-layer {
+      display: none !important;
+    }
+    .theme-arcade.stage::before {
+      opacity: 0.18;
+      background: linear-gradient(185deg, rgba(0, 30, 60, 0.2) 0%, transparent 45%);
+      mix-blend-mode: overlay;
+    }
+    .theme-arcade .sky-night-layer,
+    .theme-arcade .moon-glow {
+      opacity: 0 !important;
+      animation: none !important;
+    }
+    .theme-arcade .sun-halo {
+      top: 10%;
+      right: 10%;
+      width: min(14vw, 52px);
+      height: min(14vw, 52px);
+      border-radius: 4px;
+      filter: none;
+      background:
+        linear-gradient(180deg, #fff59d 0%, #ffeb3b 45%, #fbc02d 100%);
+      box-shadow:
+        4px 4px 0 rgba(0, 0, 0, 0.12),
+        0 0 0 3px #f9a825,
+        0 0 24px rgba(255, 213, 79, 0.9);
+      animation: sunPulse 2.8s ease-in-out infinite !important;
+    }
+    .theme-arcade .sky {
+      height: 16%;
+      background: #4ec3ff;
+      box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.08);
+    }
+    .theme-arcade .sky-clouds {
+      animation-duration: calc(var(--road-scroll) * 7);
+    }
+    .theme-arcade .sky-snow-field,
+    .theme-arcade .sky-hills-scroll,
+    .theme-arcade .sky-horizon-haze,
+    .theme-arcade .ground-snow {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+    .theme-arcade .sky-mountains-far {
+      display: none !important;
+    }
+    .theme-arcade .sky-clouds .cloud {
+      border-radius: 0;
+      filter: none;
+      background: #fff !important;
+      box-shadow:
+        12px 6px 0 -2px #fff,
+        24px 2px 0 -2px #fff,
+        6px 12px 0 -2px rgba(255, 255, 255, 0.92);
+      opacity: 0.95;
+    }
+    .theme-arcade .sky-clouds .cloud::before,
+    .theme-arcade .sky-clouds .cloud::after {
+      border-radius: 0;
+      background: #fff !important;
+    }
+    .theme-arcade .church,
+    .theme-arcade .barn,
+    .theme-arcade .round-tree {
+      opacity: 0;
+      pointer-events: none;
+    }
+    .theme-arcade .pine {
+      display: none !important;
+    }
+    .theme-arcade .sky-horizon {
+      opacity: 0.55;
+      filter: contrast(1.2);
+    }
+    .pixel-mountain-row {
+      display: none;
+    }
+    .pixel-mountain-track {
+      display: none;
+    }
+    .theme-arcade .pixel-mountain-row {
+      display: block;
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 38%;
+      z-index: 4;
+      pointer-events: none;
+      overflow: hidden;
+      padding: 0;
+    }
+    .theme-arcade .pixel-mountain-track {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 2px;
+      width: 200%;
+      min-width: 200%;
+      height: 100%;
+      padding: 0 1.5%;
+      animation: arcadeMountainLoop calc(var(--road-scroll) * 36) linear infinite;
+      will-change: transform;
+      backface-visibility: hidden;
+    }
+    .theme-arcade .pixel-mountain-track .px-m {
+      flex: 1 1 0;
+      min-width: 0;
+      background: linear-gradient(180deg, #3ecf6f 0%, #228b4a 55%, #145a32 100%);
+      clip-path: polygon(50% 0%, 100% 100%, 0 100%);
+      box-shadow: inset -6px 0 0 rgba(0, 0, 0, 0.12);
+      image-rendering: pixelated;
+    }
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(1),
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(6) { height: 62%; }
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(2),
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(7) { height: 88%; }
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(3),
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(8) { height: 72%; }
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(4),
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(9) { height: 95%; }
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(5),
+    .theme-arcade .pixel-mountain-track .px-m:nth-child(10) { height: 68%; }
+
+    .pixel-guardrail {
+      display: none;
+    }
+    .theme-arcade .pixel-guardrail {
+      display: block;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(17% - 11px);
+      height: 14px;
+      z-index: 5;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(90deg, #c62828 0 10px, #fff 10px 20px),
+        linear-gradient(180deg, #9e9e9e 0%, #616161 55%, #424242 100%);
+      background-size: 20px 100%, 100% 100%;
+      background-repeat: repeat, no-repeat;
+      background-position: 0 0, 0 100%;
+      box-shadow:
+        0 2px 0 rgba(0, 0, 0, 0.35),
+        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      border-bottom: 2px solid #212121;
+    }
+
+    .theme-arcade .track {
+      top: 17%;
+      height: 83%;
+      background: #000;
+      border-top: none;
+      box-shadow:
+        inset 0 0 80px rgba(0, 0, 0, 0.65),
+        inset 0 2px 0 rgba(255, 255, 255, 0.03);
+    }
+    .theme-arcade .track-asphalt {
+      background: none;
+      background-color: #000;
+      background-image:
+        repeating-linear-gradient(
+          118deg,
+          transparent 0,
+          transparent 2px,
+          rgba(255, 255, 255, 0.018) 2px,
+          rgba(255, 255, 255, 0.018) 3px,
+          transparent 3px,
+          transparent 5px
+        ),
+        linear-gradient(180deg, rgba(22, 22, 22, 0.5) 0%, transparent 28%, transparent 72%, rgba(0, 0, 0, 0.55) 100%);
+      background-size: 5px 5px, 100% 100%;
+    }
+    .theme-arcade .track-asphalt::before {
+      opacity: 0.22;
+    }
+    .theme-arcade .track-asphalt::after {
+      opacity: 0.35;
+    }
+    .theme-arcade .track-gleam {
+      opacity: 0.22;
+    }
+    .theme-arcade .track-gleam::before {
+      animation-duration: 14s;
+    }
+    /* Yol hareketi: kesik şerit animasyonu (varsayılan tema ile aynı mantık) */
+    .theme-arcade .track-dividers {
+      display: block;
+      opacity: 0.92;
+    }
+    .theme-arcade .lane-divider {
+      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+      left: 10px;
+      right: 10px;
+    }
+    .theme-arcade .lane-divider::after {
+      opacity: 0.72;
+      width: calc(100% + 240px);
+      background-size: 40px 100%;
+      background-position: 0 0, 2px 0;
+      animation: arcadeLaneDashTx var(--lane-stripe-scroll) linear infinite;
+      background-image:
+        repeating-linear-gradient(
+          90deg,
+          rgba(180, 255, 210, 0.5) 0 14px,
+          transparent 14px 40px
+        ),
+        repeating-linear-gradient(
+          90deg,
+          rgba(120, 220, 255, 0.2) 0 12px,
+          transparent 12px 40px
+        );
+    }
+    .theme-arcade .lane:nth-child(odd) {
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .theme-arcade .lane:nth-child(even) {
+      background: rgba(0, 0, 0, 0.15);
+    }
+    .theme-arcade .lane {
+      --arcade-label-strip: clamp(46px, 8.5vw, 72px);
+      border-bottom: none;
+      box-shadow:
+        0 3px 14px color-mix(in srgb, var(--lane-neon, #39ff14) 35%, transparent),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.2);
+    }
+    .theme-arcade .lane-inner::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 4px;
+      overflow: hidden;
+      z-index: 1;
+      pointer-events: none;
+      background-image: repeating-linear-gradient(
+        90deg,
+        var(--lane-neon, #39ff14) 0 14px,
+        transparent 14px 40px
+      );
+      background-size: 40px 100%;
+      animation: arcadeLaneNeonTx var(--lane-stripe-scroll) linear infinite;
+      box-shadow:
+        0 2px 10px color-mix(in srgb, var(--lane-neon, #39ff14) 45%, transparent),
+        0 1px 0 rgba(0, 0, 0, 0.35);
+    }
+
+    @keyframes brakeGlowPulse {
+      0%, 100% {
+        opacity: 0.78;
+        filter: blur(1px) drop-shadow(0 0 6px rgba(255, 70, 55, 0.75)) drop-shadow(0 0 12px rgba(255, 40, 30, 0.45));
+      }
+      50% {
+        opacity: 0.9;
+        filter: blur(1.05px) drop-shadow(0 0 9px rgba(255, 95, 75, 0.82)) drop-shadow(0 0 18px rgba(255, 50, 35, 0.5));
+      }
+    }
+    /* Kısa arka stop — parlak kırmızı yansıma */
+    .theme-arcade .speed-trail {
+      position: absolute;
+      left: -6%;
+      right: auto;
+      top: auto;
+      bottom: 12%;
+      width: min(28%, 40px);
+      height: min(24%, 30px);
+      max-width: 46px;
+      max-height: 34px;
+      z-index: 0;
+      pointer-events: none;
+      border-radius: 50%;
+      transform: none;
+      opacity: 1;
+      background:
+        radial-gradient(ellipse 100% 75% at 60% 42%, rgba(255, 255, 255, 0.88) 0%, rgba(255, 115, 95, 0.88) 20%, rgba(255, 55, 38, 0.72) 44%, rgba(255, 25, 15, 0.38) 62%, transparent 80%),
+        radial-gradient(ellipse 120% 90% at 55% 50%, rgba(255, 75, 58, 0.55) 0%, transparent 55%),
+        linear-gradient(90deg, transparent 0%, rgba(255, 85, 65, 0.45) 32%, rgba(255, 140, 95, 0.22) 58%, transparent 100%);
+      box-shadow:
+        0 0 8px rgba(255, 65, 48, 0.65),
+        0 0 18px rgba(255, 40, 28, 0.38);
+      mix-blend-mode: screen;
+      animation: brakeGlowPulse 1.05s ease-in-out infinite;
+    }
+    .theme-arcade .car--photo .speed-trail {
+      left: -4%;
+      bottom: 10%;
+      width: min(32%, 44px);
+      height: min(18%, 26px);
+    }
+    /* Marka bandı solda; araçlar bu şeridin sağında hareket eder */
+    .theme-arcade .car-wrap {
+      left: var(--arcade-label-strip, clamp(46px, 8.5vw, 72px));
+      width: calc(100% - var(--arcade-label-strip, clamp(46px, 8.5vw, 72px)));
+      transition: transform 0.11s ease-out;
+    }
+    .theme-arcade .car-img {
+      max-height: min(24vh, 176px);
+    }
+    @keyframes arcadeSpeedWind {
+      0% { opacity: 0; transform: translateX(12px) scaleX(0.45); }
+      20% { opacity: 1; }
+      100% { opacity: 0; transform: translateX(-40px) scaleX(1.08); }
+    }
+    @keyframes arcadeSpeedNudge {
+      0% { transform: translateX(0); }
+      18% { transform: translateX(7px); }
+      100% { transform: translateX(0); }
+    }
+    @keyframes arcadeSpeedTrailBurst {
+      0% {
+        opacity: 1;
+        transform: scale(0.85);
+        filter: blur(1px) drop-shadow(0 0 8px rgba(255, 120, 90, 0.9));
+      }
+      45% {
+        opacity: 1;
+        transform: scale(1.25);
+        filter: blur(1.2px) drop-shadow(0 0 18px rgba(120, 220, 255, 0.75)) drop-shadow(0 0 12px rgba(255, 80, 60, 0.85));
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: blur(1px) drop-shadow(0 0 6px rgba(255, 70, 55, 0.75)) drop-shadow(0 0 12px rgba(255, 40, 30, 0.45));
+      }
+    }
+    /* İlerleme anında: arkada rüzgâr çizgileri + gövde sıçraması + stop parlaması */
+    .theme-arcade .car-wrap.car-wrap--speed::before {
+      content: '';
+      position: absolute;
+      right: 96%;
+      top: 22%;
+      width: min(48%, 96px);
+      height: 56%;
+      pointer-events: none;
+      z-index: 2;
+      background: repeating-linear-gradient(
+        -86deg,
+        transparent 0 3px,
+        rgba(200, 255, 255, 0.55) 3px 4px,
+        transparent 4px 11px,
+        rgba(255, 255, 255, 0.18) 11px 12px,
+        transparent 12px 20px
+      );
+      mix-blend-mode: screen;
+      filter: blur(0.4px);
+      transform-origin: 100% 50%;
+      animation: arcadeSpeedWind 0.5s ease-out forwards;
+    }
+    .theme-arcade .car-wrap--speed .car-stack {
+      animation: arcadeSpeedNudge 0.5s ease-out 1;
+    }
+    .theme-arcade .car-wrap--speed .speed-trail {
+      animation: arcadeSpeedTrailBurst 0.48s ease-out 1;
+    }
+    .theme-arcade .car-wrap--speed .headlight-beam {
+      opacity: 1;
+      filter:
+        blur(0.12px)
+        drop-shadow(0 0 8px rgba(255, 255, 255, 0.82))
+        drop-shadow(0 0 14px rgba(220, 235, 255, 0.42))
+        drop-shadow(0 0 24px rgba(185, 215, 255, 0.2));
+      transition: filter 0.2s ease-out, opacity 0.2s ease-out;
+    }
+    .theme-arcade .lane-car-label {
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 5;
+      max-width: min(34%, 96px);
+      padding: 3px 5px;
+      text-align: left;
+      font-family: 'Press Start 2P', ui-monospace, monospace;
+      font-size: clamp(5px, 1.25vw, 8px);
+      line-height: 1.45;
+      letter-spacing: 0.02em;
+      color: var(--lane-neon, #39ff14);
+      text-shadow:
+        0 0 10px var(--lane-neon, #39ff14),
+        0 0 18px color-mix(in srgb, var(--lane-neon, #39ff14) 55%, transparent),
+        1px 1px 0 #000,
+        2px 2px 0 rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+      word-break: break-word;
+    }
+    .theme-arcade .car-wrap .car {
+      position: relative;
+      z-index: 4;
+      isolation: isolate;
+    }
+    .theme-arcade .car-stack {
+      position: relative;
+      z-index: 1;
+    }
+    .theme-arcade .headlight-beam {
+      mix-blend-mode: screen;
+      filter:
+        blur(0.28px)
+        drop-shadow(0 0 6px rgba(255, 255, 255, 0.72))
+        drop-shadow(0 0 14px rgba(228, 240, 255, 0.36))
+        drop-shadow(0 0 22px rgba(195, 218, 255, 0.16));
+      background:
+        radial-gradient(ellipse 36% 60% at 1% 50%, rgba(255, 255, 255, 1) 0%, rgba(238, 248, 255, 0.58) 24%, transparent 56%),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.68) 0%, rgba(218, 232, 255, 0.34) 44%, rgba(175, 200, 230, 0.11) 74%, transparent 100%);
+    }
+
+    @media (max-width: 720px) {
+      html, body {
+        overflow-x: hidden;
+        overflow-y: auto;
+        height: auto;
+        min-height: 100%;
+      }
+      .app-shell {
+        flex-direction: column;
+        height: auto;
+        max-height: none;
+        min-height: 100vh;
+        min-height: 100dvh;
+      }
+      .stage-wrap {
+        flex: 0 0 auto;
+        width: 100%;
+        min-height: min(78dvh, 680px);
+        height: min(78dvh, 680px);
+      }
+      .car-picker {
+        width: 100%;
+        flex: 0 0 auto;
+        max-height: none;
+        overflow-y: visible;
+        border-left: none;
+        border-top: 2px solid #2a2a42;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+  <div class="stage-wrap">
+    <div class="stage theme-arcade" id="stage">
+      <div class="sky">
+        <div class="sky-snow-field" aria-hidden="true"></div>
+        <div class="sky-mountains-far" aria-hidden="true"></div>
+        <div class="sky-hills-scroll" aria-hidden="true"></div>
+        <div class="sky-clouds">
+          <div class="cloud c1"></div>
+          <div class="cloud c2"></div>
+        </div>
+        <div class="sky-land">
+          <div class="sky-horizon" aria-hidden="true"></div>
+          <div class="sky-horizon-haze" aria-hidden="true"></div>
+          <div class="ground-snow"></div>
+          <div class="pine s1"></div>
+          <div class="pine s2"></div>
+          <div class="pine s3"></div>
+          <div class="pine s4"></div>
+          <div class="round-tree rt1"></div>
+          <div class="round-tree rt2"></div>
+          <div class="church"></div>
+          <div class="barn"></div>
+        </div>
+        <div class="pixel-mountain-row" aria-hidden="true">
+          <div class="pixel-mountain-track">
+            <span class="px-m"></span><span class="px-m"></span><span class="px-m"></span><span class="px-m"></span><span class="px-m"></span>
+            <span class="px-m"></span><span class="px-m"></span><span class="px-m"></span><span class="px-m"></span><span class="px-m"></span>
+          </div>
+        </div>
+        <div class="sun-halo" aria-hidden="true"></div>
+        <div class="sky-night-layer" aria-hidden="true"></div>
+        <div class="moon-glow" aria-hidden="true"></div>
+      </div>
+
+      <div class="snow-layer" aria-hidden="true">
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+        <span class="snow-flake"></span>
+      </div>
+
+      <div class="pixel-guardrail" aria-hidden="true"></div>
+
+      <div class="track" id="track">
+        <div class="track-road" aria-hidden="true">
+          <div class="track-asphalt"></div>
+          <div class="track-gleam" aria-hidden="true"></div>
+        </div>
+        <div class="track-dividers" aria-hidden="true">
+          <div class="lane-divider" style="--n:1"></div>
+          <div class="lane-divider" style="--n:2"></div>
+          <div class="lane-divider" style="--n:3"></div>
+          <div class="lane-divider" style="--n:4"></div>
+        </div>
+      </div>
+
+      <div class="winner-overlay" id="winner">
+        <div class="winner-confetti" aria-hidden="true">
+          <i class="confetti c0"></i><i class="confetti c1"></i><i class="confetti c2"></i><i class="confetti c3"></i>
+          <i class="confetti c4"></i><i class="confetti c5"></i><i class="confetti c6"></i><i class="confetti c7"></i>
+          <i class="confetti c8"></i><i class="confetti c9"></i><i class="confetti c10"></i><i class="confetti c11"></i>
+          <i class="confetti c12"></i><i class="confetti c13"></i><i class="confetti c14"></i><i class="confetti c15"></i>
+        </div>
+        <div class="winner-glow" aria-hidden="true"></div>
+        <button type="button" id="btnReset" class="btn-reset-round" aria-label="Yeni tur"></button>
+      </div>
+    </div>
+  </div>
+
+  <aside class="car-picker" id="carPicker" aria-label="Araç ve şerit seçimi">
+    <div class="car-picker-inner">
+      <div class="picker-tiktok-block" id="pickerTiktokBlock">
+        <h2 class="car-picker-title">TikTok bağlantısı</h2>
+        <p class="picker-tiktok-line" id="pickerTiktokWs">Köprü: bağlanıyor…</p>
+        <p class="picker-tiktok-line" id="pickerTiktokLive">TikTok: —</p>
+        <div class="picker-tiktok-user-row" id="pickerTiktokUserRow">
+          <label class="picker-tiktok-user-label" for="pickerTiktokUser">Yayın kullanıcı adı</label>
+          <div class="picker-tiktok-user-actions">
+            <input
+              type="text"
+              class="picker-tiktok-user-input"
+              id="pickerTiktokUser"
+              autocomplete="off"
+              spellcheck="false"
+              maxlength="64"
+              placeholder="canli_hesap"
+            />
+            <button type="button" class="picker-tiktok-user-apply" id="pickerTiktokApply">Bağlan</button>
+          </div>
+          <p class="picker-tiktok-feedback" id="pickerTiktokFeedback" aria-live="polite"></p>
+        </div>
+      </div>
+      <div class="car-picker-toolbar">
+        <h2 class="car-picker-title" id="pickerMainTitle">Araç seç</h2>
+        <button type="button" class="picker-refresh" id="pickerRefresh" title="Klasördeki araçları yeniden oku">Yenile</button>
+      </div>
+      <div class="picker-step-wrap">
+        <div id="pickerCarStep">
+          <div id="pickerCarGrid" class="picker-car-grid"></div>
+          <p id="pickerCarEmpty" class="picker-empty" hidden>
+            Araç listesi alınamadı. Sayfayı sunucudan açın: <strong>http://localhost:21213/</strong> (TikTok ile <code>npm start</code>) veya yalnızca dosya sunumu <strong>http://localhost:8787/</strong> (<code>npm run http</code>). Yeni görsel ekledikten sonra <strong>Yenile</strong>ye basın.
+          </p>
+        </div>
+        <div id="pickerLaneStep" class="picker-lane-step" hidden>
+          <button type="button" class="picker-back" id="pickerBackLane">← Araçlar</button>
+          <p class="picker-hint">Şerit numarası (1–5)</p>
+          <div id="pickerLaneGrid" class="picker-lane-grid"></div>
+        </div>
+      </div>
+      <p class="picker-status" id="pickerStatus" aria-live="polite"></p>
+      <div class="picker-plate-block" id="pickerPlateBlock">
+        <p class="picker-hint">Plakalar (şerit başına, kaydedilince pistte güncellenir)</p>
+        <div id="pickerPlateGrid" class="picker-plate-grid"></div>
+        <button type="button" class="picker-plate-save" id="pickerPlateSave">Plakaları kaydet</button>
+        <button type="button" class="picker-plate-toggle" id="pickerPlateToggle" aria-pressed="false">
+          Plakaları gizle
+        </button>
+      </div>
+    </div>
+  </aside>
+  </div>
+
+  <script src="../../../gemtok-tikfinity-client.js?v=1"></script>
+  <script>
+(function () {
+  /** Şerit neon renkleri (üst→alt, 5 şerit) */
+  const LANE_NEON_HEX = ['#39ff14', '#ffea00', '#00f5ff', '#bf5fff', '#ff2d55'];
+
+  function carLabelFromPath(url) {
+    if (!url || typeof url !== 'string') return '';
+    var base = url.replace(/^.*\//, '').replace(/\.(png|jpg|jpeg|webp|gif|heic|heif)$/i, '').toLowerCase();
+    var map = {
+      golf8r: 'GOLF 8 R',
+      bmwf30: 'BMW F30',
+      coruer: 'SCIROCCO',
+      cla200: 'CLA 200',
+      corolla: 'COROLLA',
+      audia6: 'AUDI A6',
+    };
+    if (map[base]) return map[base];
+    return base.replace(/[-_]/g, ' ').toUpperCase();
+  }
+
+  function updateLaneCarLabel(laneIndex) {
+    var el = document.querySelector('#track .lane-car-label[data-lane="' + String(laneIndex) + '"]');
+    if (!el) return;
+    var path = laneImagePaths[laneIndex];
+    el.textContent = carLabelFromPath(path) || 'ŞERIT ' + String(laneIndex + 1);
+  }
+
+  const LANES = [
+    { id: '1' },
+    { id: '2' },
+    { id: '3' },
+    { id: '4' },
+    { id: '5' },
+  ];
+
+  /** İlk kurulum / depolama yokken kullanılan varsayılan görseller (şerit sırası). */
+  const CAR_IMAGE_DEFAULTS = [
+    'assets/cars/golf8r.png',
+    'assets/cars/bmwf30.png',
+    'assets/cars/coruer.png',
+    'assets/cars/corolla.png',
+    'assets/cars/cla200.png',
+  ];
+
+  const LS_LANE_CARS = 'tiktokRaceLaneCars';
+  const LS_LANE_PLATES = 'tiktokRaceLanePlates';
+  const LS_HIDE_PLATES = 'tiktokRaceHidePlates';
+  const LS_TIKTOK_USER = 'tiktokRaceTiktokUsername';
+  /** Varsayılan plaka metinleri (şerit sırası) — Türkçe I, A–Z, 0–9, boşluk */
+  const PLATE_DEFAULTS = ['34 ABC 1234', '06 CD 567', '35 JK 901', '41 TT 045', '16 MM 778'];
+
+  function sanitizePlate(s) {
+    if (s == null) return '';
+    return String(s)
+      .toUpperCase()
+      .replace(/İ/g, 'I')
+      .replace(/[^A-Z0-9 ]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 14);
+  }
+
+  function loadLanePlatesFromStorage() {
+    try {
+      const raw = localStorage.getItem(LS_LANE_PLATES);
+      if (!raw) return null;
+      const arr = JSON.parse(raw);
+      if (!Array.isArray(arr)) return null;
+      return LANES.map(function (_, i) {
+        return typeof arr[i] === 'string' ? sanitizePlate(arr[i]) : '';
+      });
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function persistLanePlates() {
+    try {
+      localStorage.setItem(LS_LANE_PLATES, JSON.stringify(lanePlates));
+    } catch (e) {}
+  }
+
+  function loadLanePathsFromStorage() {
+    try {
+      const s = localStorage.getItem(LS_LANE_CARS);
+      if (!s) return null;
+      const arr = JSON.parse(s);
+      if (!Array.isArray(arr)) return null;
+      return LANES.map((_, i) => (typeof arr[i] === 'string' && arr[i] ? arr[i] : null));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function persistLanePaths() {
+    try {
+      localStorage.setItem(LS_LANE_CARS, JSON.stringify(laneImagePaths));
+    } catch (e) {}
+  }
+
+  let laneImagePaths = loadLanePathsFromStorage();
+  if (!laneImagePaths) {
+    laneImagePaths = CAR_IMAGE_DEFAULTS.slice();
+  } else {
+    while (laneImagePaths.length < LANES.length) laneImagePaths.push(null);
+    laneImagePaths = laneImagePaths.slice(0, LANES.length);
+  }
+
+  let lanePlates = loadLanePlatesFromStorage();
+  if (!lanePlates) {
+    lanePlates = PLATE_DEFAULTS.slice();
+  } else {
+    lanePlates = LANES.map(function (_, i) {
+      const s = sanitizePlate(lanePlates[i]);
+      return s || PLATE_DEFAULTS[i] || '';
+    });
+  }
+
+  let carListFiles = [];
+  let pendingCarUrl = null;
+
+  const pickerCarGrid = document.getElementById('pickerCarGrid');
+  const pickerCarEmpty = document.getElementById('pickerCarEmpty');
+  const pickerCarStep = document.getElementById('pickerCarStep');
+  const pickerLaneStep = document.getElementById('pickerLaneStep');
+  const pickerLaneGrid = document.getElementById('pickerLaneGrid');
+  const pickerBackLane = document.getElementById('pickerBackLane');
+  const pickerRefresh = document.getElementById('pickerRefresh');
+  const pickerStatus = document.getElementById('pickerStatus');
+  const pickerMainTitle = document.getElementById('pickerMainTitle');
+  const pickerPlateGrid = document.getElementById('pickerPlateGrid');
+  const pickerPlateSave = document.getElementById('pickerPlateSave');
+  const pickerPlateToggle = document.getElementById('pickerPlateToggle');
+  const pickerTiktokWs = document.getElementById('pickerTiktokWs');
+  const pickerTiktokLive = document.getElementById('pickerTiktokLive');
+  const pickerTiktokUser = document.getElementById('pickerTiktokUser');
+  const pickerTiktokApply = document.getElementById('pickerTiktokApply');
+  const pickerTiktokUserRow = document.getElementById('pickerTiktokUserRow');
+  const pickerTiktokFeedback = document.getElementById('pickerTiktokFeedback');
+
+  function setPickerTiktokWs(text, ok) {
+    if (!pickerTiktokWs) return;
+    pickerTiktokWs.textContent = text || '';
+    if (ok) pickerTiktokWs.classList.add('picker-tiktok-line--ok');
+    else pickerTiktokWs.classList.remove('picker-tiktok-line--ok');
+  }
+
+  function setPickerTiktokLive(text) {
+    if (pickerTiktokLive) pickerTiktokLive.textContent = text || 'TikTok: —';
+  }
+
+  function setPickerTiktokFeedback(text, isErr) {
+    if (!pickerTiktokFeedback) return;
+    pickerTiktokFeedback.textContent = text || '';
+    if (!text) {
+      pickerTiktokFeedback.style.color = '';
+      return;
+    }
+    pickerTiktokFeedback.style.color = isErr ? '#e08080' : '#7dcea0';
+  }
+
+  function setPickerStatus(msg) {
+    if (pickerStatus) pickerStatus.textContent = msg || '';
+  }
+
+  function updateCarPlateDisplay(laneIndex) {
+    const span = document.querySelector(
+      '#track .car-plate[data-car-idx="' + String(laneIndex) + '"] .car-plate-text'
+    );
+    if (!span) return;
+    const p = lanePlates[laneIndex] || PLATE_DEFAULTS[laneIndex] || '';
+    span.textContent = p || '\u00A0';
+  }
+
+  function buildPickerPlateInputs() {
+    if (!pickerPlateGrid) return;
+    pickerPlateGrid.innerHTML = '';
+    LANES.forEach(function (_, i) {
+      const row = document.createElement('div');
+      row.className = 'picker-plate-row';
+      const lab = document.createElement('label');
+      lab.setAttribute('for', 'plate-in-' + i);
+      lab.textContent = 'Ş.' + String(i + 1);
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.id = 'plate-in-' + i;
+      inp.setAttribute('maxlength', '14');
+      inp.setAttribute('data-plate-lane', String(i));
+      inp.setAttribute('spellcheck', 'false');
+      inp.autocomplete = 'off';
+      inp.value = lanePlates[i] || '';
+      inp.placeholder = PLATE_DEFAULTS[i] || '';
+      row.appendChild(lab);
+      row.appendChild(inp);
+      pickerPlateGrid.appendChild(row);
+    });
+  }
+
+  function savePlatesFromPicker() {
+    if (!pickerPlateGrid) return;
+    pickerPlateGrid.querySelectorAll('input[data-plate-lane]').forEach(function (inp) {
+      const li = parseInt(inp.getAttribute('data-plate-lane'), 10);
+      if (isNaN(li) || li < 0 || li >= LANES.length) return;
+      const s = sanitizePlate(inp.value);
+      lanePlates[li] = s || PLATE_DEFAULTS[li] || '';
+    });
+    persistLanePlates();
+    LANES.forEach(function (_, li) {
+      updateCarPlateDisplay(li);
+    });
+    setPickerStatus('Plakalar kaydedildi.');
+  }
+
+  function loadTrackPlatesHidden() {
+    try {
+      return localStorage.getItem(LS_HIDE_PLATES) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function persistTrackPlatesHidden(hidden) {
+    try {
+      if (hidden) localStorage.setItem(LS_HIDE_PLATES, '1');
+      else localStorage.removeItem(LS_HIDE_PLATES);
+    } catch (e) {}
+  }
+
+  function applyTrackPlatesVisibility(hidden) {
+    document.body.classList.toggle('plates-hidden', !!hidden);
+    const btn = pickerPlateToggle;
+    if (btn) {
+      btn.setAttribute('aria-pressed', hidden ? 'true' : 'false');
+      btn.textContent = hidden ? 'Plakaları göster' : 'Plakaları gizle';
+    }
+  }
+
+  function apiCarsUrls() {
+    const list = [];
+    try {
+      if (location.protocol === 'http:' || location.protocol === 'https:') {
+        list.push(new URL('/api/cars', location.href).toString());
+      }
+    } catch (e) {}
+    list.push('http://127.0.0.1:21213/api/cars');
+    list.push('http://127.0.0.1:8787/api/cars');
+    return list;
+  }
+
+  async function fetchCarList() {
+    for (const url of apiCarsUrls()) {
+      try {
+        const r = await fetch(url, { cache: 'no-store' });
+        if (!r.ok) continue;
+        const j = await r.json();
+        if (j && Array.isArray(j.files) && j.files.length) return j.files.slice();
+      } catch (e) {
+        /* try next */
+      }
+    }
+    return [];
+  }
+
+  function showCarPickerStep() {
+    pendingCarUrl = null;
+    if (pickerCarStep) pickerCarStep.hidden = false;
+    if (pickerLaneStep) pickerLaneStep.hidden = true;
+    if (pickerMainTitle) pickerMainTitle.textContent = 'Araç seç';
+  }
+
+  function showLanePickerStep(url) {
+    pendingCarUrl = url;
+    if (pickerCarStep) pickerCarStep.hidden = true;
+    if (pickerLaneStep) pickerLaneStep.hidden = false;
+    if (pickerMainTitle) pickerMainTitle.textContent = 'Şerit seç';
+    buildLaneButtons();
+  }
+
+  function buildLaneButtons() {
+    if (!pickerLaneGrid) return;
+    pickerLaneGrid.innerHTML = '';
+    LANES.forEach((_, i) => {
+      const n = i + 1;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'picker-lane-btn';
+      btn.setAttribute('data-lane-index', String(i));
+      const num = document.createElement('span');
+      num.className = 'picker-lane-num';
+      num.textContent = String(n);
+      num.setAttribute('aria-hidden', 'true');
+      const lab = document.createElement('span');
+      lab.className = 'picker-lane-label';
+      lab.textContent = 'Şerit ' + n;
+      btn.appendChild(num);
+      btn.appendChild(lab);
+      btn.addEventListener('click', function () {
+        if (!pendingCarUrl) return;
+        assignCarToLane(i, pendingCarUrl);
+        setPickerStatus('Şerit ' + n + ' atandı.');
+        showCarPickerStep();
+      });
+      pickerLaneGrid.appendChild(btn);
+    });
+  }
+
+  function renderCarPickerGrid() {
+    if (!pickerCarGrid) return;
+    pickerCarGrid.innerHTML = '';
+    const files = carListFiles;
+    if (!files.length) {
+      if (pickerCarEmpty) pickerCarEmpty.hidden = false;
+      return;
+    }
+    if (pickerCarEmpty) pickerCarEmpty.hidden = true;
+    files.forEach(function (src) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'picker-car-btn';
+      btn.title = src.replace(/^assets\/cars\//, '');
+      const im = document.createElement('img');
+      im.alt = '';
+      im.src = src;
+      im.loading = 'lazy';
+      const cap = document.createElement('span');
+      cap.className = 'picker-car-name';
+      cap.textContent = carLabelFromPath(src) || btn.title.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').toUpperCase();
+      btn.appendChild(im);
+      btn.appendChild(cap);
+      btn.addEventListener('click', function () {
+        showLanePickerStep(src);
+      });
+      pickerCarGrid.appendChild(btn);
+    });
+  }
+
+  async function refreshCarListFromServer() {
+    carListFiles = await fetchCarList();
+    renderCarPickerGrid();
+    if (!carListFiles.length) {
+      setPickerStatus('');
+    }
+  }
+
+  function laneCarImgEl(laneIndex) {
+    return document.querySelector('#track .car-img[data-car-idx="' + String(laneIndex) + '"]');
+  }
+
+  function readDataCarIdx(imgEl) {
+    if (!imgEl) return 0;
+    var v = parseInt(imgEl.getAttribute('data-car-idx'), 10);
+    return isNaN(v) ? 0 : v;
+  }
+
+  function assignCarToLane(laneIndex, url) {
+    if (laneIndex < 0 || laneIndex >= LANES.length) return;
+    const imgEl = laneCarImgEl(laneIndex);
+    laneImagePaths[laneIndex] = url;
+    persistLanePaths();
+    bindLaneCarImg(imgEl);
+    updateLaneCarLabel(laneIndex);
+  }
+
+  function bindLaneCarImg(imgEl) {
+    if (!imgEl) return;
+    const laneId = imgEl.getAttribute('data-car-id') || '';
+    const laneIndex = readDataCarIdx(imgEl);
+    const path = laneImagePaths[laneIndex];
+    const base = 'assets/cars/';
+    const tries = path
+      ? [path]
+      : [
+          laneId + '.png',
+          laneId + '.jpg',
+          laneId + '.webp',
+          String(laneIndex + 1) + '.png',
+          String(laneIndex + 1) + '.jpg',
+          String(laneIndex + 1) + '.webp',
+        ];
+    let idx = 0;
+    imgEl.classList.remove('is-loaded');
+    const car = imgEl.closest('.car');
+    if (car) car.classList.remove('car--photo');
+    imgEl.onerror = function () {
+      idx += 1;
+      if (idx >= tries.length) {
+        imgEl.removeAttribute('src');
+        imgEl.classList.remove('is-loaded');
+        const c = imgEl.closest('.car');
+        if (c) c.classList.remove('car--photo');
+        return;
+      }
+      imgEl.src = path ? tries[idx] : base + tries[idx];
+    };
+    imgEl.onload = function () {
+      imgEl.classList.add('is-loaded');
+      const c = imgEl.closest('.car');
+      if (c) c.classList.add('car--photo');
+      updateLaneCarLabel(readDataCarIdx(imgEl));
+    };
+    const first = tries[0];
+    imgEl.src = path ? first : base + first;
+  }
+
+  function initCarImages() {
+    document.querySelectorAll('#track .car-img').forEach(function (imgEl) {
+      bindLaneCarImg(imgEl);
+    });
+  }
+
+  const CHAT_KEYWORDS = [
+    ['TURKIYE', 'TÜRKİYE', 'TURKEY'],
+    ['KURDISTAN', 'KÜRDİSTAN', 'KURD'],
+    ['AZERBAYCAN', 'AZERBAIJAN'],
+    ['SURIYE', 'SURİYE', 'SYRIA'],
+    ['AFGHANISTAN', 'AFGANISTAN', 'AFGAN'],
+  ];
+
+  /** İstemci tarafı yedek: hediye ID → şerit (sunucu resolvedLane vermezse) */
+  const CLIENT_GIFT_ID_LANE = {
+    // Örnekler — kendi yayınındaki ID'leri konsoldan veya TikTok logundan ekleyebilirsin
+    // '5655': 0,
+  };
+
+  /** TikTok uniqueId → sohbette 1–5 ile seçilen şerit (0–4); Game Hub hediyeleri için */
+  const viewerLanePick = new Map();
+
+  function parseDigitLaneComment(raw) {
+    var t = String(raw || '').trim();
+    if (!t) return null;
+    var fw = { '\uFF11': '1', '\uFF12': '2', '\uFF13': '3', '\uFF14': '4', '\uFF15': '5' };
+    for (var k in fw) {
+      if (Object.prototype.hasOwnProperty.call(fw, k) && t.indexOf(k) !== -1) t = t.split(k).join(fw[k]);
+    }
+    if (/^[1-5]$/.test(t)) return parseInt(t, 10) - 1;
+    return null;
+  }
+
+  function rememberViewerLanePick(uniqueId, laneIdx) {
+    if (!uniqueId) return;
+    if (laneIdx == null || laneIdx < 0 || laneIdx >= LANES.length) return;
+    viewerLanePick.set(String(uniqueId), laneIdx);
+  }
+
+  function coerceResolvedLaneIndex(v) {
+    if (v === '' || v == null) return null;
+    var n = parseInt(v, 10);
+    if (!Number.isFinite(n) || n < 0 || n >= LANES.length) return null;
+    return n;
+  }
+
+  /**
+   * Görsel: tüm araçlar min–max skora göre pistte paketlenir (kadranda kalır).
+   * Geçiş: biri öndekini geçince geçilenin ham skoru geri çekilir.
+   * Daha geniş bant (LO/HI) = aynı skor farkında daha belirgin ilerleme.
+   */
+  const PACK_VIS_LO = 0.24;
+  const PACK_VIS_HI = 0.76;
+  /** Geçişte geride kalanlara uygulanan çekme (biraz yumuşatıldı — tek hediyede sahayı silmez) */
+  const OVERTAKE_PULL_BASE = 0.38;
+  const OVERTAKE_PULL_OVER = 0.22;
+
+  const BOOST_GIFT = 0.0021;
+  const BOOST_CHAT = 0.000425;
+
+  const track = document.getElementById('track');
+  const winnerEl = document.getElementById('winner');
+  const btnReset = document.getElementById('btnReset');
+
+  const positions = LANES.map(() => 0);
+  /** Görsel --pos hedefe doğru yumuşak yaklaşır (tek karede en uca sıçramaz) */
+  const VIS_LERP = 0.062;
+  const VIS_SNAP_EPS = 0.000012;
+  let displayVis = null;
+  let visAnimRaf = 0;
+
+  function packVisuals(scores) {
+    let min = scores[0];
+    let max = scores[0];
+    for (let k = 1; k < scores.length; k++) {
+      if (scores[k] < min) min = scores[k];
+      if (scores[k] > max) max = scores[k];
+    }
+    const span = max - min;
+    const mid = (PACK_VIS_LO + PACK_VIS_HI) / 2;
+    if (span < 1e-9) {
+      return scores.map(() => mid);
+    }
+    const lo = PACK_VIS_LO;
+    const hi = PACK_VIS_HI;
+    return scores.map(function (s) {
+      return lo + ((s - min) / span) * (hi - lo);
+    });
+  }
+
+  /** En düşük skoru sıfıra indir: göreceli sıra aynı, uzun yayında sayılar şişmez. */
+  function normalizePositionsToFloor() {
+    let m = positions[0];
+    for (let k = 1; k < positions.length; k++) {
+      if (positions[k] < m) m = positions[k];
+    }
+    if (m <= 1e-12) return;
+    for (let k = 0; k < positions.length; k++) positions[k] -= m;
+  }
+
+  function visualForLane(laneIndex) {
+    if (displayVis && displayVis.length > laneIndex) return displayVis[laneIndex];
+    return packVisuals(positions)[laneIndex];
+  }
+
+  function applyDomFromDisplayVis() {
+    if (!displayVis) return;
+    document.querySelectorAll('.car-wrap').forEach(function (el) {
+      const i = +el.getAttribute('data-lane');
+      if (i >= 0 && i < displayVis.length) {
+        el.style.setProperty('--pos', String(displayVis[i]));
+      }
+    });
+  }
+
+  function visAnimTick() {
+    const target = packVisuals(positions);
+    if (!displayVis || displayVis.length !== target.length) {
+      displayVis = target.slice();
+      applyDomFromDisplayVis();
+      visAnimRaf = 0;
+      return;
+    }
+    let need = false;
+    for (let i = 0; i < target.length; i++) {
+      const d = target[i] - displayVis[i];
+      if (Math.abs(d) <= VIS_SNAP_EPS) {
+        displayVis[i] = target[i];
+      } else {
+        displayVis[i] += d * VIS_LERP;
+        need = true;
+      }
+    }
+    applyDomFromDisplayVis();
+    if (need) {
+      visAnimRaf = requestAnimationFrame(visAnimTick);
+    } else {
+      visAnimRaf = 0;
+    }
+  }
+
+  function syncCars() {
+    const target = packVisuals(positions);
+    if (!displayVis || displayVis.length !== LANES.length) {
+      displayVis = target.slice();
+      applyDomFromDisplayVis();
+      return;
+    }
+    if (!visAnimRaf) {
+      visAnimRaf = requestAnimationFrame(visAnimTick);
+    }
+  }
+
+  function triggerSpeedOnLane(laneIndex) {
+    const el = document.querySelector('.car-wrap[data-lane="' + String(laneIndex) + '"]');
+    if (!el) return;
+    el.classList.add('car-wrap--speed');
+    clearTimeout(el._speedFxT);
+    el._speedFxT = setTimeout(function () {
+      el.classList.remove('car-wrap--speed');
+    }, 480);
+  }
+
+  function renderLanes() {
+    if (visAnimRaf) {
+      cancelAnimationFrame(visAnimRaf);
+      visAnimRaf = 0;
+    }
+    track.querySelectorAll('.lane').forEach(function (el) {
+      el.remove();
+    });
+    displayVis = packVisuals(positions).slice();
+    LANES.forEach((lane, i) => {
+      const row = document.createElement('div');
+      row.className = 'lane';
+      row.style.setProperty('--row', String(i));
+      row.style.setProperty('--lane-neon', LANE_NEON_HEX[i] || '#39ff14');
+      row.innerHTML =
+        '<div class="lane-inner">' +
+          '<span class="lane-num" aria-label="Şerit ' + (i + 1) + '">' + (i + 1) + '</span>' +
+          '<span class="lane-car-label" data-lane="' + i + '"></span>' +
+          '<div class="car-wrap" data-lane="' + i + '" style="--pos:' + visualForLane(i) + '">' +
+            '<div class="car">' +
+              '<div class="speed-trail" aria-hidden="true"></div>' +
+              '<div class="car-stack">' +
+              '<img class="car-img" alt="" data-car-id="' + lane.id + '" data-car-idx="' + i + '" />' +
+              '<div class="car-fallback">' +
+                '<div class="car-body" style="background:#2a2a2a">' +
+                  '<div class="car-top" style="background:#3a3a3a"></div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="car-plate" data-car-idx="' + i + '" aria-label="Plaka">' +
+              '<span class="car-plate-tr" aria-hidden="true"><span>T</span><span>R</span></span>' +
+              '<span class="car-plate-text"></span>' +
+              '</div>' +
+              '</div>' +
+              '<div class="headlight-beam" aria-hidden="true"></div>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      track.appendChild(row);
+    });
+    initCarImages();
+    LANES.forEach(function (_, li) {
+      updateLaneCarLabel(li);
+      updateCarPlateDisplay(li);
+    });
+  }
+
+  /** Araç ilerlemesi (hediye/sohbet/tuş) — assets/ses.mp3 */
+  function playAdvanceSound() {
+    try {
+      var a = new Audio('assets/ses.mp3');
+      a.volume = 0.38;
+      var p = a.play();
+      if (p && typeof p.then === 'function') p.catch(function () {});
+    } catch (e) {}
+  }
+
+  function boostLane(index, amount) {
+    if (index == null || index < 0 || index >= LANES.length) return;
+    if (!(amount > 1e-12)) return;
+    const before = positions.slice();
+    const visStart = packVisuals(before);
+    positions[index] += amount;
+    const ni = positions[index];
+    for (let j = 0; j < LANES.length; j++) {
+      if (j === index) continue;
+      if (before[index] <= before[j] && ni > before[j]) {
+        const over = ni - before[j];
+        const rawPull = amount * OVERTAKE_PULL_BASE + over * OVERTAKE_PULL_OVER;
+        const pull = Math.min(rawPull, before[j] * 0.92);
+        positions[j] = Math.max(0, before[j] - pull);
+      }
+    }
+    normalizePositionsToFloor();
+    const visEnd = packVisuals(positions);
+    syncCars();
+    if (visEnd[index] > visStart[index] + 1e-7) {
+      triggerSpeedOnLane(index);
+    }
+    playAdvanceSound();
+  }
+
+  function resetRace() {
+    if (visAnimRaf) {
+      cancelAnimationFrame(visAnimRaf);
+      visAnimRaf = 0;
+    }
+    for (let i = 0; i < positions.length; i++) positions[i] = 0;
+    winnerEl.classList.remove('on');
+    displayVis = null;
+    syncCars();
+  }
+
+  function resolveLaneFromChat(comment) {
+    const g = comment.toUpperCase().replace(/İ/g, 'I').trim();
+    for (let i = 0; i < CHAT_KEYWORDS.length; i++) {
+      for (const kw of CHAT_KEYWORDS[i]) {
+        const k = kw.toUpperCase().replace(/İ/g, 'I');
+        if (g === k || g.includes(k)) return i;
+      }
+    }
+    return null;
+  }
+
+  function handleGiftPayload(data) {
+    const giftType = data.giftType === 1 ? 1 : 0;
+    const repeatEnd = data.repeatEnd === true;
+    const isStreakable = giftType === 1;
+    if (isStreakable && !repeatEnd) return;
+
+    const uid = String(data.uniqueId || '').trim();
+    var lane = coerceResolvedLaneIndex(data.resolvedLane);
+    if (lane == null && uid && viewerLanePick.has(uid)) {
+      lane = viewerLanePick.get(uid);
+    }
+    if (lane == null && data.giftId != null && CLIENT_GIFT_ID_LANE[String(data.giftId)] != null) {
+      lane = CLIENT_GIFT_ID_LANE[String(data.giftId)];
+    }
+    if (lane == null) {
+      return;
+    }
+    const n = Math.max(1, parseInt(data.repeatCount, 10) || 1);
+    const dc = Math.max(1, Math.round(Number(data.diamondCount) || 1));
+    boostLane(lane, BOOST_GIFT * dc * n);
+  }
+
+  /** Sunucu: 50 beğeni = 1 jeton-adımı (BOOST_GIFT) */
+  function handleLikeBoostPayload(data) {
+    const lane = coerceResolvedLaneIndex(data.resolvedLane);
+    if (lane == null) return;
+    const steps = Math.max(1, parseInt(data.steps, 10) || 1);
+    boostLane(lane, BOOST_GIFT * steps);
+  }
+
+  function handleChatPayload(data) {
+    const uid = String(data.uniqueId || '').trim();
+    const digitLane = parseDigitLaneComment(data.comment || '');
+    if (digitLane != null) {
+      rememberViewerLanePick(uid, digitLane);
+      return;
+    }
+    const lane = resolveLaneFromChat(data.comment || '');
+    if (lane == null) return;
+    boostLane(lane, BOOST_CHAT);
+  }
+
+  function hubEmbedMode() {
+    try {
+      return new URLSearchParams(location.search).get('hubEmbed') === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function hubOriginAllowed(origin) {
+    try {
+      var u = new URL(origin);
+      if (u.protocol !== 'http:' && u.protocol !== 'https:') return false;
+      var h = u.hostname.replace(/^\[|\]$/g, '');
+      return h === 'localhost' || h === '127.0.0.1' || h === '::1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * WarFront Arena ile aynı: API tam URL — göreli /api yanlış köke gitmesin.
+   */
+  function raceApiUrl(path) {
+    var p = path.charAt(0) === '/' ? path : '/' + path;
+    try {
+      return new URL(p, location.origin).href;
+    } catch (e) {
+      return p;
+    }
+  }
+
+  /**
+   * WarFront `streamxtWsUrl` ile aynı: localhost/::1 → 127.0.0.1 (IPv6/WS uyumu).
+   * file:// veya blob: için varsayılan Car Race köprü portu.
+   */
+  function raceWsUrl() {
+    var proto = location.protocol === 'https:' ? 'wss' : 'ws';
+    try {
+      var u = new URL(location.href);
+      var hn = u.hostname.replace(/^\[|\]$/g, '');
+      if (location.protocol === 'http:' || location.protocol === 'https:') {
+        if (u.hostname === 'localhost' || hn === '::1' || hn === '0:0:0:0:0:0:0:1') {
+          return u.port ? proto + '://127.0.0.1:' + u.port : proto + '://127.0.0.1';
+        }
+        return proto + '://' + location.host;
+      }
+    } catch (e) {}
+    return 'ws://127.0.0.1:21213';
+  }
+
+  /** WarFront ile aynı uç: POST /api/tiktok/live (sayfa http(s) değilse 21213 köprüsü). */
+  function raceTiktokLivePostUrl() {
+    try {
+      if (location.protocol === 'http:' || location.protocol === 'https:') {
+        return raceApiUrl('/api/tiktok/live');
+      }
+    } catch (e) {}
+    return new URL('/api/tiktok/live', 'http://127.0.0.1:21213/').href;
+  }
+
+  function normalizePanelTiktokUser(s) {
+    return String(s || '')
+      .replace(/^@/, '')
+      .trim();
+  }
+
+  async function applyTiktokUsernameFromPanel() {
+    if (!pickerTiktokUser || hubEmbedMode()) return;
+    const raw = normalizePanelTiktokUser(pickerTiktokUser.value);
+    setPickerTiktokFeedback('');
+    try {
+      const r = await fetch(raceTiktokLivePostUrl(), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: raw }),
+      });
+      let j = {};
+      try {
+        j = await r.json();
+      } catch (e2) {
+        j = {};
+      }
+      if (!r.ok || !j.ok) {
+        var detail = j && j.error ? String(j.error) : !r.ok ? 'HTTP ' + r.status : 'ok:false';
+        if (r.status === 404) {
+          try {
+            var gr = await fetch(raceApiUrl('/api/tiktok/live'), { method: 'GET', cache: 'no-store' });
+            var gj = gr.ok ? await gr.json().catch(function () {
+              return null;
+            }) : null;
+            if (gj && gj.tiktokLivePost && gj.carRace) {
+              detail += ' (GET var; POST engellenmiş olabilir.)';
+            } else if (gr.ok && gj && !gj.tiktokLivePost) {
+              detail += ' (Sunucu sürümü eski olabilir.)';
+            }
+          } catch (e4) {}
+        }
+        setPickerTiktokFeedback(
+          'Köprü yanıt vermedi (' + detail + '). Sayfayı `npm start` ile açın (WarFront ile aynı: aynı origin + POST /api/tiktok/live).',
+          true,
+        );
+        return;
+      }
+      try {
+        localStorage.setItem(LS_TIKTOK_USER, raw);
+      } catch (e3) {}
+      setPickerTiktokFeedback(raw ? 'Güncellendi.' : 'Köprü kapatıldı.', false);
+    } catch (e) {
+      setPickerTiktokFeedback('Bağlantı hatası. Sunucu çalışıyor mu (aynı adres + /api/tiktok/live)?', true);
+    }
+  }
+
+  function carRaceLegacyNodeWsEnabled() {
+    try {
+      if (new URLSearchParams(location.search).get('legacyWs') === '1') return true;
+      if (localStorage.getItem('hottok_car_race_legacy_server_ws') === '1') return true;
+    } catch (e) {}
+    return false;
+  }
+
+  function carRaceWsUrlSameAsPage(wsUrl) {
+    try {
+      if (location.protocol !== 'http:' && location.protocol !== 'https:') return false;
+      var ru = new URL(String(wsUrl).replace(/^ws/i, 'http'));
+      var loc = new URL(location.href);
+      var rh = ru.hostname === 'localhost' ? '127.0.0.1' : ru.hostname;
+      var lh = loc.hostname === 'localhost' ? '127.0.0.1' : loc.hostname;
+      var rp = ru.port || (ru.protocol === 'https:' ? '443' : '80');
+      var lp = loc.port || (loc.protocol === 'https:' ? '443' : '80');
+      return rh === lh && String(rp) === String(lp);
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function applyCarRaceTikfinityPayload(p) {
+    var t = String(p.type || '').toLowerCase();
+    var uid = String(p.userId || '').trim();
+    if (t === 'lane_pick') {
+      var lane = typeof p.lane === 'number' ? p.lane : parseInt(p.lane, 10);
+      if (uid) rememberViewerLanePick(uid, lane);
+      return;
+    }
+    if (t === 'gift') {
+      var gid = String(p.giftKey || p.giftId || '')
+        .trim()
+        .toLowerCase();
+      if (!gid) return;
+      var combo = Math.max(1, parseInt(p.giftCombo, 10) || parseInt(p.repeatCount, 10) || 1);
+      var hubDc = p.diamondCount != null ? p.diamondCount : p.coins;
+      handleGiftPayload({
+        giftType: 0,
+        repeatEnd: true,
+        giftId: gid,
+        giftName: gid,
+        repeatCount: combo,
+        uniqueId: uid,
+        diamondCount: hubDc,
+        resolvedLane: undefined,
+      });
+      return;
+    }
+    if (t === 'like') {
+      if (!uid) return;
+      var laneL = viewerLanePick.get(uid);
+      if (laneL == null) return;
+      var steps = Math.max(1, Math.min(20, parseInt(p.likeCount, 10) || 1));
+      handleLikeBoostPayload({ resolvedLane: laneL, steps: steps });
+      return;
+    }
+    if (t === 'follow' || t === 'subscribe' || t === 'share' || t === 'member') {
+      if (!uid) return;
+      var laneF = viewerLanePick.get(uid);
+      if (laneF == null) return;
+      boostLane(laneF, BOOST_GIFT * 0.35);
+    }
+  }
+
+  function applyCarRaceTikfinityPayloadBatch(batch) {
+    var i;
+    for (i = 0; i < batch.length; i++) {
+      try {
+        applyCarRaceTikfinityPayload(batch[i]);
+      } catch (e) {}
+    }
+  }
+
+  var carRaceTfClient = null;
+
+  function connectTikfinityCarRace() {
+    if (typeof GemTokTikFinity === 'undefined') {
+      setPickerTiktokWs('TikFinity: gemtok-tikfinity-client.js yüklenemedi — ?legacyWs=1', false);
+      connectWs();
+      return;
+    }
+    carRaceTfClient = GemTokTikFinity.createClient({
+      emitLanePickForChatDigits: true,
+      eventsPerFrame: 28,
+      getServerSuggestedWsUrl: function () {
+        return fetch(raceApiUrl('/api/config'), { cache: 'no-store' })
+          .then(function (r) {
+            return r.ok ? r.json() : {};
+          })
+          .then(function (j) {
+            return typeof j.tikfinityWsUrl === 'string' ? j.tikfinityWsUrl.trim() : '';
+          })
+          .catch(function () {
+            return '';
+          });
+      },
+      onStatus: function (s) {
+        var ph = s && s.phase;
+        var u = s && s.url ? String(s.url) : '';
+        if (ph === 'connected') setPickerTiktokWs('TikFinity: bağlı ' + (u ? '(' + u + ')' : ''), true);
+        else if (ph === 'connecting') setPickerTiktokWs('TikFinity: bağlanıyor… ' + u, false);
+        else if (ph === 'reconnecting') setPickerTiktokWs('TikFinity: yeniden deneniyor…', false);
+        else if (ph === 'disabled_by_url') setPickerTiktokWs('TikFinity otomatik kapalı — Node köprü', false);
+        else if (ph === 'invalid_url') setPickerTiktokWs('TikFinity: geçersiz WS URL', true);
+        else if (ph === 'file_protocol') setPickerTiktokWs('TikFinity: file:// — http(s) ile açın', false);
+      },
+      onPayloads: applyCarRaceTikfinityPayloadBatch,
+    });
+    void carRaceTfClient.startAuto();
+    setPickerTiktokLive('TikTok: TikFinity (yerel WS)');
+  }
+
+  function connectCarRaceLiveSocket() {
+    if (hubEmbedMode()) {
+      setPickerTiktokWs('Köprü: Game Hub (üst pencere)', true);
+      setPickerTiktokLive('TikTok: hediye/sohbet üst çerçeveden iletilir.');
+      connectWsFromHubParent();
+      return;
+    }
+    if (carRaceLegacyNodeWsEnabled()) {
+      connectWs();
+      return;
+    }
+    if (typeof GemTokTikFinity === 'undefined') {
+      connectWs();
+      return;
+    }
+    if (GemTokTikFinity.isTikfinityAutoDisabled()) {
+      connectWs();
+      setPickerTiktokWs('TikFinity otomatik kapalı — Node köprü WS', true);
+      return;
+    }
+    var resolved = GemTokTikFinity.getResolvedTikfinityWsUrl('');
+    if (carRaceWsUrlSameAsPage(resolved)) {
+      connectWs();
+      setPickerTiktokWs('Köprü: sunucu WS (TikFinity için farklı port → localStorage streamxt_tikfinity_ws_url)', true);
+      return;
+    }
+    connectTikfinityCarRace();
+  }
+
+  /** Game Hub (STREAMXT WS) → postMessage; kendi 21213 soketini açmaz */
+  function connectWsFromHubParent() {
+    window.addEventListener('message', function (ev) {
+      if (!hubOriginAllowed(ev.origin)) return;
+      var d = ev.data;
+      if (!d || d.source !== 'TIKTOK_HUB' || typeof d.raw !== 'string') return;
+      var outer;
+      try {
+        outer = JSON.parse(d.raw);
+      } catch (e) {
+        return;
+      }
+      if (!outer || outer.channel !== 'tiktok' || !outer.payload || typeof outer.payload !== 'object') return;
+      var p = outer.payload;
+      var t = String(p.type || 'gift').toLowerCase();
+      if (t === 'gift') {
+        var gid = String(p.giftKey || p.giftId || '')
+          .trim()
+          .toLowerCase();
+        if (!gid) return;
+        var combo = Math.max(1, parseInt(p.giftCombo, 10) || parseInt(p.repeatCount, 10) || 1);
+        var hubUid = String(p.userId || p.uniqueId || '').trim();
+        var hubDc = p.diamondCount != null ? p.diamondCount : p.coins;
+        handleGiftPayload({
+          giftType: 0,
+          repeatEnd: true,
+          giftId: gid,
+          giftName: gid,
+          repeatCount: combo,
+          uniqueId: hubUid,
+          diamondCount: hubDc,
+          resolvedLane: undefined,
+        });
+      }
+    });
+  }
+
+  function connectWs() {
+    var wsRoot = raceWsUrl().replace(/\/?$/, '');
+    var url = wsRoot + '/';
+    var pm = wsRoot.match(/:(\d+)$/);
+    var wsPortLabel = pm ? pm[1] : location.port || '21213';
+    let ws;
+    try {
+      ws = new WebSocket(url);
+    } catch (e) {
+      setPickerTiktokWs('Köprü: WebSocket açılamadı.', false);
+      return;
+    }
+
+    setPickerTiktokWs('Köprü: bağlanıyor…', false);
+    setPickerTiktokLive('TikTok: —');
+
+    ws.onopen = function () {
+      setPickerTiktokWs('Köprü: bağlı (' + String(wsPortLabel || 'WS') + ')', true);
+    };
+    ws.onclose = function () {
+      setPickerTiktokWs('Köprü: kapalı — 3 sn sonra yeniden denenecek…', false);
+      setPickerTiktokLive('TikTok: —');
+      setTimeout(connectWs, 3000);
+    };
+    ws.onerror = function () {
+      setPickerTiktokWs('Köprü: hata (sunucu çalışıyor mu?)', false);
+    };
+    ws.onmessage = function (ev) {
+      let msg;
+      try {
+        msg = JSON.parse(ev.data);
+      } catch (e) {
+        return;
+      }
+      if (msg.event === 'hello' && msg.data) {
+        var d = msg.data;
+        var uid = String(d.uniqueId || '').replace(/^@/, '');
+        var off = !uid || uid === 'kapalı' || d.tiktok === 'kapalı';
+        if (off) {
+          setPickerTiktokLive('TikTok: kapalı');
+        } else {
+          if (pickerTiktokUser) pickerTiktokUser.value = uid;
+          setPickerTiktokLive('TikTok: bağlanıyor… (@' + uid + ')');
+        }
+      }
+      if (msg.event === 'tiktokConnected' && msg.data) {
+        if (typeof console !== 'undefined' && console.info) {
+          console.info('TikTok LIVE', msg.data);
+        }
+        var u = String(msg.data.uniqueId || '').replace(/^@/, '');
+        setPickerTiktokLive('TikTok LIVE bağlı (@' + u + ')');
+      }
+      if (msg.event === 'gift') handleGiftPayload(msg.data || {});
+      if (msg.event === 'likeBoost') handleLikeBoostPayload(msg.data || {});
+      if (msg.event === 'chat') handleChatPayload(msg.data || {});
+      if (msg.event === 'streamEnd') {
+        setPickerTiktokLive('TikTok: yayın bitti');
+        if (typeof console !== 'undefined' && console.info) console.info('streamEnd');
+      }
+    };
+  }
+
+  if (pickerPlateSave) {
+    pickerPlateSave.addEventListener('click', savePlatesFromPicker);
+  }
+
+  if (pickerPlateToggle) {
+    pickerPlateToggle.addEventListener('click', function () {
+      const hidden = !document.body.classList.contains('plates-hidden');
+      applyTrackPlatesVisibility(hidden);
+      persistTrackPlatesHidden(hidden);
+      setPickerStatus(hidden ? 'Pistteki plakalar gizlendi.' : 'Plakalar görünür.');
+    });
+  }
+
+  btnReset.addEventListener('click', resetRace);
+
+  if (pickerBackLane) pickerBackLane.addEventListener('click', showCarPickerStep);
+  if (pickerRefresh) pickerRefresh.addEventListener('click', function () {
+    refreshCarListFromServer();
+  });
+
+  if (pickerTiktokUserRow) {
+    pickerTiktokUserRow.hidden = !!hubEmbedMode();
+  }
+  if (pickerTiktokUser && !hubEmbedMode()) {
+    try {
+      var savedU = localStorage.getItem(LS_TIKTOK_USER);
+      if (savedU != null && savedU !== '') pickerTiktokUser.value = savedU;
+    } catch (e0) {}
+  }
+  if (pickerTiktokApply && pickerTiktokUser) {
+    pickerTiktokApply.addEventListener('click', function () {
+      void applyTiktokUsernameFromPanel();
+    });
+    pickerTiktokUser.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        void applyTiktokUsernameFromPanel();
+      }
+    });
+  }
+
+  function isTypingInFormField(target) {
+    if (!target || typeof target !== 'object') return false;
+    if (target.isContentEditable) return true;
+    const tag = target.tagName;
+    if (tag === 'TEXTAREA' || tag === 'SELECT') return true;
+    if (tag === 'INPUT') {
+      const type = (target.getAttribute('type') || 'text').toLowerCase();
+      if (type === 'button' || type === 'submit' || type === 'checkbox' || type === 'radio' || type === 'file') return false;
+      return true;
+    }
+    return false;
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (isTypingInFormField(e.target)) return;
+    if (e.key >= '1' && e.key <= '5') {
+      const i = parseInt(e.key, 10) - 1;
+      boostLane(i, 0.011);
+    }
+    if (e.key === 'r' || e.key === 'R') resetRace();
+  });
+
+  buildPickerPlateInputs();
+  renderLanes();
+  applyTrackPlatesVisibility(loadTrackPlatesHidden());
+  refreshCarListFromServer();
+  connectCarRaceLiveSocket();
+})();
+  </script>
+</body>
+</html>

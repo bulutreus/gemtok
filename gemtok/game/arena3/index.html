@@ -1,0 +1,3764 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Bos birakilir; TikFinity WS URL icin (localStorage ve window.TIKFINITY_WS_URL oncelikli) -->
+  <meta name="tikfinity-ws-url" content="" />
+  <title>Arena 3-10</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --text: #f7f7f7;
+      --gold: #ffea00;
+      --gold-soft: #fff44d;
+      --scorebox-bg: rgba(0, 0, 0, 0.94);
+      --scorebox-border: rgba(255, 255, 255, 0.22);
+      --ui-font: Arial, Helvetica, sans-serif;
+      --score-font: Arial, Helvetica, sans-serif;
+      --app-frame-outer: rgb(5, 10, 20);
+      --app-frame-bevel: max(4px, min(1.1vmin, 8px));
+      --app-frame-radius: clamp(10px, 1.8vmin, 16px);
+      --app-frame-border: 2px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      height: 100%;
+      background: var(--app-frame-outer);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      height: 100%;
+      background: var(--app-frame-outer);
+      color: var(--text);
+      font-family: var(--ui-font);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-top: max(var(--app-frame-bevel), env(safe-area-inset-top, 0px));
+      padding-right: max(var(--app-frame-bevel), env(safe-area-inset-right, 0px));
+      padding-bottom: max(var(--app-frame-bevel), env(safe-area-inset-bottom, 0px));
+      padding-left: max(var(--app-frame-bevel), env(safe-area-inset-left, 0px));
+      overflow: hidden;
+    }
+
+    .app {
+      width: min(
+        calc(100dvw - 2 * var(--app-frame-bevel)),
+        calc((100dvh - 2 * var(--app-frame-bevel)) * 9 / 16)
+      );
+      aspect-ratio: 9 / 16;
+      max-height: calc(100dvh - 2 * var(--app-frame-bevel));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px;
+      background: var(--bg);
+      border-radius: var(--app-frame-radius);
+      border: var(--app-frame-border) solid rgba(255, 255, 255, 0.14);
+      box-shadow:
+        0 0 0 1px rgba(0, 0, 0, 0.65),
+        inset 0 1px 0 rgba(255, 255, 255, 0.07),
+        inset 0 -24px 48px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+    }
+
+    .scoreboard {
+      flex: 0 0 auto;
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 7px;
+      align-items: stretch;
+      justify-content: stretch;
+      background: transparent;
+      border: none;
+      margin-top: clamp(32px, 6vh, 56px);
+      padding: 0 2px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .team {
+      flex: 1 1 0;
+      min-width: 0;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 6px;
+      padding: 4px 8px;
+      border-radius: 9px;
+      background: var(--scorebox-bg);
+      border: none;
+      box-shadow:
+        inset 0 0 0 2px var(--scorebox-border),
+        0 0 8px rgba(0, 0, 0, 0.45);
+      transition:
+        box-shadow 0.28s ease,
+        color 0.22s ease,
+        transform 0.28s ease,
+        filter 0.35s ease;
+    }
+
+    .team.leading {
+      border: none;
+      box-shadow:
+        inset 0 0 0 2px var(--gold),
+        0 0 14px rgba(255, 230, 0, 0.42),
+        0 0 28px rgba(255, 200, 60, 0.18);
+      transform: scale(1.02);
+      z-index: 1;
+    }
+
+    .team.is-leader-handoff {
+      animation: arena3-leader-handoff 0.52s ease-out;
+    }
+
+    @keyframes arena3-leader-handoff {
+      0% {
+        filter: brightness(1.35);
+        box-shadow:
+          inset 0 0 0 2px var(--gold),
+          0 0 22px rgba(255, 240, 120, 0.55);
+      }
+      100% {
+        filter: brightness(1);
+      }
+    }
+
+    .team .score {
+      margin-left: auto;
+      color: #ffffff;
+      font-family: var(--score-font);
+      font-size: clamp(13px, 3vw, 19px);
+      font-weight: 700;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 0.01em;
+    }
+
+    .team.leading .score {
+      color: var(--gold-soft);
+      text-shadow:
+        0 0 12px rgba(255, 240, 60, 0.75),
+        0 1px 2px rgba(0, 0, 0, 0.85);
+    }
+
+    .crest {
+      position: relative;
+      overflow: hidden;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      background: var(--crest-slot-color, rgba(255, 255, 255, 0.1));
+      border: none;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.22);
+    }
+
+    .crest::after {
+      content: attr(data-label);
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.92);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.65);
+      pointer-events: none;
+    }
+
+    .crest.has-photo::after {
+      display: none;
+    }
+
+    .team.leading .crest {
+      box-shadow: inset 0 0 0 2px rgba(255, 245, 80, 0.82);
+    }
+
+    .crest-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      display: none;
+    }
+
+    .crest.has-photo .crest-img {
+      display: block;
+    }
+
+    .arena-wrap {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      overflow: hidden;
+      box-shadow: none;
+    }
+
+    canvas {
+      width: 100%;
+      max-height: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+      display: block;
+      background: #000000;
+    }
+
+    .settings-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      backdrop-filter: blur(6px);
+    }
+
+    .settings-backdrop[hidden] {
+      display: none;
+    }
+
+    .settings-panel {
+      width: min(460px, 100%);
+      max-height: min(88vh, 720px);
+      overflow-y: auto;
+      background: #000000;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      padding: 20px 20px 18px;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+    }
+
+    .settings-panel h2 {
+      margin: 0 0 4px;
+      font-size: 1.2rem;
+      font-weight: 600;
+    }
+
+    .settings-lead {
+      margin: 0 0 18px;
+      font-size: 12px;
+      line-height: 1.45;
+      color: rgba(255, 255, 255, 0.5);
+    }
+
+    .settings-desc {
+      margin: 0 0 16px;
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.55);
+      line-height: 1.4;
+    }
+
+    .settings-subtitle {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .settings-input {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 9px 11px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: rgba(0, 0, 0, 0.35);
+      color: var(--text);
+      font: inherit;
+      font-size: 13px;
+    }
+
+    .settings-input:focus {
+      outline: none;
+      border-color: rgba(255, 255, 255, 0.45);
+    }
+
+    .settings-tikfinity-block {
+      margin-bottom: 18px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .settings-tikfinity-status {
+      font-size: 12px;
+      color: rgba(200, 200, 200, 0.75);
+      margin-top: 8px;
+      min-height: 1.2em;
+    }
+
+    .settings-player-card {
+      position: relative;
+      margin-bottom: 12px;
+      padding: 14px 14px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .settings-player-card:last-child {
+      margin-bottom: 4px;
+    }
+
+    .settings-player-card input[type="file"] {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    .settings-player-title {
+      margin: 0 0 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 15px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.92);
+    }
+
+    .settings-field {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .settings-field:last-child {
+      margin-bottom: 0;
+    }
+
+    .settings-field-label {
+      flex: 0 0 auto;
+      font-size: 13px;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.72);
+    }
+
+    .settings-field-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 6px;
+    }
+
+    .settings-music-head {
+      margin: 10px 0 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: rgba(255, 235, 120, 0.92);
+    }
+
+    .settings-music-status {
+      margin: 0 0 8px;
+      font-size: 11px;
+      color: rgba(200, 220, 255, 0.72);
+      line-height: 1.35;
+    }
+
+    .settings-music-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .settings-music-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.25);
+    }
+
+    .settings-slot-name {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.78);
+    }
+
+    .settings-slot-btns {
+      display: flex;
+      flex-shrink: 0;
+      gap: 6px;
+    }
+
+    .settings-btn-sm {
+      padding: 5px 10px;
+      font-size: 12px;
+      min-width: 0;
+    }
+
+    .settings-music-clear-all-wrap {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .scoreboard.scoreboard-dense .team .score {
+      font-size: clamp(10px, 2.1vw, 15px);
+    }
+
+    .scoreboard.scoreboard-dense .crest {
+      width: 28px;
+      height: 28px;
+    }
+
+    .settings-mode-block {
+      margin-bottom: 18px;
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .settings-mode-label {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .settings-mode-hint {
+      margin: 0 0 10px;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.48);
+      line-height: 1.35;
+    }
+
+    .settings-mode-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .settings-mode-btn {
+      font: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      min-width: 40px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .settings-mode-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .settings-mode-btn.active {
+      border-color: rgba(255, 255, 255, 0.5);
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .settings-btn {
+      font: inherit;
+      font-size: 13px;
+      padding: 7px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .settings-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+    }
+
+    .settings-btn.danger {
+      border-color: rgba(255, 100, 100, 0.35);
+      color: #ffb4b4;
+    }
+
+    .settings-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .settings-close {
+      font: inherit;
+      padding: 9px 18px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.1);
+      color: #f0f0f0;
+      cursor: pointer;
+    }
+
+    .settings-close:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="scoreboard" id="scoreboard-root" aria-label="Skor cubugu"></section>
+
+    <section class="arena-wrap">
+      <canvas id="arena" width="1000" height="1000"></canvas>
+    </section>
+  </main>
+
+  <button type="button" id="gemtok-open-settings" class="gemtok-game-settings-fab" aria-controls="settings-backdrop" aria-label="Ayarlar" title="Ayarlar" aria-haspopup="dialog" aria-expanded="false">
+    <svg class="gemtok-game-settings-fab__icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32a.51.51 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.51.51 0 0 0 9.25 2.4H5.41a.51.51 0 0 0-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.51.51 0 0 0-.59.22L.06 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.31-.09.63-.09.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2z"/></svg>
+    <span class="gemtok-game-settings-fab__label">Ayarlar</span>
+  </button>
+
+  <div id="settings-backdrop" class="settings-overlay gemtok-settings-theme" hidden>
+    <div class="settings-overlay__backdrop" aria-hidden="true"></div>
+    <div
+      id="settings-panel"
+      class="settings-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settings-title"
+    >
+      <h2 class="settings-panel__title" id="settings-title">Ayarlar</h2>
+      <div class="settings-panel__body">
+      <div class="settings-gift-block">
+        <p class="settings-subtitle">Hediye</p>
+        <input
+          type="search"
+          class="settings-input"
+          id="settings-gift-search"
+          placeholder="Hediye ara (isim veya #id)"
+          autocomplete="off"
+        />
+        <p class="settings-tikfinity-status" id="settings-gift-status"></p>
+      </div>
+
+      <div class="settings-mode-block">
+        <p class="settings-mode-label">Oyuncu sayisi</p>
+        <div class="settings-mode-row" id="player-count-mode"></div>
+      </div>
+
+      <div id="settings-teams-root"></div>
+
+      </div>
+      <div class="settings-panel__actions">
+        <button type="button" class="settings-btn settings-btn--ghost" id="settings-close">Kapat</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="../../gemtok-tikfinity-client.js"></script>
+  <script src="../../gemtok-gift-catalog-filter.js"></script>
+  <script src="../../gemtok-gift-client.js"></script>
+  <script src="../../sıra/gift-images/gift-list.loader.js"></script>
+  <script src="../../sıra/gemtok-tiktok-live-global.js"></script>
+  <script src="../../gemtok-live-game-bridge.js"></script>
+  <script>
+    try {
+      window.__GEMTOK_GIFT_HUB_URL__ = window.__GEMTOK_GIFT_HUB_URL__ || "http://127.0.0.1:8787";
+    } catch (_e) {}
+  </script>
+  <script>
+    const canvas = document.getElementById("arena");
+    const ctx = canvas.getContext("2d", { alpha: true, desynchronized: true }) || canvas.getContext("2d");
+    try {
+      if (ctx.imageSmoothingEnabled !== false) ctx.imageSmoothingQuality = "high";
+    } catch (_e) {}
+
+    const SLOT_IDS = Array.from({ length: 10 }, (_, i) => `s${i}`);
+    const MAX_SLOTS = 10;
+
+    /**
+     * Arena3 — büyüme, yumuşatma, fizik, efekt, skor UI. Magic number burada toplanır.
+     */
+    const ARENA3 = {
+      arenaLayout: {
+        edgePad: 12,
+        clipInset: 20,
+        matchStartFrac: 0.033,
+        matchStartRMin: 10,
+        ballMaxFrac: 0.52,
+        twoPlayerMaxRFrac: 0.31,
+        twoPlayerMaxSumFrac: 0.63,
+        twoPlayerGapPx: 16
+      },
+      growth: {
+        blendRelative: 0.5,
+        sqrtTau: 22
+      },
+      smoothing: {
+        steps: 420,
+        easeOutCubic(t) {
+          const x = Math.min(1, Math.max(0, t));
+          return 1 - (1 - x) ** 3;
+        }
+      },
+      physics: {
+        /** Sabit fizik adimi (sn); FPS dusse bile tutarli carpisma */
+        fixedTimestep: 1 / 120,
+        maxSubSteps: 6,
+        maxFrameDelta: 0.05,
+        /** Toplar arasi minimum bosluk (px) */
+        minPlayerGap: 4,
+        /** Konum ayristirma (MTV) tekrarlari */
+        positionIterations: 10,
+        /** Hiz itmesi tekrarlari (genelde 1 yeterli; cift uygulama enerji biriktirir) */
+        velocityIterations: 1,
+        /** Penetrasyon duzeltme orani (0-1); 1 = tam ayristirma */
+        positionalCorrection: 0.92,
+        positionalSlop: 0.15,
+        /** Esnek carpisma (0 = tamamen inelastik, 1 = tamamen elastik) */
+        collisionRestitution: 0.38,
+        /** 3+ oyuncu kumesi: dusuk geri sekme (enerji birikimini keser) */
+        collisionRestitutionCluster: 0.24,
+        /** Yalnizca normal impulse; teget/tork kapali (orbiting onleme) */
+        collisionFriction: 0,
+        wallRestitution: 0.46,
+        wallFriction: 0,
+        wallSkinPx: 0.6,
+        /** Bu hizin altinda normal/itme atlanir (titreme onleme) */
+        velocitySlop: 0.35,
+        massExponent: 2,
+        speedRefRFrac: 0.18,
+        maxSpeedBase: 260,
+        maxSpeedMassDivisor: 5200,
+        /** Saniyede lineer hiz sonum (tum oyuncu sayilari) */
+        linearDamping: 1.1,
+        clusterLinearDamping: 1.8,
+        /** Cok dusuk hizda hafif sonum (sert sifirlama yok) */
+        velocitySleepThreshold: 3,
+        velocitySleepDamp: 0.94,
+        /** Yalnizca bu teget hizin ustunde orbiting kes (px/s) */
+        orbitalSpeedThreshold: 48,
+        /** Teget iptali tavan orani */
+        orbitalTangentialCancel: 0.62,
+        /** Yuksek hiz + coklu temasta hafif ek sonum */
+        multiContactVelDamp: 0.9,
+        singleContactClusterDamp: 0.97,
+        /** Impulse / ivme tavanlari (geri besleme dongusu onleme) */
+        maxImpulseNormal: 220,
+        maxDeltaVPerSubstep: 90,
+        /** Uzun sure cakisma sayaci esigi -> cift normali boyunca radyal ayirma */
+        deadlockContactFrames: 18,
+        deadlockNudgeSpeed: 22,
+        /** Sıkışan top: en acik yone hafif itme */
+        stuckEscapeFrames: 14,
+        stuckEscapeNudgeSpeed: 18,
+        stuckEscapeSamples: 10,
+        heavyPackRadius: 82,
+        clusterSpeedScale: 0.78,
+        /** Broadphase: bu kadar px disinda carpisma hesabi atlanir */
+        pairBroadphaseSlop: 14,
+        nanSpeedCap: 480
+      },
+      effects: {
+        giftParticlesBase: 7,
+        giftParticlesPerPoint: 0.38,
+        giftParticlesCap: 40,
+        shockwavePointThreshold: 15,
+        screenFlashPointThreshold: 12,
+        screenFlashLife: 0.2,
+        giftEffectCap: 180,
+        dustSpawnProb: 0.14,
+        dustCap: 90
+      },
+      scoreUi: {
+        lerpPerSec: 10
+      }
+    };
+
+    const AL = ARENA3.arenaLayout;
+
+    /** Buyuk modda badge/stroke arena halkasinin disina tasmasin (fizik + cizim clip) */
+    function badgeOuterRadiusPx(r, teamId) {
+      const rr = Math.max(0, r);
+      const raw = Math.max(0, Math.floor(Number(state.scores[teamId]) || 0));
+      const digits = String(raw).length;
+      const digitPad = digits <= 2 ? 0 : (digits - 2) * 12;
+      return rr + Math.max(24, Math.min(110, 0.48 * rr + 20 + digitPad));
+    }
+
+    /** Fizik ve duvar: rozet + skor alani dis sinir */
+    function physicsBadgeRadius(r, teamId) {
+      return badgeOuterRadiusPx(r, teamId);
+    }
+
+    /** Profil + skor cizimini arena icinde kirp (neon + hafif ic pay) */
+    const ARENA_CLIP_INSET = AL.clipInset;
+    /** Top-top carpismada parcacik, shockwave ve kamera titremesi (false = kapali) */
+    const COLLISION_EFFECTS_ON = false;
+    const PLAYER_COUNT_KEY = "arena_player_count_v1";
+    const PHOTO_STORAGE_KEY = "arena_slots_teamPhotos_v1";
+    const PHOTO_LEGACY_KEY = "arena5gen_teamPhotos_v1";
+    const LOCAL_GIFT_ASSIGN_STORAGE_KEY = "arena3_gift_assign_map_v1";
+    const GEMTOK_GIFT_LIST_JSON_URL = "../../sıra/gift-images/gift-list.json";
+    const GEMTOK_GIFT_LIST_IMAGE_BASE = "../../sıra/gift-images/";
+
+    /** Arena: neon glow; daire icinde renk kaplamasi kapali (tint opaklik 0) */
+    const TEAM_VISUAL_SLOTS = [
+      { label: "1", glow: "rgba(255, 30, 50, 1)", tint: "rgba(255, 30, 50, 0)" },
+      { label: "2", glow: "rgba(50, 130, 255, 1)", tint: "rgba(50, 130, 255, 0)" },
+      { label: "3", glow: "rgba(40, 255, 110, 1)", tint: "rgba(40, 255, 110, 0)" },
+      { label: "4", glow: "rgba(255, 150, 0, 1)", tint: "rgba(255, 150, 0, 0)" },
+      { label: "5", glow: "rgba(160, 200, 255, 1)", tint: "rgba(130, 175, 255, 0)" },
+      { label: "6", glow: "rgba(255, 55, 175, 1)", tint: "rgba(255, 55, 175, 0)" },
+      { label: "7", glow: "rgba(0, 255, 220, 1)", tint: "rgba(0, 255, 220, 0)" },
+      { label: "8", glow: "rgba(215, 85, 255, 1)", tint: "rgba(215, 85, 255, 0)" },
+      { label: "9", glow: "rgba(255, 215, 45, 1)", tint: "rgba(255, 215, 45, 0)" },
+      { label: "10", glow: "rgba(110, 225, 255, 1)", tint: "rgba(110, 225, 255, 0)" }
+    ];
+
+    const GIFT_STYLE_SLOTS = [
+      { color: "#ff3040", icon: "star" },
+      { color: "#2d7dff", icon: "heart" },
+      { color: "#22ff6e", icon: "coin" },
+      { color: "#ff9a00", icon: "star" },
+      { color: "#8ec0ff", icon: "rose" },
+      { color: "#ff3db8", icon: "star" },
+      { color: "#00ffd8", icon: "heart" },
+      { color: "#d060ff", icon: "coin" },
+      { color: "#ffd520", icon: "star" },
+      { color: "#7ee8ff", icon: "rose" }
+    ];
+
+    const CANVAS_SCORE_FONT = "Arial, Helvetica, sans-serif";
+
+    function activeTeamIds() {
+      return SLOT_IDS.slice(0, state.playerCount);
+    }
+
+    function slotIndexFromId(teamId) {
+      const m = /^s(\d+)$/.exec(teamId || "");
+      if (!m) return 0;
+      return Math.min(MAX_SLOTS - 1, Math.max(0, parseInt(m[1], 10)));
+    }
+
+    function teamVisualForId(teamId) {
+      return TEAM_VISUAL_SLOTS[slotIndexFromId(teamId)] || TEAM_VISUAL_SLOTS[0];
+    }
+
+    function giftStyleForTeam(teamId) {
+      return GIFT_STYLE_SLOTS[slotIndexFromId(teamId)] || GIFT_STYLE_SLOTS[0];
+    }
+
+    let teamEls = {};
+
+    const settingsBackdrop = document.getElementById("settings-backdrop");
+    const settingsClose = document.getElementById("settings-close");
+    const scoreboardRoot = document.getElementById("scoreboard-root");
+    const settingsTeamsRoot = document.getElementById("settings-teams-root");
+    const playerCountModeEl = document.getElementById("player-count-mode");
+    const settingsGiftSearch = document.getElementById("settings-gift-search");
+    const settingsGiftStatus = document.getElementById("settings-gift-status");
+
+    const WS_STORAGE_KEY = "arena_tikfinity_ws_url";
+    const DEFAULT_WS_URL = "ws://127.0.0.1:21213";
+    const TIKFINITY_MAX_PER_FRAME = 8;
+
+    const state = {
+      playerCount: 5,
+      scores: Object.fromEntries(SLOT_IDS.map((id) => [id, 0])),
+      audioReady: false,
+      currentLeader: "none",
+      lastFrameTime: 0,
+      speedMultiplier: 1,
+      balls: {},
+      teamPhotos: Object.fromEntries(SLOT_IDS.map((id) => [id, ""])),
+      teamCanvasImages: Object.fromEntries(SLOT_IDS.map((id) => [id, null])),
+      audios: Object.fromEntries(SLOT_IDS.map((id) => [id, new Audio()])),
+      collisionEffects: [],
+      dustEffects: [],
+      shockwaves: [],
+      giftEffects: [],
+      cameraShake: 0,
+      ballRadiusDisplayed: Object.fromEntries(SLOT_IDS.map((id) => [id, null])),
+      ballRadiusRamp: Object.fromEntries(
+        SLOT_IDS.map((id) => [id, { from: 0, goal: 0, t: ARENA3.smoothing.steps }])
+      ),
+      displayScores: Object.fromEntries(SLOT_IDS.map((id) => [id, 0])),
+      giftScreenFlash: null,
+      uiLastLeader: null,
+      physFrameIdx: 0,
+      physicsAccumulator: 0,
+      pairOverlapTick: Object.create(null),
+      ballStuckTick: Object.create(null),
+      musicPlaybackTime: Object.create(null),
+      leaderMusicPlayingId: null,
+      musicObjectUrls: {},
+      musicPlaylistIndex: Object.fromEntries(SLOT_IDS.map((id) => [id, 0])),
+      leaderEndedHandler: null,
+      leaderEndedAudio: null,
+      localGiftToTeam: new Map(),
+      tikfinity: {
+        ws: null,
+        queue: [],
+        flushScheduled: false,
+        reconnectTimer: null,
+        intentionalClose: false,
+        bridgeUnsub: null,
+        portalHudTimer: null
+      }
+    };
+
+    let giftAssignCatalogRows = [];
+    let giftAssignCatalogSource = "none";
+    let giftComboPopover = null;
+    let giftComboPopoverTeamId = null;
+
+    function loadLocalGiftAssignmentsToState() {
+      state.localGiftToTeam = new Map();
+      try {
+        const raw = localStorage.getItem(LOCAL_GIFT_ASSIGN_STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== "object") return;
+        Object.entries(parsed).forEach(([giftIdRaw, teamId]) => {
+          const giftId = Math.floor(Number(giftIdRaw));
+          const team = String(teamId || "");
+          if (!Number.isFinite(giftId) || giftId <= 0) return;
+          if (!SLOT_IDS.includes(team)) return;
+          state.localGiftToTeam.set(giftId, team);
+        });
+      } catch (_e) {}
+    }
+
+    function saveLocalGiftAssignmentsFromState() {
+      const out = {};
+      state.localGiftToTeam.forEach((teamId, giftId) => {
+        out[String(giftId)] = teamId;
+      });
+      try {
+        localStorage.setItem(LOCAL_GIFT_ASSIGN_STORAGE_KEY, JSON.stringify(out));
+      } catch (_e) {}
+    }
+
+    function sanitizeLocalGiftAssignments() {
+      let changed = false;
+      state.localGiftToTeam.forEach((teamId, giftId) => {
+        if (!SLOT_IDS.includes(teamId)) {
+          state.localGiftToTeam.delete(giftId);
+          changed = true;
+        }
+      });
+      if (changed) saveLocalGiftAssignmentsFromState();
+    }
+
+    function getAssignedGiftIdForTeam(teamId) {
+      for (const [giftId, mappedTeamId] of state.localGiftToTeam.entries()) {
+        if (mappedTeamId === teamId) return giftId;
+      }
+      return null;
+    }
+
+    function clearGiftAssignmentsForTeam(teamId) {
+      const toDelete = [];
+      state.localGiftToTeam.forEach((mappedTeamId, giftId) => {
+        if (mappedTeamId === teamId) toDelete.push(giftId);
+      });
+      toDelete.forEach((giftId) => state.localGiftToTeam.delete(giftId));
+    }
+
+    function setAssignedGiftForTeam(teamId, giftId) {
+      clearGiftAssignmentsForTeam(teamId);
+      if (Number.isFinite(giftId) && giftId > 0) state.localGiftToTeam.set(giftId, teamId);
+      saveLocalGiftAssignmentsFromState();
+    }
+
+    function bundledGiftImageFullUrl(fileName) {
+      const f = String(fileName || "").trim();
+      if (!f) return "";
+      try {
+        return new URL(GEMTOK_GIFT_LIST_IMAGE_BASE + f, window.location.href).href;
+      } catch (_e) {
+        return GEMTOK_GIFT_LIST_IMAGE_BASE + f;
+      }
+    }
+
+    function giftHubImageFullUrl(imageUrl) {
+      if (!imageUrl || typeof imageUrl !== "string") return "";
+      const s = imageUrl.trim();
+      if (/^[a-z][a-z0-9+.-]*:/i.test(s)) return s;
+      const base =
+        typeof GemtokGiftHub !== "undefined" && GemtokGiftHub.hubBase
+          ? GemtokGiftHub.hubBase()
+          : (window.__GEMTOK_GIFT_HUB_URL__ || "http://127.0.0.1:8787");
+      return String(base).replace(/\/$/, "") + (s.startsWith("/") ? s : "/" + s);
+    }
+
+    function normalizeBundledGiftRow(row) {
+      if (!row || typeof row !== "object") return null;
+      const id = Math.floor(Number(row.code != null ? row.code : row.tiktok_id));
+      if (!Number.isFinite(id) || id <= 0) return null;
+      const fileName = String(row.file || "").trim();
+      return {
+        tiktok_id: id,
+        name: String(row.name || "").trim() || "Gift " + id,
+        diamond_count: Math.max(0, Math.floor(Number(row.coins != null ? row.coins : row.diamond_count) || 0)),
+        imageUrl: fileName ? bundledGiftImageFullUrl(fileName) : ""
+      };
+    }
+
+    async function loadBundledGiftList() {
+      try {
+        if (Array.isArray(window.__GEMTOK_GIFT_LIST__) && window.__GEMTOK_GIFT_LIST__.length) {
+          const src =
+            typeof GemtokGiftCatalogFilter !== "undefined"
+              ? GemtokGiftCatalogFilter.filterCatalogGifts(window.__GEMTOK_GIFT_LIST__)
+              : window.__GEMTOK_GIFT_LIST__;
+          return src.map(normalizeBundledGiftRow).filter(Boolean);
+        }
+      } catch (_e) {}
+      try {
+        const res = await fetch(GEMTOK_GIFT_LIST_JSON_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error("gift_list_http_" + res.status);
+        const arr = await res.json();
+        if (!Array.isArray(arr)) return [];
+        const filtered =
+          typeof GemtokGiftCatalogFilter !== "undefined"
+            ? GemtokGiftCatalogFilter.filterCatalogGifts(arr)
+            : arr;
+        return filtered.map(normalizeBundledGiftRow).filter(Boolean);
+      } catch (_e2) {
+        return [];
+      }
+    }
+
+    async function getGiftAssignCatalog(opts) {
+      const force = !!(opts && opts.force);
+      if (typeof GemtokGiftHub !== "undefined" && GemtokGiftHub.getAllGifts) {
+        try {
+          const gifts = await GemtokGiftHub.getAllGifts({ force });
+          if (Array.isArray(gifts) && gifts.length) return { gifts, source: "hub" };
+        } catch (_e) {}
+      }
+      const fallback = await loadBundledGiftList();
+      return { gifts: fallback, source: fallback.length ? "bundled" : "none" };
+    }
+
+    function getGiftCatalogImageUrl(giftRow) {
+      if (!giftRow || typeof giftRow !== "object") return "";
+      const d = giftRow.discoveredImageUrl;
+      if (typeof d === "string" && d.trim()) return giftHubImageFullUrl(d);
+      const u = giftRow.imageUrl || giftRow.image_url;
+      if (typeof u === "string" && u.trim()) return giftHubImageFullUrl(u);
+      const f = giftRow.image_file;
+      if (typeof f === "string" && f.trim()) {
+        return giftHubImageFullUrl("/gift-images/" + encodeURIComponent(f.trim()));
+      }
+      return "";
+    }
+
+    function currentGiftCatalogFilter() {
+      const q = String(settingsGiftSearch && settingsGiftSearch.value ? settingsGiftSearch.value : "")
+        .normalize("NFC")
+        .toLowerCase()
+        .trim();
+      if (!q) return giftAssignCatalogRows;
+      return giftAssignCatalogRows.filter((g) => {
+        const nm = String(g.name || "").toLowerCase();
+        const idStr = String(g.tiktok_id != null ? g.tiktok_id : "");
+        return nm.includes(q) || idStr.includes(q);
+      });
+    }
+
+    function giftRowById(giftId) {
+      return giftAssignCatalogRows.find((row) => Number(row && row.tiktok_id) === Number(giftId)) || null;
+    }
+
+    function syncGiftComboTrigger(teamId, giftId) {
+      const wrap = document.querySelector(`.gift-combo[data-team-id="${teamId}"]`);
+      if (!wrap) return;
+      const hidden = wrap.querySelector(`#teamGiftId-${teamId}`);
+      const trigger = wrap.querySelector(".gift-combo__trigger");
+      const img = wrap.querySelector(".gift-combo__trigger-img");
+      const label = wrap.querySelector(".gift-combo__trigger-label");
+      const resolved = giftRowById(giftId);
+      if (hidden) hidden.value = resolved ? String(resolved.tiktok_id) : "";
+      if (img) {
+        const src = resolved ? getGiftCatalogImageUrl(resolved) : "";
+        if (src) {
+          img.src = src;
+          img.alt = String(resolved.name || "");
+          img.hidden = false;
+        } else {
+          img.removeAttribute("src");
+          img.alt = "";
+          img.hidden = !resolved;
+        }
+      }
+      if (label) {
+        label.textContent = resolved
+          ? `${String(resolved.name || "Gift " + giftId)} (${Number(resolved.diamond_count) || 0})`
+          : "Hediye sec";
+      }
+      if (trigger) trigger.setAttribute("aria-expanded", giftComboPopoverTeamId === teamId ? "true" : "false");
+    }
+
+    function normalizeGiftCatalogRow(row) {
+      if (!row || typeof row !== "object") return null;
+      const id = Math.floor(Number(row.tiktok_id ?? row.code ?? row.gift_tiktok_id ?? 0));
+      if (!Number.isFinite(id) || id <= 0) return null;
+      return {
+        ...row,
+        tiktok_id: id,
+        name: String(row.name || "").trim() || "Gift " + id,
+        diamond_count: Math.max(
+          0,
+          Math.floor(Number(row.diamond_count ?? row.coins ?? row.diamond ?? 0) || 0)
+        ),
+      };
+    }
+
+    function giftCatalogRowId(row) {
+      const id = Math.floor(Number(row && row.tiktok_id));
+      return Number.isFinite(id) && id > 0 ? id : null;
+    }
+
+    function destroyGiftComboPopover() {
+      if (giftComboPopover) {
+        giftComboPopover.remove();
+        giftComboPopover = null;
+      }
+    }
+
+    function mountGiftComboPopoverShell() {
+      if (giftComboPopover) return giftComboPopover;
+      const pop = document.createElement("div");
+      pop.className = "gift-combo-popover";
+      pop.setAttribute("role", "listbox");
+      pop.hidden = true;
+      document.body.appendChild(pop);
+      pop.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const btn = ev.target instanceof Element ? ev.target.closest(".gift-combo-option") : null;
+        if (!btn || giftComboPopoverTeamId == null) return;
+        const giftId = Math.floor(Number(btn.dataset.giftId));
+        if (!Number.isFinite(giftId) || giftId <= 0) return;
+        setAssignedGiftForTeam(giftComboPopoverTeamId, giftId);
+        syncGiftComboTrigger(giftComboPopoverTeamId, giftId);
+        if (settingsGiftStatus) {
+          settingsGiftStatus.textContent = "";
+        }
+        closeGiftComboPopover();
+      });
+      giftComboPopover = pop;
+      return pop;
+    }
+
+    function renderGiftComboPopoverOptions() {
+      const pop = mountGiftComboPopoverShell();
+      pop.replaceChildren();
+      const scroll = document.createElement("div");
+      scroll.className = "gift-combo-popover__scroll";
+      const rows = currentGiftCatalogFilter();
+      rows.forEach((g) => {
+        const id = giftCatalogRowId(g);
+        if (id == null) return;
+        const row = document.createElement("button");
+        row.type = "button";
+        row.className = "gift-combo-option";
+        row.setAttribute("role", "option");
+        row.dataset.giftId = String(id);
+        const im = document.createElement("img");
+        im.className = "gift-combo-option__img";
+        im.src = getGiftCatalogImageUrl(g);
+        im.alt = "";
+        im.width = 28;
+        im.height = 28;
+        im.loading = "lazy";
+        im.decoding = "async";
+        if (!im.src) im.hidden = true;
+        const name = document.createElement("span");
+        name.className = "gift-combo-option__name";
+        name.textContent = String(g.name || "Gift " + id);
+        const dm = document.createElement("span");
+        dm.className = "gift-combo-option__diamonds";
+        dm.textContent = String(Number(g.diamond_count) || 0);
+        row.append(im, name, dm);
+        scroll.appendChild(row);
+      });
+      if (!scroll.childElementCount) {
+        const empty = document.createElement("div");
+        empty.className = "settings-gift-empty";
+        empty.textContent =
+          giftAssignCatalogRows.length === 0
+            ? "Hediye listesi yukleniyor..."
+            : "Aramaya uygun hediye bulunamadi.";
+        scroll.appendChild(empty);
+      }
+      pop.appendChild(scroll);
+    }
+
+    function positionGiftComboPopover(teamId) {
+      const pop = mountGiftComboPopoverShell();
+      const trigger = document.querySelector(`.gift-combo[data-team-id="${teamId}"] .gift-combo__trigger`);
+      if (!trigger) return false;
+      const r = trigger.getBoundingClientRect();
+      const maxH = Math.min(360, Math.max(160, window.innerHeight - r.bottom - 16));
+      const w = Math.max(260, Math.min(Math.max(r.width, 280), window.innerWidth - 16));
+      pop.style.left = `${Math.max(8, Math.min(r.left, window.innerWidth - w - 8))}px`;
+      pop.style.top = `${r.bottom + 4}px`;
+      pop.style.width = `${w}px`;
+      const sc = pop.querySelector(".gift-combo-popover__scroll");
+      if (sc) sc.style.maxHeight = `${maxH}px`;
+      return true;
+    }
+
+    function closeGiftComboPopover() {
+      if (!giftComboPopover || giftComboPopover.hidden) {
+        giftComboPopoverTeamId = null;
+        return;
+      }
+      giftComboPopover.hidden = true;
+      if (giftComboPopoverTeamId != null) {
+        syncGiftComboTrigger(giftComboPopoverTeamId, getAssignedGiftIdForTeam(giftComboPopoverTeamId));
+      }
+      giftComboPopoverTeamId = null;
+    }
+
+    function rebuildGiftComboPopover() {
+      if (giftComboPopoverTeamId == null) {
+        destroyGiftComboPopover();
+        return;
+      }
+      const teamId = giftComboPopoverTeamId;
+      renderGiftComboPopoverOptions();
+      positionGiftComboPopover(teamId);
+      mountGiftComboPopoverShell().hidden = false;
+      syncGiftComboTrigger(teamId, getAssignedGiftIdForTeam(teamId));
+    }
+
+    function openGiftComboPopover(teamId) {
+      if (!teamId) return;
+      if (giftComboPopoverTeamId === teamId && giftComboPopover && !giftComboPopover.hidden) {
+        closeGiftComboPopover();
+        return;
+      }
+      giftComboPopoverTeamId = teamId;
+      renderGiftComboPopoverOptions();
+      if (!positionGiftComboPopover(teamId)) {
+        giftComboPopoverTeamId = null;
+        return;
+      }
+      mountGiftComboPopoverShell().hidden = false;
+      syncGiftComboTrigger(teamId, getAssignedGiftIdForTeam(teamId));
+    }
+
+    async function refreshGiftAssignCatalog(opts) {
+      if (settingsGiftStatus) settingsGiftStatus.textContent = "";
+      try {
+        const catalog = await getGiftAssignCatalog(opts);
+        giftAssignCatalogSource = catalog.source;
+        giftAssignCatalogRows = (Array.isArray(catalog.gifts) ? catalog.gifts : [])
+          .map(normalizeGiftCatalogRow)
+          .filter(Boolean)
+          .slice()
+          .sort((a, b) => {
+          const da = Number(a && a.diamond_count) || 0;
+          const db = Number(b && b.diamond_count) || 0;
+          if (da !== db) return da - db;
+          return String(a && a.name ? a.name : "").localeCompare(String(b && b.name ? b.name : ""), "tr");
+        });
+        activeTeamIds().forEach((teamId) => syncGiftComboTrigger(teamId, getAssignedGiftIdForTeam(teamId)));
+        if (settingsGiftStatus) settingsGiftStatus.textContent = "";
+        if (giftComboPopoverTeamId != null) rebuildGiftComboPopover();
+        else destroyGiftComboPopover();
+      } catch (e) {
+        if (settingsGiftStatus) {
+          settingsGiftStatus.textContent = `Hediye listesi alinamadi: ${e && e.message ? e.message : "bilinmeyen hata"}`;
+        }
+      }
+    }
+
+    SLOT_IDS.forEach((id) => {
+      state.audios[id].loop = false;
+      state.audios[id].preload = "auto";
+      state.audios[id].volume = 1;
+      state.audios[id].src = "";
+    });
+
+    function loadPlayerCountFromStorage() {
+      try {
+        const v = parseInt(localStorage.getItem(PLAYER_COUNT_KEY), 10);
+        if (Number.isFinite(v) && v >= 2 && v <= MAX_SLOTS) state.playerCount = v;
+      } catch (_e) {}
+    }
+
+    function savePlayerCountToStorage() {
+      try {
+        localStorage.setItem(PLAYER_COUNT_KEY, String(state.playerCount));
+      } catch (_e) {}
+    }
+
+    function ensureAllBallSlots() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      SLOT_IDS.forEach((id) => {
+        if (!state.balls[id]) state.balls[id] = { x: cx, y: cy, vx: 0, vy: 0 };
+      });
+    }
+
+    /**
+     * Gorseldeki gibi ic ice paketlenmis daireler: buyuk sol, orta sag-alt, kucuk ust-sag (3 kisi);
+     * 4–10 kisi icin cakismayi gidermek uzere yumusak itme + dis halka icinde kalma.
+     */
+    function syncPackedBubbleLayout() {
+      const { cx, cy, radius: arenaR } = getArenaGeometry();
+      const { radii } = getBallRadiiSnapshot();
+      const ids = activeTeamIds();
+      if (ids.length === 0) return;
+
+      const gap = 10;
+      const nodes = ids.map((id) => {
+        const b = state.balls[id];
+        const br = radii[id];
+        const outer = badgeOuterRadiusPx(br, id);
+        return { id, r: outer + gap * 0.5, br, outer, x: b.x, y: b.y };
+      });
+      nodes.sort((a, b) => b.outer - a.outer);
+
+      const seed = (i, n) => {
+        if (n === 1) return { x: cx, y: cy };
+        if (n === 2) {
+          const k = i === 0 ? -1 : 1;
+          return { x: cx + k * arenaR * 0.3, y: cy };
+        }
+        if (n >= 3 && i < 3) {
+          if (i === 0) return { x: cx - arenaR * 0.34, y: cy - arenaR * 0.04 };
+          if (i === 1) return { x: cx + arenaR * 0.3, y: cy + arenaR * 0.36 };
+          return { x: cx + arenaR * 0.2, y: cy - arenaR * 0.32 };
+        }
+        const t = (i + 0.37) / Math.max(1, n);
+        const ang = -Math.PI * 0.72 + t * Math.PI * 1.55;
+        const dist = arenaR * (0.16 + 0.5 * Math.pow(t, 0.82));
+        return { x: cx + Math.cos(ang) * dist, y: cy + Math.sin(ang) * dist * 0.9 };
+      };
+
+      nodes.forEach((node, i) => {
+        const p = seed(i, nodes.length);
+        node.x = p.x;
+        node.y = p.y;
+      });
+
+      for (let iter = 0; iter < 52; iter++) {
+        for (const node of nodes) {
+          let dx = node.x - cx;
+          let dy = node.y - cy;
+          const d = Math.hypot(dx, dy) || 1;
+          const maxD = Math.max(arenaR - node.r - 5 - AL.edgePad, arenaR * 0.14);
+          if (d > maxD) {
+            node.x = cx + (dx / d) * maxD;
+            node.y = cy + (dy / d) * maxD;
+          }
+        }
+        for (let i = 0; i < nodes.length; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const a = nodes[i];
+            const b = nodes[j];
+            let dx = b.x - a.x;
+            let dy = b.y - a.y;
+            const d = Math.hypot(dx, dy) || 0.0001;
+            const minD = a.r + b.r;
+            if (d < minD) {
+              const push = (minD - d) * 0.74;
+              const nx = dx / d;
+              const ny = dy / d;
+              a.x -= nx * push * 0.5;
+              a.y -= ny * push * 0.5;
+              b.x += nx * push * 0.5;
+              b.y += ny * push * 0.5;
+            }
+          }
+        }
+      }
+
+      nodes.forEach((node) => {
+        const b = state.balls[node.id];
+        b.x = node.x;
+        b.y = node.y;
+      });
+    }
+
+    function layoutBallsForArena() {
+      snapBallRadiiToTargets();
+      syncPackedBubbleLayout();
+      const { radius: ar } = getArenaGeometry();
+      const { radii } = computeBallRadiusTargets();
+      const ids = activeTeamIds();
+      const meanR = ids.reduce((s, id) => s + radii[id], 0) / Math.max(1, ids.length);
+      const refR = Math.max(28, ar * ARENA3.physics.speedRefRFrac);
+      const sizeNorm = Math.min(1.45, meanR / refR);
+      let startSpeed = Math.round(Math.max(165, 285 * (1.08 - 0.48 * sizeNorm)));
+      if (ids.length >= 3) startSpeed = Math.round(startSpeed * 0.92);
+      if (ids.length >= 5) startSpeed = Math.round(startSpeed * 0.88);
+      activeTeamIds().forEach((id) => Object.assign(state.balls[id], randomVelocity(startSpeed)));
+    }
+
+    function refreshTeamEls() {
+      teamEls = Object.fromEntries(
+        activeTeamIds().map((id) => [
+          id,
+          {
+            wrap: document.getElementById(`team-${id}`),
+            score: document.getElementById(`score-${id}`),
+            crest: document.getElementById(`crest-${id}`),
+            crestImg: document.getElementById(`crest-img-${id}`)
+          }
+        ])
+      );
+    }
+
+    function restoreTeamCrests() {
+      activeTeamIds().forEach((id, idx) => {
+        const url = state.teamPhotos[id] || "";
+        if (!url) {
+          const row = teamEls[id];
+          if (row && row.crestImg) row.crestImg.removeAttribute("src");
+          if (row && row.crest) row.crest.classList.remove("has-photo");
+          return;
+        }
+        const run = () => applyTeamPhoto(id, url, { skipSave: true });
+        if (idx === 0) run();
+        else setTimeout(run, idx * 12);
+      });
+    }
+
+    function buildScoreboard() {
+      if (!scoreboardRoot) return;
+      scoreboardRoot.className =
+        "scoreboard" + (state.playerCount >= 7 ? " scoreboard-dense" : "");
+      scoreboardRoot.innerHTML = activeTeamIds()
+        .map((id) => {
+          const vis = teamVisualForId(id);
+          const slotColor = String(vis.glow || "rgba(255,255,255,0.35)").replace(/,\s*1\)$/, ", 0.38)");
+          return `
+      <article class="team" id="team-${id}">
+        <div class="crest" id="crest-${id}" data-label="${vis.label}" style="--crest-slot-color:${slotColor}" aria-hidden="true">
+          <img class="crest-img" id="crest-img-${id}" alt="" width="34" height="34" decoding="async" />
+        </div>
+        <div class="score" id="score-${id}">0</div>
+      </article>`;
+        })
+        .join("");
+      refreshTeamEls();
+      activeTeamIds().forEach((id) => {
+        state.displayScores[id] = state.scores[id];
+        const row = teamEls[id];
+        if (row && row.score) row.score.textContent = String(state.scores[id]);
+      });
+      restoreTeamCrests();
+    }
+
+    function buildSettingsTeamRows() {
+      if (!settingsTeamsRoot) return;
+      settingsTeamsRoot.innerHTML = activeTeamIds()
+        .map((id, idx) => {
+          const label = `Oyuncu ${idx + 1}`;
+          const musicLines = [0, 1, 2, 3]
+            .map(
+              (slot) => `
+        <div class="settings-music-line">
+          <span class="settings-slot-name">Sarki ${slot + 1}</span>
+          <div class="settings-slot-btns">
+            <button type="button" class="settings-btn settings-btn-sm" data-music-browse="${id}" data-music-slot="${slot}">Sec</button>
+            <button type="button" class="settings-btn settings-btn-sm danger" data-music-clear-slot="${id}" data-music-slot="${slot}" title="Bu sarkiyi kaldir">Sil</button>
+          </div>
+        </div>`
+            )
+            .join("");
+          return `
+      <section class="settings-player-card" aria-label="${label}">
+        <h3 class="settings-player-title">${label}</h3>
+        <div class="settings-team-bird-grid">
+          <div class="settings-team-bird-row">
+            <span class="settings-label settings-team-bird-row__label">Gorsel</span>
+            <img class="settings-team-bird-row__preview" id="teamPhotoPreview-${id}" alt="" width="40" height="40" decoding="async" />
+            <input
+              type="text"
+              class="settings-input settings-team-bird-row__url"
+              id="teamPhotoUrl-${id}"
+              value="${String(state.teamPhotos[id] || "").replace(/"/g, "&quot;")}"
+              placeholder="Bos = varsayilan"
+              spellcheck="false"
+              autocomplete="off"
+            />
+            <label class="settings-btn settings-btn-sm settings-btn--ghost settings-team-bird-row__filebtn" for="file-${id}">Dosya</label>
+            <button type="button" class="settings-btn settings-btn-sm settings-btn--ghost settings-team-bird-row__reset" data-photo-clear="${id}">Sifirla</button>
+          </div>
+          <div class="settings-team-gift-row">
+            <span class="settings-label">Takim hediyesi</span>
+            <div class="gift-combo" data-team-id="${id}">
+              <input type="hidden" id="teamGiftId-${id}" value="" />
+              <button
+                type="button"
+                class="gift-combo__trigger"
+                aria-haspopup="listbox"
+                aria-expanded="false"
+                data-gift-trigger="${id}"
+                aria-label="${label} hediyesi"
+              >
+                <img class="gift-combo__trigger-img" alt="" width="28" height="28" decoding="async" hidden />
+                <span class="gift-combo__trigger-label">Hediye sec</span>
+                <span class="gift-combo__chevron" aria-hidden="true">▾</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="settings-music-list">
+          ${musicLines}
+        </div>
+        <div class="settings-music-clear-all-wrap">
+          <button type="button" class="settings-btn settings-btn-sm danger" data-music-clear-all="${id}" title="Tum sarkilari kaldir">Tum sarkilari temizle</button>
+        </div>
+        <input type="file" id="file-${id}" accept="image/*" hidden />
+        ${[0, 1, 2, 3]
+          .map(
+            (slot) =>
+              `<input type="file" id="file-music-${id}-${slot}" accept="audio/*,.mp3,.m4a,.ogg,.wav,.webm" hidden />`
+          )
+          .join("")}
+      </section>`;
+        })
+        .join("");
+    }
+
+    function updatePlayerCountButtonsHighlight() {
+      if (!playerCountModeEl) return;
+      playerCountModeEl.querySelectorAll(".settings-mode-btn").forEach((btn) => {
+        const n = parseInt(btn.getAttribute("data-n"), 10);
+        btn.classList.toggle("active", n === state.playerCount);
+      });
+    }
+
+    function initPlayerCountModeUI() {
+      if (!playerCountModeEl) return;
+      playerCountModeEl.innerHTML = "";
+      for (let n = 2; n <= MAX_SLOTS; n++) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "settings-mode-btn";
+        b.setAttribute("data-n", String(n));
+        b.textContent = String(n);
+        b.title = `${n} oyuncu`;
+        b.addEventListener("click", (ev) => {
+          ev.stopPropagation();
+          setPlayerCount(parseInt(ev.currentTarget.getAttribute("data-n"), 10));
+        });
+        playerCountModeEl.appendChild(b);
+      }
+      updatePlayerCountButtonsHighlight();
+    }
+
+    function setPlayerCount(n) {
+      const nc = Math.max(2, Math.min(MAX_SLOTS, Math.floor(n)));
+      if (nc === state.playerCount) return;
+      state.playerCount = nc;
+      savePlayerCountToStorage();
+      buildScoreboard();
+      buildSettingsTeamRows();
+      activeTeamIds().forEach((teamId) => syncGiftComboTrigger(teamId, getAssignedGiftIdForTeam(teamId)));
+      updatePlayerCountButtonsHighlight();
+      ensureAllBallSlots();
+      layoutBallsForArena();
+      updateAll();
+    }
+
+    const MUSIC_DB_NAME = "arena_skor_team_music_v1";
+    const MUSIC_STORE = "tracks";
+    let musicDbPromise = null;
+
+    function openTeamMusicDB() {
+      if (!musicDbPromise) {
+        musicDbPromise = new Promise((resolve, reject) => {
+          const req = indexedDB.open(MUSIC_DB_NAME, 1);
+          req.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(MUSIC_STORE)) {
+              db.createObjectStore(MUSIC_STORE, { keyPath: "teamId" });
+            }
+          };
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => reject(req.error);
+        });
+      }
+      return musicDbPromise;
+    }
+
+    const MUSIC_SLOT_COUNT = 4;
+
+    async function idbGetTeamBlobs(teamId) {
+      const base = [null, null, null, null];
+      const db = await openTeamMusicDB();
+      const row = await new Promise((resolve, reject) => {
+        const tx = db.transaction(MUSIC_STORE, "readonly");
+        const q = tx.objectStore(MUSIC_STORE).get(teamId);
+        q.onsuccess = () => resolve(q.result || null);
+        q.onerror = () => reject(q.error);
+      });
+      if (!row) return base;
+      if (Array.isArray(row.blobs)) {
+        for (let i = 0; i < MUSIC_SLOT_COUNT && i < row.blobs.length; i++) {
+          const b = row.blobs[i];
+          if (b instanceof Blob && b.size > 0) base[i] = b;
+        }
+        return base;
+      }
+      if (row.blob instanceof Blob && row.blob.size > 0) base[0] = row.blob;
+      return base;
+    }
+
+    async function idbPutTeamBlobs(teamId, blobs) {
+      const normalized = [0, 1, 2, 3].map((i) => {
+        const b = blobs[i];
+        return b instanceof Blob && b.size > 0 ? b : null;
+      });
+      if (!normalized.some(Boolean)) {
+        await idbDeleteTeamMusic(teamId);
+        return;
+      }
+      const db = await openTeamMusicDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(MUSIC_STORE, "readwrite");
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.objectStore(MUSIC_STORE).put({ teamId, blobs: normalized });
+      });
+    }
+
+    async function idbDeleteTeamMusic(teamId) {
+      const db = await openTeamMusicDB();
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(MUSIC_STORE, "readwrite");
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+        tx.objectStore(MUSIC_STORE).delete(teamId);
+      });
+    }
+
+    function revokeTeamMusicUrls(teamId) {
+      const u = state.musicObjectUrls[teamId];
+      if (Array.isArray(u)) {
+        u.forEach((url) => {
+          if (url) {
+            try {
+              URL.revokeObjectURL(url);
+            } catch (_e) {}
+          }
+        });
+      } else if (typeof u === "string") {
+        try {
+          URL.revokeObjectURL(u);
+        } catch (_e) {}
+      }
+      delete state.musicObjectUrls[teamId];
+    }
+
+    function bindTeamMusic(teamId, blobs) {
+      const a = state.audios[teamId];
+      revokeTeamMusicUrls(teamId);
+      a.pause();
+      const slots = [0, 1, 2, 3].map((i) =>
+        blobs[i] instanceof Blob && blobs[i].size > 0 ? blobs[i] : null
+      );
+      const urls = slots.map((b) => (b ? URL.createObjectURL(b) : null));
+      state.musicObjectUrls[teamId] = urls;
+      const filled = [];
+      urls.forEach((url, j) => {
+        if (url) filled.push(j);
+      });
+      if (filled.length === 0) {
+        a.removeAttribute("src");
+        a.src = "";
+        a.loop = false;
+        delete state.musicPlaylistIndex[teamId];
+        if (state.musicPlaybackTime) delete state.musicPlaybackTime[teamId];
+        return;
+      }
+      const firstIdx = filled[Math.floor(Math.random() * filled.length)];
+      a.src = urls[firstIdx];
+      state.musicPlaylistIndex[teamId] = firstIdx;
+      a.loop = false;
+      a.load();
+      if (!state.musicPlaybackTime) state.musicPlaybackTime = Object.create(null);
+      state.musicPlaybackTime[teamId] = { t: 0, key: urls[firstIdx] || "" };
+    }
+
+    function audioTrackKey(a) {
+      if (!a) return "";
+      return String(a.currentSrc || a.src || "");
+    }
+
+    function saveMusicPlaybackPosition(teamId) {
+      const a = state.audios[teamId];
+      if (!a || !a.src) return;
+      const key = audioTrackKey(a);
+      if (!key) return;
+      if (!state.musicPlaybackTime) state.musicPlaybackTime = Object.create(null);
+      state.musicPlaybackTime[teamId] = {
+        t: Math.max(0, Number(a.currentTime) || 0),
+        key
+      };
+    }
+
+    function restoreMusicPlaybackPosition(teamId) {
+      const a = state.audios[teamId];
+      const saved = state.musicPlaybackTime?.[teamId];
+      if (!a || !saved || !saved.key) return;
+      if (audioTrackKey(a) !== saved.key) return;
+      if (saved.t < 0.02) return;
+      const applySeek = () => {
+        try {
+          const dur = Number(a.duration);
+          let t = saved.t;
+          if (Number.isFinite(dur) && dur > 0) t = Math.min(t, Math.max(0, dur - 0.05));
+          a.currentTime = t;
+        } catch (_e) {}
+      };
+      if (a.readyState >= 1) applySeek();
+      else a.addEventListener("loadedmetadata", applySeek, { once: true });
+    }
+
+    function wireLeaderMusicEndedHandler(leader, a) {
+      teardownLeaderEndedListener();
+      const uArr = state.musicObjectUrls[leader];
+      const trackCount = Array.isArray(uArr) ? uArr.filter(Boolean).length : 0;
+      if (trackCount <= 1) {
+        a.loop = trackCount === 1;
+        return;
+      }
+      a.loop = false;
+      const handler = () => {
+        const arr = state.musicObjectUrls[leader];
+        if (!Array.isArray(arr)) return;
+        let cur = state.musicPlaylistIndex[leader];
+        if (typeof cur !== "number" || cur < 0) cur = 0;
+        const filled = [];
+        arr.forEach((url, j) => {
+          if (url) filled.push(j);
+        });
+        if (filled.length === 0) return;
+        let nextIdx;
+        if (filled.length === 1) {
+          nextIdx = filled[0];
+        } else {
+          const others = filled.filter((j) => j !== cur);
+          const pool = others.length ? others : filled;
+          nextIdx = pool[Math.floor(Math.random() * pool.length)];
+        }
+        state.musicPlaylistIndex[leader] = nextIdx;
+        a.src = arr[nextIdx];
+        if (!state.musicPlaybackTime) state.musicPlaybackTime = Object.create(null);
+        state.musicPlaybackTime[leader] = { t: 0, key: arr[nextIdx] || "" };
+        a.load();
+        void a.play();
+      };
+      state.leaderEndedHandler = handler;
+      state.leaderEndedAudio = a;
+      a.addEventListener("ended", handler);
+    }
+
+    async function applyTeamMusicSlot(teamId, slotIndex, fileOrNull) {
+      const idx = Math.max(0, Math.min(MUSIC_SLOT_COUNT - 1, Number(slotIndex) || 0));
+      let blobs = await idbGetTeamBlobs(teamId);
+      if (fileOrNull instanceof Blob && fileOrNull.size > 0) blobs[idx] = fileOrNull;
+      else blobs[idx] = null;
+      await idbPutTeamBlobs(teamId, blobs);
+      blobs = await idbGetTeamBlobs(teamId);
+      bindTeamMusic(teamId, blobs);
+      if (!state.audioReady) await initAudio();
+      else await playLeaderSong(getLeader(), { forceRestart: getLeader() === teamId });
+    }
+
+    async function applyTeamMusicClearAll(teamId) {
+      try {
+        await idbDeleteTeamMusic(teamId);
+      } catch (_e) {}
+      bindTeamMusic(teamId, [null, null, null, null]);
+      if (!state.audioReady) await initAudio();
+      else if (getLeader() === teamId) await playLeaderSong("none");
+      else await playLeaderSong(getLeader());
+    }
+
+    async function loadTeamMusicFromIDB() {
+      const LEGACY_IDS = ["fb", "amed", "bjk", "gs", "ts"];
+      for (let i = 0; i < LEGACY_IDS.length; i++) {
+        const slotId = SLOT_IDS[i];
+        try {
+          const have = await idbGetTeamBlobs(slotId);
+          if (have.some(Boolean)) continue;
+          const legacyBlobs = await idbGetTeamBlobs(LEGACY_IDS[i]);
+          const oldBlob = legacyBlobs[0];
+          if (oldBlob) {
+            await idbPutTeamBlobs(slotId, [oldBlob, null, null, null]);
+            await idbDeleteTeamMusic(LEGACY_IDS[i]);
+          }
+        } catch (_e) {}
+      }
+      for (const id of SLOT_IDS) {
+        try {
+          const blobs = await idbGetTeamBlobs(id);
+          if (blobs.some(Boolean)) bindTeamMusic(id, blobs);
+        } catch (_e) {}
+      }
+      if (state.audioReady) void playLeaderSong(getLeader());
+    }
+
+    function isTikfinityAutoWsDisabled() {
+      const p = new URLSearchParams(location.search);
+      for (const k of ["tikfinity", "autows", "tikfinityWs"]) {
+        const v = p.get(k);
+        if (v === "0" || v === "false" || v === "off") return true;
+      }
+      return false;
+    }
+
+    function getTikfinityWsUrl() {
+      try {
+        const s = localStorage.getItem(WS_STORAGE_KEY);
+        if (s && /^wss?:\/\//i.test(s.trim())) return s.trim();
+      } catch (_e) {}
+      if (typeof window.TIKFINITY_WS_URL === "string") {
+        const g = window.TIKFINITY_WS_URL.trim();
+        if (/^wss?:\/\//i.test(g)) return g;
+      }
+      const meta = document.querySelector('meta[name="tikfinity-ws-url"]');
+      if (meta) {
+        const c = (meta.getAttribute("content") || "").trim();
+        if (/^wss?:\/\//i.test(c)) return c;
+      }
+      const qp = new URLSearchParams(location.search).get("ws");
+      if (qp && /^wss?:\/\//i.test(qp.trim())) return qp.trim();
+      return DEFAULT_WS_URL;
+    }
+
+    function setTikfinityStatus(text) {
+      const el = document.getElementById("tikfinity-ws-status");
+      if (el) el.textContent = text;
+    }
+
+    function teamIdFromGiftData(data) {
+      const slotFromIndex = (idx) => {
+        if (!Number.isFinite(idx) || idx < 0 || idx >= state.playerCount) return null;
+        return SLOT_IDS[idx];
+      };
+
+      const pick = (v) => (typeof v === "string" && v.trim() ? v.trim() : "");
+      const pickSentDescribe = (info) => {
+        const d = info && typeof info.describe === "string" ? info.describe.trim() : "";
+        if (!d) return "";
+        return d.replace(/^sent\s+/i, "").trim();
+      };
+
+      const rawGid =
+        data.giftId != null
+          ? data.giftId
+          : data.giftID != null
+            ? data.giftID
+            : data.gift_id != null
+              ? data.gift_id
+              : data.extendedGiftInfo && data.extendedGiftInfo.giftId != null
+                ? data.extendedGiftInfo.giftId
+                : data.giftDetails && data.giftDetails.giftId != null
+                  ? data.giftDetails.giftId
+                  : data.gift && (data.gift.gift_id != null ? data.gift.gift_id : data.gift.id);
+      const gid = rawGid != null && rawGid !== "" ? parseInt(String(rawGid), 10) : NaN;
+      if (Number.isFinite(gid) && state.localGiftToTeam.has(gid)) {
+        const mappedTeam = state.localGiftToTeam.get(gid);
+        return activeTeamIds().includes(mappedTeam) ? mappedTeam : null;
+      }
+      const idToSlotIndex = {
+        5655: 3,
+        5269: 0,
+        5827: 1,
+        6064: 2
+      };
+      if (Number.isFinite(gid) && idToSlotIndex[gid] !== undefined) {
+        return slotFromIndex(idToSlotIndex[gid]);
+      }
+
+      const raw =
+        pick(data.giftName) ||
+        pick(data.giftDetails && data.giftDetails.giftName) ||
+        pick(data.gift && (data.gift.name || data.gift.giftName || data.gift.gift_name)) ||
+        pickSentDescribe(data.extendedGiftInfo) ||
+        "";
+
+      const n = raw.normalize("NFC").toLowerCase();
+      if (!n) return null;
+      for (const [giftId, mappedTeam] of state.localGiftToTeam.entries()) {
+        const row = giftRowById(giftId);
+        const rowName = String(row && row.name ? row.name : "").normalize("NFC").toLowerCase().trim();
+        if (rowName && rowName === n && activeTeamIds().includes(mappedTeam)) return mappedTeam;
+      }
+      const spaced = n.replace(/\s+/g, " ").trim();
+      const compact = spaced.replace(/ /g, "");
+
+      if (spaced === "rose" || compact === "rose" || spaced === "gül" || compact === "gül") return slotFromIndex(3);
+      if (spaced === "gg" || compact === "gg") return slotFromIndex(2);
+      if (spaced === "tiktok" || spaced === "tik tok" || compact === "tiktok") return slotFromIndex(0);
+      if (
+        spaced === "ice cream cone" ||
+        compact === "icecreamcone" ||
+        compact === "icecream" ||
+        spaced === "ice cream" ||
+        (spaced.includes("ice cream") && spaced.includes("cone")) ||
+        (spaced.includes("icecream") && spaced.includes("cone")) ||
+        n.includes("dondurma") ||
+        (n.includes("külah") && n.includes("dondurma")) ||
+        (n.includes("kulah") && n.includes("dondurma"))
+      ) {
+        return slotFromIndex(1);
+      }
+      if (spaced === "pop" || /^pop\b/i.test(raw)) return slotFromIndex(4);
+
+      return null;
+    }
+
+    function applyTikfinityPoints(teamId, points, withBurst) {
+      const p = Math.max(0, Math.floor(points));
+      if (p < 1) return;
+      if (!activeTeamIds().includes(teamId)) return;
+      if (!state.audioReady) initAudio();
+      state.scores[teamId] += p;
+      if (withBurst !== false) spawnGiftBurst(teamId, p);
+      updateAll();
+    }
+
+    function giftIdFromTikfinityData(data) {
+      const rawGid =
+        data.giftId != null
+          ? data.giftId
+          : data.giftID != null
+            ? data.giftID
+            : data.gift_id != null
+              ? data.gift_id
+              : data.extendedGiftInfo && data.extendedGiftInfo.giftId != null
+                ? data.extendedGiftInfo.giftId
+                : data.giftDetails && data.giftDetails.giftId != null
+                  ? data.giftDetails.giftId
+                  : data.gift && (data.gift.gift_id != null ? data.gift.gift_id : data.gift.id);
+      const gid = rawGid != null && rawGid !== "" ? parseInt(String(rawGid), 10) : NaN;
+      return Number.isFinite(gid) && gid > 0 ? gid : null;
+    }
+
+    /** TikTok streak (giftType 1): yalnizca repeatEnd=true tek olay; ara combo tiklari sayilmaz */
+    function isTikfinityGiftEventInProgress(data) {
+      const giftType = Number(
+        data.giftType ?? data.gift_type ?? data.gift?.gift_type ?? data.gift?.giftType ?? 0
+      );
+      const repeatEnd = data.repeatEnd ?? data.repeat_end;
+      if (giftType === 1) {
+        return !(repeatEnd === true || repeatEnd === 1 || repeatEnd === "1");
+      }
+      return repeatEnd === false || repeatEnd === 0 || repeatEnd === "0";
+    }
+
+    function resolveGiftDiamondPerUnit(data) {
+      const direct = Math.floor(
+        Number(
+          data.diamondCount ??
+            data.diamond_count ??
+            data.gift?.diamond_count ??
+            data.gift?.diamondCount ??
+            data.extendedGiftInfo?.diamondCount ??
+            data.giftDetails?.diamondCount ??
+            0
+        )
+      );
+      if (direct > 0) return direct;
+      const gid = giftIdFromTikfinityData(data);
+      if (gid != null) {
+        const row = giftRowById(gid);
+        const cat = Math.floor(Number(row && row.diamond_count));
+        if (cat > 0) return cat;
+      }
+      return 1;
+    }
+
+    function resolveGiftComboCount(data) {
+      const raw = Math.floor(
+        Number(
+          data.repeatCount ??
+            data.repeat_count ??
+            data.giftCombo ??
+            data.comboCount ??
+            data.groupCount ??
+            data.gift?.repeat_count ??
+            1
+        )
+      );
+      return Math.min(120, Math.max(1, Number.isFinite(raw) && raw > 0 ? raw : 1));
+    }
+
+    function computeTikfinityGiftPoints(data) {
+      const diamondPerUnit = resolveGiftDiamondPerUnit(data);
+      const combo = resolveGiftComboCount(data);
+      return Math.min(60, Math.max(1, diamondPerUnit * combo));
+    }
+
+    function handleGemTokPortalGift(p) {
+      if (!p || typeof p !== "object") return;
+      if (String(p.type || "").toLowerCase() !== "gift") return;
+      const msg = { event: "gift", data: p };
+      handleTikfinityParsed(msg);
+    }
+
+    function handleTikfinityParsed(msg) {
+      const ev = String(msg.event || msg.type || "").toLowerCase();
+      if (ev !== "gift") return;
+
+      const data = msg.data != null && typeof msg.data === "object" ? msg.data : msg;
+
+      if (isTikfinityGiftEventInProgress(data)) return;
+      const giftTeam = teamIdFromGiftData(data);
+      if (!giftTeam) return;
+
+      applyTikfinityPoints(giftTeam, computeTikfinityGiftPoints(data));
+    }
+
+    function handleTikfinityRawLine(line) {
+      let msg;
+      try {
+        msg = JSON.parse(line);
+      } catch (_e) {
+        return;
+      }
+      if (!msg || typeof msg !== "object") return;
+      handleTikfinityParsed(msg);
+    }
+
+    function scheduleTikfinityFlush() {
+      if (state.tikfinity.flushScheduled) return;
+      state.tikfinity.flushScheduled = true;
+      requestAnimationFrame(() => {
+        state.tikfinity.flushScheduled = false;
+        let n = 0;
+        while (n < TIKFINITY_MAX_PER_FRAME && state.tikfinity.queue.length) {
+          const raw = state.tikfinity.queue.shift();
+          if (typeof raw !== "string") {
+            n++;
+            continue;
+          }
+          const chunks = String(raw)
+            .split(/\r?\n/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          for (const c of chunks) handleTikfinityRawLine(c);
+          n++;
+        }
+        if (state.tikfinity.queue.length) scheduleTikfinityFlush();
+      });
+    }
+
+    function disconnectTikfinity(opts) {
+      const intentional = opts && opts.intentional;
+      if (state.tikfinity.bridgeUnsub) {
+        try {
+          state.tikfinity.bridgeUnsub();
+        } catch (_e) {}
+        state.tikfinity.bridgeUnsub = null;
+      }
+      if (state.tikfinity.portalHudTimer) {
+        clearInterval(state.tikfinity.portalHudTimer);
+        state.tikfinity.portalHudTimer = null;
+      }
+      if (state.tikfinity.reconnectTimer) {
+        clearTimeout(state.tikfinity.reconnectTimer);
+        state.tikfinity.reconnectTimer = null;
+      }
+      const w = state.tikfinity.ws;
+      state.tikfinity.ws = null;
+      state.tikfinity.intentionalClose = !!intentional;
+      if (w && (w.readyState === WebSocket.OPEN || w.readyState === WebSocket.CONNECTING)) {
+        try {
+          w.close();
+        } catch (_e) {}
+      }
+    }
+
+    function scheduleTikfinityReconnect() {
+      if (isTikfinityAutoWsDisabled()) return;
+      if (state.tikfinity.reconnectTimer) return;
+      const delay = 3000 + Math.random() * 2500;
+      state.tikfinity.reconnectTimer = setTimeout(() => {
+        state.tikfinity.reconnectTimer = null;
+        connectTikfinity({ bypassDisable: true });
+      }, delay);
+    }
+
+    function connectTikfinity(opts) {
+      const bypass = opts && opts.bypassDisable;
+      if (!bypass && isTikfinityAutoWsDisabled()) {
+        setTikfinityStatus("Otomatik WebSocket kapali (?tikfinity=0). Ayarlardan baglan.");
+        return;
+      }
+      if (typeof GemTokLiveGameBridge !== "undefined" && typeof GemTokTikTokLive !== "undefined") {
+        disconnectTikfinity({ intentional: true });
+        const hub = window.__GEMTOK_GIFT_HUB_URL__ || "http://127.0.0.1:8787";
+        if (GemTokLiveGameBridge.ensure({ hubBase: hub, showHud: false })) {
+          state.tikfinity.bridgeUnsub = GemTokLiveGameBridge.onPayload((p) => handleGemTokPortalGift(p));
+          if (state.tikfinity.portalHudTimer) clearInterval(state.tikfinity.portalHudTimer);
+          state.tikfinity.portalHudTimer = setInterval(() => {
+            try {
+              const st = GemTokTikTokLive.getConnectionState?.();
+              if (!st) return;
+              const u = st.url || getTikfinityWsUrl();
+              if (st.state === "connected") setTikfinityStatus("GemTok koprusu bagli: " + u);
+              else if (st.state === "reconnecting") setTikfinityStatus("GemTok koprusu yeniden baglaniyor…");
+              else if (st.state === "connecting") setTikfinityStatus("GemTok koprusu baglaniyor…");
+              else setTikfinityStatus("GemTok koprusu bekleniyor…");
+            } catch (_e2) {}
+          }, 600);
+          return;
+        }
+      }
+      disconnectTikfinity({ intentional: true });
+      const url = getTikfinityWsUrl();
+      setTikfinityStatus("Baglaniyor…");
+      let ws;
+      try {
+        ws = new WebSocket(url);
+      } catch (_e) {
+        setTikfinityStatus("Baglanti basarisiz, yeniden denenecek.");
+        scheduleTikfinityReconnect();
+        return;
+      }
+      state.tikfinity.ws = ws;
+      state.tikfinity.intentionalClose = false;
+      ws.onopen = () => {
+        setTikfinityStatus("Bagli: " + url);
+      };
+      ws.onmessage = (ev) => {
+        state.tikfinity.queue.push(ev.data);
+        scheduleTikfinityFlush();
+      };
+      ws.onclose = () => {
+        if (state.tikfinity.ws !== ws) return;
+        state.tikfinity.ws = null;
+        const skipReconnect = state.tikfinity.intentionalClose;
+        state.tikfinity.intentionalClose = false;
+        if (skipReconnect) return;
+        setTikfinityStatus("Baglanti koptu, yeniden deneniyor…");
+        scheduleTikfinityReconnect();
+      };
+      ws.onerror = () => {
+        try {
+          ws.close();
+        } catch (_e) {}
+      };
+    }
+
+    function openSettings() {
+      void initAudio();
+      buildSettingsTeamRows();
+      settingsBackdrop.hidden = false;
+      settingsBackdrop.setAttribute("aria-hidden", "false");
+      void refreshGiftAssignCatalog({ force: false });
+      const inp = document.getElementById("tikfinity-ws-input");
+      if (inp) inp.value = getTikfinityWsUrl();
+    }
+
+    function closeSettings() {
+      closeGiftComboPopover();
+      settingsBackdrop.hidden = true;
+      settingsBackdrop.setAttribute("aria-hidden", "true");
+    }
+
+    function loadPhotosFromStorage() {
+      try {
+        let raw = localStorage.getItem(PHOTO_STORAGE_KEY);
+        if (!raw) {
+          raw = localStorage.getItem(PHOTO_LEGACY_KEY);
+          if (raw) {
+            const o = JSON.parse(raw);
+            const map = { fb: "s0", amed: "s1", bjk: "s2", gs: "s3", ts: "s4" };
+            const next = {};
+            for (const [legacy, nid] of Object.entries(map)) {
+              if (typeof o[legacy] === "string" && o[legacy]) next[nid] = o[legacy];
+            }
+            raw = JSON.stringify(next);
+            try {
+              localStorage.setItem(PHOTO_STORAGE_KEY, raw);
+            } catch (_e) {}
+          }
+        }
+        if (!raw) return;
+        const o = JSON.parse(raw);
+        SLOT_IDS.forEach((id) => {
+          if (typeof o[id] === "string" && o[id].length > 0) state.teamPhotos[id] = o[id];
+        });
+      } catch (_e) {}
+    }
+
+    function savePhotosToStorage() {
+      try {
+        localStorage.setItem(PHOTO_STORAGE_KEY, JSON.stringify(state.teamPhotos));
+      } catch (_e) {}
+    }
+
+    function applyTeamPhoto(id, dataUrl, opts) {
+      const skipSave = !!(opts && opts.skipSave);
+      const url = dataUrl || "";
+      const prevUrl = state.teamPhotos[id] || "";
+      if (url !== prevUrl) {
+        state.teamPhotos[id] = url;
+        if (!skipSave) savePhotosToStorage();
+      }
+      const input = document.getElementById(`teamPhotoUrl-${id}`);
+      if (input && input.value !== url) input.value = url;
+      const preview = document.getElementById(`teamPhotoPreview-${id}`);
+      if (preview) preview.src = url || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+      const row = teamEls[id];
+      const crest = row && row.crest;
+      const crestImg = row && row.crestImg;
+      if (crest && crestImg) {
+        crestImg.onerror = () => {
+          crestImg.removeAttribute("src");
+          crest.classList.remove("has-photo");
+        };
+        if (url) {
+          crestImg.src = url;
+          crest.classList.add("has-photo");
+        } else {
+          crestImg.removeAttribute("src");
+          crest.classList.remove("has-photo");
+        }
+      }
+      if (!url) {
+        state.teamCanvasImages[id] = null;
+        paintArenaFrame();
+        return;
+      }
+      const existing = state.teamCanvasImages[id];
+      if (existing && existing.src === url && existing.complete && existing.naturalWidth > 0) {
+        return;
+      }
+      const im = new Image();
+      state.teamCanvasImages[id] = im;
+      im.onload = () => paintArenaFrame();
+      im.onerror = () => {
+        state.teamCanvasImages[id] = null;
+        paintArenaFrame();
+      };
+      im.src = url;
+    }
+
+    function fileToResizedDataUrl(file, maxDim, cb) {
+      const reader = new FileReader();
+      reader.onerror = () => cb(null);
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => cb(null);
+        img.onload = () => {
+          const w = img.naturalWidth;
+          const h = img.naturalHeight;
+          const sc = Math.min(1, maxDim / Math.max(w, h));
+          const cw = Math.max(1, Math.round(w * sc));
+          const ch = Math.max(1, Math.round(h * sc));
+          const c = document.createElement("canvas");
+          c.width = cw;
+          c.height = ch;
+          c.getContext("2d").drawImage(img, 0, 0, cw, ch);
+          try {
+            cb(c.toDataURL("image/jpeg", 0.88));
+          } catch (_e) {
+            cb(null);
+          }
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function getArenaGeometry() {
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const radius = Math.min(canvas.width, canvas.height) / 2 - 16;
+      return { cx, cy, radius };
+    }
+
+    function physMassFromDisplayR(r) {
+      const exp = ARENA3.physics.massExponent;
+      return Math.max(1, r ** exp);
+    }
+
+    function physicsPairKey(idA, idB) {
+      return idA < idB ? `${idA}|${idB}` : `${idB}|${idA}`;
+    }
+
+    function buildActiveBallEntries(radii) {
+      return activeTeamIds().map((id) => ({
+        id,
+        ball: state.balls[id],
+        radius: radii[id]
+      }));
+    }
+
+    function ballCollisionRadius(r, teamId) {
+      return physicsBadgeRadius(r, teamId);
+    }
+
+    function ballMaxAllowedDist(arena, r, teamId) {
+      const P = ARENA3.physics;
+      const edge = badgeOuterRadiusPx(r, teamId);
+      return Math.max(4, arena.radius - edge - AL.edgePad - (P.wallSkinPx || 0));
+    }
+
+    function pairNormal(dx, dy, dist, idA, idB) {
+      const eps = 1e-4;
+      if (dist >= eps) return { nx: dx / dist, ny: dy / dist, dist };
+      /** Stabil eksen — frame'e bagli degil (orbiting/jitter onleme) */
+      const seed = (slotIndexFromId(idA) * 92837111) ^ (slotIndexFromId(idB) * 689287499);
+      const ang = ((seed >>> 0) / 4294967296) * Math.PI * 2;
+      return { nx: Math.cos(ang), ny: Math.sin(ang), dist: 1 };
+    }
+
+    function pairContactInfo(entryA, entryB, gap) {
+      const P = ARENA3.physics;
+      const RA = ballCollisionRadius(entryA.radius, entryA.id);
+      const RB = ballCollisionRadius(entryB.radius, entryB.id);
+      const minSep = RA + RB + gap;
+      const dx = entryB.ball.x - entryA.ball.x;
+      const dy = entryB.ball.y - entryA.ball.y;
+      const distRaw = Math.hypot(dx, dy);
+      const { nx, ny, dist } = pairNormal(dx, dy, distRaw, entryA.id, entryB.id);
+      return {
+        inContact: dist <= minSep + P.positionalSlop * 2,
+        nx,
+        ny,
+        minSep,
+        dist,
+        mA: physMassFromDisplayR(entryA.radius),
+        mB: physMassFromDisplayR(entryB.radius)
+      };
+    }
+
+    function cancelRelativeTangentialVelocity(ballA, ballB, nx, ny, mA, mB, strength) {
+      const s = Math.min(1, Math.max(0, strength));
+      if (s <= 0) return;
+      const tx = -ny;
+      const ty = nx;
+      const relT = (ballB.vx - ballA.vx) * tx + (ballB.vy - ballA.vy) * ty;
+      if (Math.abs(relT) < 1e-5) return;
+      const sumM = mA + mB;
+      ballA.vx += tx * relT * s * (mB / sumM);
+      ballA.vy += ty * relT * s * (mB / sumM);
+      ballB.vx -= tx * relT * s * (mA / sumM);
+      ballB.vy -= ty * relT * s * (mA / sumM);
+    }
+
+    function countBallContacts(balls, gap) {
+      const counts = Object.create(null);
+      balls.forEach((entry) => {
+        counts[entry.id] = 0;
+      });
+      for (let i = 0; i < balls.length; i++) {
+        for (let j = i + 1; j < balls.length; j++) {
+          if (pairBroadphaseSkip(balls[i], balls[j], gap)) continue;
+          const info = pairContactInfo(balls[i], balls[j], gap);
+          if (!info.inContact) continue;
+          counts[balls[i].id] += 1;
+          counts[balls[j].id] += 1;
+        }
+      }
+      return counts;
+    }
+
+    function stabilizeContactVelocities(balls, gap, nt) {
+      if (nt < 3) return;
+      const P = ARENA3.physics;
+      const threshold = Math.max(12, P.orbitalSpeedThreshold || 48);
+      const maxCancel = Math.min(0.95, Math.max(0, P.orbitalTangentialCancel || 0.62));
+      const contactCounts = countBallContacts(balls, gap);
+
+      for (let i = 0; i < balls.length; i++) {
+        for (let j = i + 1; j < balls.length; j++) {
+          const entryA = balls[i];
+          const entryB = balls[j];
+          if (pairBroadphaseSkip(entryA, entryB, gap)) continue;
+          const info = pairContactInfo(entryA, entryB, gap);
+          if (!info.inContact) continue;
+
+          const tx = -info.ny;
+          const ty = info.nx;
+          const relT =
+            (entryB.ball.vx - entryA.ball.vx) * tx + (entryB.ball.vy - entryA.ball.vy) * ty;
+          const absT = Math.abs(relT);
+          if (absT < threshold) continue;
+
+          const strength = maxCancel * Math.min(1, (absT - threshold) / threshold);
+          cancelRelativeTangentialVelocity(
+            entryA.ball,
+            entryB.ball,
+            info.nx,
+            info.ny,
+            info.mA,
+            info.mB,
+            strength
+          );
+        }
+      }
+
+      balls.forEach((entry) => {
+        const c = contactCounts[entry.id] || 0;
+        const sp = Math.hypot(entry.ball.vx, entry.ball.vy);
+        if (c >= 2 && sp > threshold * 1.35) {
+          entry.ball.vx *= P.multiContactVelDamp;
+          entry.ball.vy *= P.multiContactVelDamp;
+        } else if (c >= 1 && sp > threshold * 1.8) {
+          entry.ball.vx *= P.singleContactClusterDamp;
+          entry.ball.vy *= P.singleContactClusterDamp;
+        }
+      });
+    }
+
+    function nudgeStuckBallToOpenSpace(entry, balls, arena, gap) {
+      const P = ARENA3.physics;
+      const ball = entry.ball;
+      const samples = Math.max(6, Math.floor(P.stuckEscapeSamples) || 10);
+      const seedOff = slotIndexFromId(entry.id) * 0.73;
+      let bestAng = 0;
+      let bestScore = -Infinity;
+
+      for (let s = 0; s < samples; s++) {
+        const ang = seedOff + (s / samples) * Math.PI * 2;
+        const ux = Math.cos(ang);
+        const uy = Math.sin(ang);
+        let score = 0;
+
+        for (const other of balls) {
+          if (other.id === entry.id) continue;
+          const dx = other.ball.x - ball.x;
+          const dy = other.ball.y - ball.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const minSep =
+            ballCollisionRadius(entry.radius, entry.id) +
+            ballCollisionRadius(other.radius, other.id) +
+            gap;
+          score += Math.min(dist - minSep, 240);
+          const proj = dx * ux + dy * uy;
+          if (proj > 0) score -= proj * 1.4;
+        }
+
+        const wdx = ball.x - arena.cx;
+        const wdy = ball.y - arena.cy;
+        const wallDist = ballMaxAllowedDist(arena, entry.radius, entry.id) - Math.hypot(wdx, wdy);
+        score += wallDist * 1.2;
+        const outward = wdx * ux + wdy * uy;
+        if (outward > 0) score -= outward * 0.6;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestAng = ang;
+        }
+      }
+
+      const mag = P.stuckEscapeNudgeSpeed;
+      ball.vx += Math.cos(bestAng) * mag;
+      ball.vy += Math.sin(bestAng) * mag;
+    }
+
+    function updateStuckBallEscape(balls, arena, gap, nt) {
+      if (nt < 3) return;
+      const P = ARENA3.physics;
+      const tickMap = state.ballStuckTick || (state.ballStuckTick = Object.create(null));
+      const contactCounts = countBallContacts(balls, gap);
+      const active = new Set(balls.map((b) => b.id));
+
+      balls.forEach((entry) => {
+        const c = contactCounts[entry.id] || 0;
+        if (c >= 2) {
+          tickMap[entry.id] = (tickMap[entry.id] || 0) + 1;
+          if (tickMap[entry.id] >= P.stuckEscapeFrames) {
+            tickMap[entry.id] = 0;
+            nudgeStuckBallToOpenSpace(entry, balls, arena, gap);
+          }
+        } else {
+          tickMap[entry.id] = 0;
+        }
+      });
+
+      Object.keys(tickMap).forEach((id) => {
+        if (!active.has(id)) delete tickMap[id];
+      });
+    }
+
+    function clampSubstepVelocityDelta(balls, prevVel) {
+      const P = ARENA3.physics;
+      const cap = Math.max(20, P.maxDeltaVPerSubstep || 90);
+      balls.forEach((entry, i) => {
+        const ball = entry.ball;
+        const pv = prevVel[i];
+        let dvx = ball.vx - pv.vx;
+        let dvy = ball.vy - pv.vy;
+        const d = Math.hypot(dvx, dvy);
+        if (d <= cap) return;
+        const f = cap / d;
+        ball.vx = pv.vx + dvx * f;
+        ball.vy = pv.vy + dvy * f;
+      });
+    }
+
+    function sanitizeBallState(ball, maxSp) {
+      const P = ARENA3.physics;
+      if (!Number.isFinite(ball.x)) ball.x = 0;
+      if (!Number.isFinite(ball.y)) ball.y = 0;
+      if (!Number.isFinite(ball.vx)) ball.vx = 0;
+      if (!Number.isFinite(ball.vy)) ball.vy = 0;
+      let sp = Math.hypot(ball.vx, ball.vy);
+      const cap = Math.max(maxSp || 0, P.nanSpeedCap || 480);
+      if (sp > cap) {
+        const f = cap / sp;
+        ball.vx *= f;
+        ball.vy *= f;
+        sp = cap;
+      }
+      if (sp > 0 && sp < P.velocitySleepThreshold) {
+        ball.vx *= P.velocitySleepDamp;
+        ball.vy *= P.velocitySleepDamp;
+      }
+    }
+
+    /** MTV ile konum ayristirma — impulse uygulanmaz */
+    function separateBallPairMTV(entryA, entryB, gap, correction) {
+      const RA = ballCollisionRadius(entryA.radius, entryA.id);
+      const RB = ballCollisionRadius(entryB.radius, entryB.id);
+      const minSep = RA + RB + gap;
+      const dx = entryB.ball.x - entryA.ball.x;
+      const dy = entryB.ball.y - entryA.ball.y;
+      const distRaw = Math.hypot(dx, dy);
+      const { nx, ny, dist } = pairNormal(dx, dy, distRaw, entryA.id, entryB.id);
+      const penetration = minSep - dist;
+      if (penetration <= ARENA3.physics.positionalSlop) return false;
+      const mA = physMassFromDisplayR(entryA.radius);
+      const mB = physMassFromDisplayR(entryB.radius);
+      const invA = 1 / mA;
+      const invB = 1 / mB;
+      const invSum = invA + invB;
+      const corr = penetration * correction;
+      entryA.ball.x -= nx * corr * (invA / invSum);
+      entryA.ball.y -= ny * corr * (invA / invSum);
+      entryB.ball.x += nx * corr * (invB / invSum);
+      entryB.ball.y += ny * corr * (invB / invSum);
+      return true;
+    }
+
+    /** Impulse tabanli hiz cozumu — yalnizca normal (linear) impulse */
+    function resolveBallPairImpulse(entryA, entryB, gap, playEffects, nt) {
+      const P = ARENA3.physics;
+      const info = pairContactInfo(entryA, entryB, gap);
+      if (!info.inContact) return false;
+
+      const ballA = entryA.ball;
+      const ballB = entryB.ball;
+      const { nx, ny, mA, mB } = info;
+      const invA = 1 / mA;
+      const invB = 1 / mB;
+      const invSum = invA + invB;
+
+      const relN = (ballB.vx - ballA.vx) * nx + (ballB.vy - ballA.vy) * ny;
+      if (relN >= -P.velocitySlop) return false;
+
+      const impact = Math.min(1, Math.abs(relN) / 620);
+      const RA = ballCollisionRadius(entryA.radius, entryA.id);
+      const contactX = ballA.x + nx * RA;
+      const contactY = ballA.y + ny * RA;
+      if (playEffects && COLLISION_EFFECTS_ON) {
+        spawnCollisionEffect(contactX, contactY, impact);
+        spawnShockwave(contactX, contactY, impact);
+        state.cameraShake = Math.min(1, state.cameraShake + 0.35 + impact * 0.4);
+      }
+
+      const restitution = nt >= 3 ? P.collisionRestitutionCluster : P.collisionRestitution;
+      let j = -(1 + restitution) * relN / invSum;
+      const jCap = Math.max(40, P.maxImpulseNormal || 220);
+      j = Math.max(-jCap, Math.min(jCap, j));
+
+      ballA.vx -= j * invA * nx;
+      ballA.vy -= j * invA * ny;
+      ballB.vx += j * invB * nx;
+      ballB.vy += j * invB * ny;
+      return true;
+    }
+
+    function pairBroadphaseSkip(entryA, entryB, gap) {
+      const P = ARENA3.physics;
+      const RA = ballCollisionRadius(entryA.radius, entryA.id);
+      const RB = ballCollisionRadius(entryB.radius, entryB.id);
+      const maxDist = RA + RB + gap + P.pairBroadphaseSlop;
+      const dx = entryB.ball.x - entryA.ball.x;
+      const dy = entryB.ball.y - entryA.ball.y;
+      return dx * dx + dy * dy > maxDist * maxDist;
+    }
+
+    function resolveWallPosition(entry, arena) {
+      const P = ARENA3.physics;
+      const ball = entry.ball;
+      const dx = ball.x - arena.cx;
+      const dy = ball.y - arena.cy;
+      const dist = Math.hypot(dx, dy) || 0.0001;
+      const maxD = ballMaxAllowedDist(arena, entry.radius, entry.id);
+      if (dist <= maxD) return false;
+      const nx = dx / dist;
+      const ny = dy / dist;
+      ball.x = arena.cx + nx * maxD;
+      ball.y = arena.cy + ny * maxD;
+      return true;
+    }
+
+    function resolveWallVelocity(entry, arena) {
+      const P = ARENA3.physics;
+      const ball = entry.ball;
+      const dx = ball.x - arena.cx;
+      const dy = ball.y - arena.cy;
+      const dist = Math.hypot(dx, dy) || 0.0001;
+      const maxD = ballMaxAllowedDist(arena, entry.radius, entry.id);
+      if (dist < maxD - P.positionalSlop) return false;
+      const nx = dx / dist;
+      const ny = dy / dist;
+      const vn = ball.vx * nx + ball.vy * ny;
+      if (vn <= P.velocitySlop) return false;
+
+      ball.vx -= (1 + P.wallRestitution) * vn * nx;
+      ball.vy -= (1 + P.wallRestitution) * vn * ny;
+      return true;
+    }
+
+    function runPositionSolver(balls, arena, gap, iterOverride) {
+      const P = ARENA3.physics;
+      const posIters = Math.max(1, Math.floor(iterOverride ?? P.positionIterations) || 10);
+      const corr = Math.min(1, Math.max(0.1, P.positionalCorrection));
+      for (let it = 0; it < posIters; it++) {
+        for (let i = 0; i < balls.length; i++) {
+          for (let j = i + 1; j < balls.length; j++) {
+            if (pairBroadphaseSkip(balls[i], balls[j], gap)) continue;
+            separateBallPairMTV(balls[i], balls[j], gap, corr);
+          }
+        }
+        balls.forEach((entry) => resolveWallPosition(entry, arena));
+      }
+    }
+
+    function runVelocitySolver(balls, arena, gap, playEffects, nt) {
+      const P = ARENA3.physics;
+      const velIters = Math.max(1, Math.floor(P.velocityIterations) || 1);
+      for (let it = 0; it < velIters; it++) {
+        balls.forEach((entry) => resolveWallVelocity(entry, arena));
+        for (let i = 0; i < balls.length; i++) {
+          for (let j = i + 1; j < balls.length; j++) {
+            if (pairBroadphaseSkip(balls[i], balls[j], gap)) continue;
+            resolveBallPairImpulse(balls[i], balls[j], gap, playEffects, nt);
+          }
+        }
+      }
+    }
+
+    function applyLinearDamping(balls, subDt, nt) {
+      const P = ARENA3.physics;
+      const dampRate = nt >= 3 ? P.clusterLinearDamping : P.linearDamping;
+      if (dampRate <= 0) return;
+      const damp = Math.exp(-dampRate * subDt);
+      balls.forEach(({ ball }) => {
+        ball.vx *= damp;
+        ball.vy *= damp;
+      });
+    }
+
+    function clampBallSpeeds(balls, radii, nt, maxRPhys) {
+      const P = ARENA3.physics;
+      const packScale = nt >= 3 ? P.clusterSpeedScale : 1;
+      const maxSpeedGlobal =
+        Math.min(P.maxSpeedBase * packScale, 920 / (1 + maxRPhys * 0.02)) * packScale;
+      balls.forEach(({ ball, radius, id }) => {
+        const mass = physMassFromDisplayR(radius || 36);
+        const maxSp = maxSpeedGlobal / (1 + mass / P.maxSpeedMassDivisor);
+        sanitizeBallState(ball, maxSp);
+      });
+    }
+
+    function physicsSubstep(subDt, arena, balls, gap, nt, maxRPhys, playEffects) {
+      const prevVel = balls.map((entry) => ({ vx: entry.ball.vx, vy: entry.ball.vy }));
+      applyLinearDamping(balls, subDt, nt);
+      balls.forEach(({ ball }) => {
+        ball.x += ball.vx * subDt;
+        ball.y += ball.vy * subDt;
+      });
+      runPositionSolver(balls, arena, gap);
+      runVelocitySolver(balls, arena, gap, playEffects, nt);
+      clampSubstepVelocityDelta(balls, prevVel);
+      clampBallSpeeds(balls, null, nt, maxRPhys);
+    }
+
+    function updatePairOverlapDeadlock(balls, gap) {
+      const P = ARENA3.physics;
+      const tickMap = state.pairOverlapTick;
+      const seen = new Set();
+      for (let i = 0; i < balls.length; i++) {
+        for (let j = i + 1; j < balls.length; j++) {
+          const a = balls[i];
+          const b = balls[j];
+          const RA = physicsBadgeRadius(a.radius, a.id);
+          const RB = physicsBadgeRadius(b.radius, b.id);
+          const need = RA + RB + gap - 0.75;
+          const dx = b.ball.x - a.ball.x;
+          const dy = b.ball.y - a.ball.y;
+          const d = Math.hypot(dx, dy);
+          const k = physicsPairKey(a.id, b.id);
+          seen.add(k);
+          if (d < need) {
+            tickMap[k] = (tickMap[k] || 0) + 1;
+            if (tickMap[k] >= P.deadlockContactFrames) {
+              tickMap[k] = 0;
+              separateBallPairMTV(a, b, gap, 1);
+              const dx = b.ball.x - a.ball.x;
+              const dy = b.ball.y - a.ball.y;
+              const d = Math.hypot(dx, dy);
+              const { nx, ny } = pairNormal(dx, dy, d, a.id, b.id);
+              const half = P.deadlockNudgeSpeed * 0.5;
+              a.ball.vx -= nx * half;
+              a.ball.vy -= ny * half;
+              b.ball.vx += nx * half;
+              b.ball.vy += ny * half;
+            }
+          } else {
+            delete tickMap[k];
+          }
+        }
+      }
+      Object.keys(tickMap).forEach((k) => {
+        if (!seen.has(k)) delete tickMap[k];
+      });
+    }
+
+    function maxRadiusSumAllowed(arenaR, nPlayers) {
+      if (nPlayers <= 1) return arenaR * 0.82;
+      if (nPlayers === 2) return Math.max(44, arenaR * AL.twoPlayerMaxSumFrac - AL.twoPlayerGapPx);
+      const n = Math.max(3, nPlayers);
+      const ring = Math.sin(Math.PI / n);
+      const perBall = arenaR * ((ring / (1 + ring)) * 0.92);
+      return Math.max(52, perBall * n - AL.twoPlayerGapPx * (n - 1));
+    }
+
+    /**
+     * Toplam yaricap arena butcesini asarsa: biri max sinira yakinsa o korunur, digerleri kuculur;
+     * aksi halde herkese oransal olcek.
+     */
+    function applyRadiusPackConstraint(arenaR, maxR, startR, ids, radii) {
+      const n = ids.length;
+      if (n < 2) return;
+      const maxSum = maxRadiusSumAllowed(arenaR, n);
+      let total = ids.reduce((s, id) => s + radii[id], 0);
+      if (total <= maxSum) return;
+      const otherMin = Math.max(22, Math.min(Math.floor(startR * 0.95), Math.floor(maxR * 0.24)));
+      const maxTol = 0.9;
+      const atMaxIds = ids.filter((id) => radii[id] >= maxR - maxTol);
+      if (atMaxIds.length > 0) {
+        const win = [...atMaxIds].sort(
+          (a, b) => radii[b] - radii[a] || SLOT_IDS.indexOf(a) - SLOT_IDS.indexOf(b)
+        )[0];
+        const others = ids.filter((id) => id !== win);
+        let rW = Math.min(maxR, radii[win]);
+        const sumO = others.reduce((s, id) => s + radii[id], 0);
+        const minOthersTotal = others.length * otherMin;
+        if (rW + minOthersTotal > maxSum) {
+          rW = Math.max(startR, maxSum - minOthersTotal);
+        }
+        const budget = maxSum - rW;
+        if (sumO > budget && sumO > 0.001) {
+          const k = budget / sumO;
+          others.forEach((id) => {
+            radii[id] = Math.max(otherMin, radii[id] * k);
+          });
+        }
+        radii[win] = Math.min(maxR, rW);
+        total = ids.reduce((s, id) => s + radii[id], 0);
+        if (total > maxSum && total > 0.001) {
+          const kk = maxSum / total;
+          ids.forEach((id) => {
+            radii[id] *= kk;
+          });
+        }
+      } else {
+        const k = maxSum / total;
+        ids.forEach((id) => {
+          radii[id] *= k;
+        });
+      }
+    }
+
+    function getLeader() {
+      const rows = activeTeamIds().map((id) => ({ id, score: state.scores[id] }));
+      const maxScore = Math.max(...rows.map((t) => t.score));
+      const leaders = rows.filter((t) => t.score === maxScore);
+      if (leaders.length !== 1) return "none";
+      return leaders[0].id;
+    }
+
+    function computeBallRadiusTargets() {
+      const { radius: arenaR } = getArenaGeometry();
+      const leader = getLeader();
+      const ids = activeTeamIds();
+      const nActive = Math.max(1, ids.length);
+      let maxR = Math.min(
+        Math.floor(arenaR * AL.ballMaxFrac),
+        Math.floor(arenaR - AL.edgePad - 10)
+      );
+      if (nActive === 2) {
+        maxR = Math.min(maxR, Math.floor(arenaR * AL.twoPlayerMaxRFrac));
+      }
+      let startR = Math.max(AL.matchStartRMin, Math.floor(arenaR * AL.matchStartFrac));
+      startR = Math.min(startR, Math.max(AL.matchStartRMin, maxR - 8));
+      const span = Math.max(1, maxR - startR);
+
+      const rawScores = ids.map((id) => state.scores[id]);
+      const maxS = rawScores.length ? Math.max(...rawScores) : 0;
+      const na = Math.max(2, ids.length);
+      const idleR =
+        na >= 10 ? 40 : na >= 9 ? 44 : na >= 8 ? 48 : na >= 7 ? 52 : na >= 6 ? 58 : 72;
+
+      const G = ARENA3.growth;
+      const ms = Math.max(1, maxS);
+
+      const toRFromMax = (rawScore) => {
+        const s = Math.max(0, rawScore);
+        const rel = Math.sqrt((s + 1) / (ms + 1));
+        const dim = 1 - Math.exp(-Math.sqrt(s + 1) / G.sqrtTau);
+        const tt = G.blendRelative * rel + (1 - G.blendRelative) * dim;
+        return Math.min(maxR, startR + tt * span);
+      };
+
+      let radii;
+      if (maxS === 0) {
+        radii = Object.fromEntries(ids.map((id) => [id, idleR]));
+      } else {
+        radii = Object.fromEntries(ids.map((id) => [id, toRFromMax(state.scores[id])]));
+      }
+
+      if (ids.length >= 2) {
+        applyRadiusPackConstraint(arenaR, maxR, startR, ids, radii);
+      }
+      return { leader, radii };
+    }
+
+    function snapBallRadiiToTargets() {
+      const { radii } = computeBallRadiusTargets();
+      const n = ARENA3.smoothing.steps;
+      activeTeamIds().forEach((id) => {
+        const t = radii[id];
+        state.ballRadiusDisplayed[id] = t;
+        state.ballRadiusRamp[id] = { from: t, goal: t, t: n };
+      });
+    }
+
+    function getBallRadiiSnapshot() {
+      const { leader, radii: targets } = computeBallRadiusTargets();
+      const radii = {};
+      activeTeamIds().forEach((id) => {
+        let cur = state.ballRadiusDisplayed[id];
+        if (cur == null || !Number.isFinite(cur)) cur = targets[id];
+        radii[id] = cur;
+      });
+      return { leader, radii };
+    }
+
+    function tickSmoothBallRadii() {
+      const { leader, radii: targets } = computeBallRadiusTargets();
+      const n = ARENA3.smoothing.steps;
+      const ease = ARENA3.smoothing.easeOutCubic;
+      const radii = {};
+      activeTeamIds().forEach((id) => {
+        const target = targets[id];
+        const rm = state.ballRadiusRamp[id];
+        if (Math.abs(rm.goal - target) > 0.25) {
+          let cur0 = state.ballRadiusDisplayed[id];
+          if (cur0 == null || !Number.isFinite(cur0)) cur0 = rm.from;
+          if (cur0 == null || !Number.isFinite(cur0)) cur0 = target;
+          rm.from = cur0;
+          rm.goal = target;
+          rm.t = 0;
+        }
+        rm.t = Math.min(rm.t + 1, n);
+        const u = ease(rm.t / n);
+        const cur = rm.from + (rm.goal - rm.from) * u;
+        state.ballRadiusDisplayed[id] = cur;
+        radii[id] = cur;
+      });
+      return { leader, radii };
+    }
+
+    let arenaGradientLayer = null;
+    let arenaGradientLayerKey = "";
+
+    function getArenaGradientLayer() {
+      const { cx, cy, radius } = getArenaGeometry();
+      const key = `${canvas.width}x${canvas.height}_${Math.round(radius)}_pureblack`;
+      if (arenaGradientLayer && arenaGradientLayerKey === key) return arenaGradientLayer;
+      if (!arenaGradientLayer) arenaGradientLayer = document.createElement("canvas");
+      arenaGradientLayer.width = canvas.width;
+      arenaGradientLayer.height = canvas.height;
+      arenaGradientLayerKey = key;
+      const gctx = arenaGradientLayer.getContext("2d");
+      gctx.fillStyle = "#000000";
+      gctx.fillRect(0, 0, canvas.width, canvas.height);
+      gctx.save();
+      gctx.beginPath();
+      gctx.arc(cx, cy, radius * 0.992, 0, Math.PI * 2);
+      gctx.clip();
+      gctx.fillStyle = "#000000";
+      gctx.fillRect(0, 0, canvas.width, canvas.height);
+      gctx.restore();
+      return arenaGradientLayer;
+    }
+
+    function drawArenaRing() {
+      const { cx, cy, radius } = getArenaGeometry();
+      const layer = getArenaGradientLayer();
+
+      ctx.save();
+      ctx.drawImage(layer, 0, 0);
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(0, 255, 250, 0.28)";
+      ctx.lineWidth = 7.5;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(140, 255, 248, 0.94)";
+      ctx.lineWidth = 2.1;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    function drawStar(cx, cy, outerR, color) {
+      const innerR = outerR * 0.42;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      for (let i = 0; i < 10; i++) {
+        const angle = -Math.PI / 2 + (Math.PI * i) / 5;
+        const rr = i % 2 === 0 ? outerR : innerR;
+        const x = cx + Math.cos(angle) * rr;
+        const y = cy + Math.sin(angle) * rr;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawLeaderCrown(cx, cy, r) {
+      const cr = r * 0.42;
+      const y0 = cy - r - cr * 0.35;
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 220, 120, 0.95)";
+      ctx.fillStyle = "rgba(255, 210, 60, 0.88)";
+      ctx.lineWidth = 2;
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      ctx.moveTo(cx - cr * 1.1, y0 + cr * 0.55);
+      ctx.lineTo(cx - cr * 0.55, y0 - cr * 0.15);
+      ctx.lineTo(cx - cr * 0.2, y0 + cr * 0.25);
+      ctx.lineTo(cx, y0 - cr * 0.55);
+      ctx.lineTo(cx + cr * 0.2, y0 + cr * 0.25);
+      ctx.lineTo(cx + cr * 0.55, y0 - cr * 0.15);
+      ctx.lineTo(cx + cr * 1.1, y0 + cr * 0.55);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawTeamBadge(id, x, y, r, isLeader) {
+      const vis = teamVisualForId(id);
+      const score = Math.round(state.displayScores[id] ?? state.scores[id]);
+      const pulse = isLeader ? 1 + 0.038 * Math.sin(performance.now() * 0.0036) : 1;
+      const rp = r * pulse;
+      const clipR = Math.max(8, rp - 1.5);
+      const boundR = Math.max(badgeOuterRadiusPx(rp, id), clipR + 4);
+
+      if (isLeader) {
+        ctx.save();
+        const g = ctx.createRadialGradient(x, y, rp * 0.15, x, y, boundR * 1.02);
+        g.addColorStop(0, "rgba(255, 230, 140, 0.2)");
+        g.addColorStop(0.55, "rgba(255, 200, 60, 0.1)");
+        g.addColorStop(1, "rgba(255, 180, 40, 0)");
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(x, y, boundR * 1.02, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255, 215, 90, 0.92)";
+        ctx.lineWidth = 3;
+        ctx.shadowColor = "rgba(255, 200, 80, 0.72)";
+        ctx.shadowBlur = 16;
+        ctx.beginPath();
+        ctx.arc(x, y, clipR + 2.2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.restore();
+      }
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, boundR, 0, Math.PI * 2);
+      ctx.clip();
+
+      ctx.beginPath();
+      ctx.arc(x, y, clipR + 0.58, 0, Math.PI * 2);
+      ctx.strokeStyle = vis.glow.replace(/[\d.]+\)$/, "0.46)");
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(x, y, clipR, 0, Math.PI * 2);
+      ctx.clip();
+
+      const im = state.teamCanvasImages[id];
+      if (im && im.complete && im.naturalWidth > 0) {
+        const iw = im.naturalWidth;
+        const ih = im.naturalHeight;
+        const scale = Math.max((2 * clipR) / iw, (2 * clipR) / ih);
+        const dw = iw * scale;
+        const dh = ih * scale;
+        ctx.drawImage(im, x - dw / 2, y - dh / 2, dw, dh);
+      } else {
+        ctx.fillStyle = "rgba(12, 14, 22, 0.98)";
+        ctx.fillRect(x - clipR, y - clipR, clipR * 2, clipR * 2);
+      }
+
+      ctx.fillStyle = vis.tint;
+      ctx.fillRect(x - clipR, y - clipR, clipR * 2, clipR * 2);
+
+      ctx.restore();
+
+      ctx.beginPath();
+      ctx.arc(x, y, clipR, 0, Math.PI * 2);
+      ctx.strokeStyle = vis.glow.replace(/[\d.]+\)$/, "0.85)");
+      ctx.lineWidth = 1.65;
+      ctx.stroke();
+
+      const fontN = Math.max(10, Math.min(32, rp * 0.23));
+      const fontL = Math.max(7, fontN * 0.34);
+      const labelText = String(vis.label).toUpperCase();
+      const scoreY = y - fontN * 0.2;
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.font = `700 ${fontN}px ${CANVAS_SCORE_FONT}`;
+      ctx.lineJoin = "round";
+      ctx.miterLimit = 2;
+      ctx.lineWidth = Math.max(2.5, fontN * 0.14);
+      ctx.strokeStyle = "rgba(0,0,0,0.92)";
+      ctx.strokeText(String(score), x, scoreY);
+      ctx.fillStyle = isLeader ? "#fff6a8" : "#ffea00";
+      ctx.shadowColor = isLeader ? "rgba(255, 220, 80, 0.65)" : "rgba(255, 235, 0, 0.5)";
+      ctx.shadowBlur = isLeader ? 6 : 3;
+      ctx.fillText(String(score), x, scoreY);
+      ctx.shadowBlur = 0;
+      ctx.font = `600 ${fontL}px ${CANVAS_SCORE_FONT}`;
+      ctx.letterSpacing = "0.12em";
+      ctx.lineWidth = Math.max(1.5, fontL * 0.2);
+      ctx.strokeStyle = "rgba(0,0,0,0.88)";
+      ctx.strokeText(labelText, x, y + fontN * 0.38);
+      ctx.fillStyle = "#ffffff";
+      ctx.shadowColor = "rgba(255,255,255,0.22)";
+      ctx.shadowBlur = 2;
+      ctx.fillText(labelText, x, y + fontN * 0.38);
+      ctx.shadowBlur = 0;
+
+      ctx.restore();
+
+      if (isLeader) drawLeaderCrown(x, y, rp);
+    }
+
+    function drawGiftScreenFlashOverlay() {
+      const f = state.giftScreenFlash;
+      if (!f || f.life <= 0) return;
+      const E = ARENA3.effects;
+      const a = Math.min(0.42, f.strength * 0.55 * (f.life / E.screenFlashLife));
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = `rgba(255, 248, 220, ${a})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.restore();
+    }
+
+    function tickGiftScreenFlash(dtSec) {
+      const f = state.giftScreenFlash;
+      if (!f || f.life <= 0) return;
+      f.life -= dtSec;
+      if (f.life <= 0) state.giftScreenFlash = null;
+    }
+
+    function spawnGiftScreenFlash(points) {
+      const E = ARENA3.effects;
+      if (points < E.screenFlashPointThreshold) return;
+      state.giftScreenFlash = {
+        life: E.screenFlashLife,
+        strength: Math.min(1, points / 36)
+      };
+    }
+
+    function render(arena, ballLayout) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const nt = activeTeamIds().length;
+      const shakeScale = nt >= 3 ? 2.8 : 6;
+      const shakeAmt = state.cameraShake > 0 ? state.cameraShake * shakeScale : 0;
+      const phase = performance.now() * 0.001;
+      const offsetX = shakeAmt > 0 ? Math.sin(phase * 14.1) * shakeAmt * 0.48 : 0;
+      const offsetY = shakeAmt > 0 ? Math.cos(phase * 11.9) * shakeAmt * 0.48 : 0;
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+      drawArenaRing();
+      drawGiftScreenFlashOverlay();
+
+      const { cx: ax, cy: ay, radius: ar } = arena;
+      const { leader, radii } = ballLayout;
+      if (state.uiLastLeader !== null && state.uiLastLeader !== leader) {
+        activeTeamIds().forEach((tid) => {
+          const w = teamEls[tid] && teamEls[tid].wrap;
+          if (w) w.classList.remove("is-leader-handoff");
+        });
+        if (leader !== "none" && teamEls[leader] && teamEls[leader].wrap) {
+          const w = teamEls[leader].wrap;
+          w.classList.add("is-leader-handoff");
+          const lid = leader;
+          setTimeout(() => {
+            const ww = teamEls[lid] && teamEls[lid].wrap;
+            if (ww) ww.classList.remove("is-leader-handoff");
+          }, 520);
+        }
+      }
+      state.uiLastLeader = leader;
+
+      const clipArenaR = Math.max(24, ar - ARENA_CLIP_INSET);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(ax, ay, clipArenaR, 0, Math.PI * 2);
+      ctx.clip();
+
+      drawShockwaves();
+      drawDustEffects();
+      drawGiftEffects();
+      drawCollisionEffects();
+
+      const order = activeTeamIds().map((id) => ({ id, r: radii[id] })).sort((a, b) => a.r - b.r);
+      order.forEach(({ id }) => {
+        const b = state.balls[id];
+        drawTeamBadge(id, b.x, b.y, radii[id], leader === id);
+      });
+      ctx.restore();
+
+      ctx.restore();
+    }
+
+    function paintArenaFrame() {
+      render(getArenaGeometry(), getBallRadiiSnapshot());
+    }
+
+    function spawnCollisionEffect(x, y, intensity) {
+      const particleCount = Math.min(22, 10 + Math.floor(intensity * 18));
+      for (let i = 0; i < particleCount; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = 120 + Math.random() * 260 + intensity * 140;
+        state.collisionEffects.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0.26 + Math.random() * 0.22,
+          maxLife: 0.26 + Math.random() * 0.22,
+          size: 2 + Math.random() * 4
+        });
+      }
+      state.collisionEffects.push({
+        x,
+        y,
+        vx: 0,
+        vy: 0,
+        life: 0.12,
+        maxLife: 0.12,
+        size: 20 + intensity * 28,
+        flash: true
+      });
+    }
+
+    function spawnDustTrail(x, y, speed) {
+      const count = speed > 260 ? 2 : 1;
+      for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const drift = 14 + Math.random() * 28;
+        state.dustEffects.push({
+          x: x + (Math.random() - 0.5) * 10,
+          y: y + (Math.random() - 0.5) * 10,
+          vx: Math.cos(angle) * drift,
+          vy: Math.sin(angle) * drift,
+          life: 0.24 + Math.random() * 0.24,
+          maxLife: 0.24 + Math.random() * 0.24,
+          size: 4 + Math.random() * 8
+        });
+      }
+      if (state.dustEffects.length > ARENA3.effects.dustCap) {
+        state.dustEffects.splice(0, state.dustEffects.length - ARENA3.effects.dustCap);
+      }
+    }
+
+    function spawnShockwave(x, y, intensity) {
+      state.shockwaves.push({
+        x,
+        y,
+        radius: 8,
+        growth: 220 + intensity * 220,
+        life: 0.18,
+        maxLife: 0.18,
+        width: 2 + intensity * 2
+      });
+      if (state.shockwaves.length > 12) {
+        state.shockwaves.splice(0, state.shockwaves.length - 12);
+      }
+    }
+
+    function getTeamBall(teamId) {
+      return state.balls[teamId];
+    }
+
+    function spawnGiftBurst(teamId, points) {
+      const E = ARENA3.effects;
+      const pts = Math.max(1, Math.floor(points || 1));
+      const intensity = Math.min(1, pts / 40);
+      const n = Math.min(
+        E.giftParticlesCap,
+        Math.floor(E.giftParticlesBase + pts * E.giftParticlesPerPoint)
+      );
+      const source = getTeamBall(teamId);
+      if (!source) return;
+      const style = giftStyleForTeam(teamId);
+      for (let i = 0; i < n; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const sp = 90 + Math.random() * 160 + intensity * 200;
+        state.giftEffects.push({
+          x: source.x + (Math.random() - 0.5) * (36 + pts * 0.6),
+          y: source.y + (Math.random() - 0.5) * (28 + pts * 0.45),
+          vx: Math.cos(ang) * sp * 0.55 + (Math.random() - 0.5) * 70,
+          vy: -(110 + Math.random() * 140 + intensity * 160),
+          life: 0.72 + Math.random() * 0.55 + intensity * 0.35,
+          maxLife: 0.72 + Math.random() * 0.55 + intensity * 0.35,
+          size: 11 + Math.random() * 9 + intensity * 10,
+          icon: style.icon,
+          color: style.color
+        });
+      }
+      if (state.giftEffects.length > E.giftEffectCap) {
+        state.giftEffects.splice(0, state.giftEffects.length - E.giftEffectCap);
+      }
+      if (pts >= E.shockwavePointThreshold) {
+        spawnShockwave(source.x, source.y, Math.min(1, intensity * 1.1));
+      }
+      if (pts >= 10) {
+        state.cameraShake = Math.min(1, state.cameraShake + 0.08 + intensity * 0.35);
+      }
+      spawnGiftScreenFlash(pts);
+    }
+
+    function updateCollisionEffects(dtSec) {
+      for (let i = state.collisionEffects.length - 1; i >= 0; i--) {
+        const p = state.collisionEffects[i];
+        p.life -= dtSec;
+        if (p.life <= 0) {
+          state.collisionEffects.splice(i, 1);
+          continue;
+        }
+        if (!p.flash) {
+          p.x += p.vx * dtSec;
+          p.y += p.vy * dtSec;
+          p.vx *= 0.94;
+          p.vy *= 0.94;
+        }
+      }
+    }
+
+    function updateDustEffects(dtSec) {
+      for (let i = state.dustEffects.length - 1; i >= 0; i--) {
+        const p = state.dustEffects[i];
+        p.life -= dtSec;
+        if (p.life <= 0) {
+          state.dustEffects.splice(i, 1);
+          continue;
+        }
+        p.x += p.vx * dtSec;
+        p.y += p.vy * dtSec;
+        p.vx *= 0.9;
+        p.vy *= 0.9;
+      }
+    }
+
+    function updateShockwaves(dtSec) {
+      for (let i = state.shockwaves.length - 1; i >= 0; i--) {
+        const s = state.shockwaves[i];
+        s.life -= dtSec;
+        if (s.life <= 0) {
+          state.shockwaves.splice(i, 1);
+          continue;
+        }
+        s.radius += s.growth * dtSec;
+      }
+    }
+
+    function updateGiftEffects(dtSec) {
+      for (let i = state.giftEffects.length - 1; i >= 0; i--) {
+        const g = state.giftEffects[i];
+        g.life -= dtSec;
+        if (g.life <= 0) {
+          state.giftEffects.splice(i, 1);
+          continue;
+        }
+        g.x += g.vx * dtSec;
+        g.y += g.vy * dtSec;
+        g.vx *= 0.96;
+        g.vy += 80 * dtSec;
+      }
+    }
+
+    function drawCollisionEffects() {
+      state.collisionEffects.forEach((p) => {
+        const alpha = Math.max(0, p.life / p.maxLife);
+        ctx.save();
+        if (p.flash) {
+          const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size);
+          g.addColorStop(0, `rgba(255, 245, 200, ${alpha * 0.9})`);
+          g.addColorStop(1, "rgba(255, 210, 120, 0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = `rgba(255, 210, 130, ${alpha * 0.9})`;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.restore();
+      });
+    }
+
+    function drawDustEffects() {
+      state.dustEffects.forEach((p) => {
+        const alpha = Math.max(0, p.life / p.maxLife);
+        ctx.fillStyle = `rgba(80, 80, 80, ${alpha * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * alpha, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawShockwaves() {
+      state.shockwaves.forEach((s) => {
+        const alpha = Math.max(0, s.life / s.maxLife);
+        ctx.strokeStyle = `rgba(255, 214, 150, ${alpha * 0.55})`;
+        ctx.lineWidth = s.width;
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        ctx.stroke();
+      });
+    }
+
+    function drawGiftIcon(gift) {
+      const alpha = Math.max(0, gift.life / gift.maxLife);
+      const age = 1 - alpha;
+      const pop = 0.78 + 0.28 * (1 - age * age);
+      const s = gift.size * pop;
+      ctx.save();
+      ctx.translate(gift.x, gift.y);
+      ctx.globalAlpha = alpha;
+
+      if (gift.icon === "coin") {
+        ctx.fillStyle = gift.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, s * 0.85, s * 0.65, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.75)";
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+      } else if (gift.icon === "heart") {
+        ctx.fillStyle = gift.color;
+        ctx.beginPath();
+        ctx.moveTo(0, s * 0.5);
+        ctx.bezierCurveTo(-s * 1.1, -s * 0.2, -s * 0.65, -s * 1.15, 0, -s * 0.55);
+        ctx.bezierCurveTo(s * 0.65, -s * 1.15, s * 1.1, -s * 0.2, 0, s * 0.5);
+        ctx.fill();
+      } else if (gift.icon === "star") {
+        drawStar(0, 0, s * 0.72, gift.color);
+      } else {
+        ctx.strokeStyle = gift.color;
+        ctx.lineWidth = 2.1;
+        ctx.beginPath();
+        ctx.arc(0, 0, s * 0.4, Math.PI * 0.2, Math.PI * 1.8);
+        ctx.stroke();
+        ctx.fillStyle = gift.color;
+        ctx.beginPath();
+        ctx.arc(0, -s * 0.45, s * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawGiftEffects() {
+      state.giftEffects.forEach(drawGiftIcon);
+    }
+
+    function randomVelocity(speed) {
+      const angle = Math.random() * Math.PI * 2;
+      return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
+    }
+
+    function stepPhysics(dtSec, arena, ballLayout) {
+      const { radii } = ballLayout;
+      const scaledDt = dtSec * state.speedMultiplier;
+      const P = ARENA3.physics;
+      const gap = P.minPlayerGap;
+      state.physFrameIdx = (state.physFrameIdx + 1) | 0;
+
+      const balls = buildActiveBallEntries(radii);
+      const nt = balls.length;
+      if (nt === 0) return;
+
+      const maxRPhys = Math.max(
+        ...balls.map((b) => ballCollisionRadius(b.radius, b.id)),
+        36
+      );
+      const dustP = ARENA3.effects.dustSpawnProb;
+
+      const fixed = Math.max(1 / 240, P.fixedTimestep || 1 / 120);
+      const maxSteps = Math.max(1, Math.floor(P.maxSubSteps) || 6);
+      state.physicsAccumulator = (state.physicsAccumulator || 0) + scaledDt;
+      if (state.physicsAccumulator > fixed * maxSteps) {
+        state.physicsAccumulator = fixed * maxSteps;
+      }
+
+      let subSteps = 0;
+      while (state.physicsAccumulator >= fixed && subSteps < maxSteps) {
+        state.physicsAccumulator -= fixed;
+        subSteps += 1;
+        physicsSubstep(fixed, arena, balls, gap, nt, maxRPhys, false);
+      }
+
+      if (subSteps === 0 && scaledDt > 1e-6) {
+        physicsSubstep(Math.min(scaledDt, fixed), arena, balls, gap, nt, maxRPhys, false);
+      }
+
+      balls.forEach(({ ball }) => {
+        if (Math.random() < dustP) {
+          spawnDustTrail(ball.x, ball.y, Math.hypot(ball.vx, ball.vy));
+        }
+      });
+
+      updatePairOverlapDeadlock(balls, gap);
+      updateStuckBallEscape(balls, arena, gap, nt);
+      runPositionSolver(balls, arena, gap, 4);
+      stabilizeContactVelocities(balls, gap, nt);
+      clampBallSpeeds(balls, radii, nt, maxRPhys);
+
+      updateCollisionEffects(scaledDt);
+      updateDustEffects(scaledDt);
+      updateShockwaves(scaledDt);
+      updateGiftEffects(scaledDt);
+      state.cameraShake = Math.max(0, state.cameraShake - scaledDt * (nt >= 3 ? 3.4 : 2.1));
+    }
+
+    function tickDisplayScores(dtSec) {
+      const k = Math.min(1, dtSec * ARENA3.scoreUi.lerpPerSec);
+      activeTeamIds().forEach((id) => {
+        const target = state.scores[id];
+        let cur = state.displayScores[id];
+        if (cur == null || !Number.isFinite(cur)) cur = target;
+        cur += (target - cur) * k;
+        if (Math.abs(target - cur) < 0.51) cur = target;
+        state.displayScores[id] = cur;
+        const row = teamEls[id];
+        if (row && row.score) row.score.textContent = String(Math.round(cur));
+      });
+    }
+
+    function animate(ts) {
+      if (document.hidden) {
+        state.lastFrameTime = 0;
+        requestAnimationFrame(animate);
+        return;
+      }
+      if (!state.lastFrameTime) state.lastFrameTime = ts;
+      const dtSec = Math.min((ts - state.lastFrameTime) / 1000, ARENA3.physics.maxFrameDelta || 0.05);
+      state.lastFrameTime = ts;
+      const arena = getArenaGeometry();
+      const ballLayout = tickSmoothBallRadii();
+      tickDisplayScores(dtSec);
+      tickGiftScreenFlash(dtSec);
+      stepPhysics(dtSec, arena, ballLayout);
+      render(arena, ballLayout);
+      requestAnimationFrame(animate);
+    }
+
+    function teardownLeaderEndedListener() {
+      const la = state.leaderEndedAudio;
+      const lh = state.leaderEndedHandler;
+      if (la && lh) {
+        try {
+          la.removeEventListener("ended", lh);
+        } catch (_e) {}
+      }
+      state.leaderEndedAudio = null;
+      state.leaderEndedHandler = null;
+    }
+
+    function stopLeadSong() {
+      if (state.leaderMusicPlayingId) saveMusicPlaybackPosition(state.leaderMusicPlayingId);
+      teardownLeaderEndedListener();
+      SLOT_IDS.forEach((id) => {
+        state.audios[id].pause();
+      });
+      state.leaderMusicPlayingId = null;
+    }
+
+    async function playLeaderSong(leader, opts = {}) {
+      if (!state.audioReady) return;
+      const forceRestart = opts.forceRestart === true;
+      const prevPlaying = state.leaderMusicPlayingId;
+
+      if (leader === "none") {
+        if (prevPlaying) saveMusicPlaybackPosition(prevPlaying);
+        SLOT_IDS.forEach((id) => state.audios[id].pause());
+        teardownLeaderEndedListener();
+        state.leaderMusicPlayingId = null;
+        return;
+      }
+
+      const a = state.audios[leader];
+      if (!a || !a.src) {
+        if (prevPlaying) saveMusicPlaybackPosition(prevPlaying);
+        SLOT_IDS.forEach((id) => state.audios[id].pause());
+        teardownLeaderEndedListener();
+        state.leaderMusicPlayingId = null;
+        return;
+      }
+
+      if (!forceRestart && prevPlaying === leader && !a.paused && !a.ended) {
+        wireLeaderMusicEndedHandler(leader, a);
+        return;
+      }
+
+      if (prevPlaying && prevPlaying !== leader) {
+        saveMusicPlaybackPosition(prevPlaying);
+      }
+
+      SLOT_IDS.forEach((id) => {
+        if (id !== leader) state.audios[id].pause();
+      });
+
+      teardownLeaderEndedListener();
+
+      if (forceRestart) {
+        try {
+          a.currentTime = 0;
+        } catch (_e) {}
+        if (!state.musicPlaybackTime) state.musicPlaybackTime = Object.create(null);
+        state.musicPlaybackTime[leader] = { t: 0, key: audioTrackKey(a) };
+      } else {
+        restoreMusicPlaybackPosition(leader);
+      }
+
+      wireLeaderMusicEndedHandler(leader, a);
+
+      try {
+        await a.play();
+        state.leaderMusicPlayingId = leader;
+      } catch (_e) {}
+    }
+
+    async function initAudio() {
+      if (state.audioReady) return;
+      state.audioReady = true;
+      playLeaderSong(getLeader());
+    }
+
+    function refreshScoreboardOrder() {
+      const ranked = activeTeamIds()
+        .map((id) => ({
+          id,
+          score: state.scores[id],
+          el: teamEls[id] && teamEls[id].wrap
+        }))
+        .filter((row) => row.el)
+        .sort((a, b) => {
+          if (b.score !== a.score) return b.score - a.score;
+          return SLOT_IDS.indexOf(a.id) - SLOT_IDS.indexOf(b.id);
+        });
+      ranked.forEach((row, index) => {
+        row.el.style.order = String(index);
+      });
+    }
+
+    function syncScoreboardLeading(leader) {
+      activeTeamIds().forEach((id) => {
+        const w = teamEls[id] && teamEls[id].wrap;
+        if (w) w.classList.toggle("leading", leader === id);
+      });
+    }
+
+    function updateAll() {
+      refreshScoreboardOrder();
+      const leader = getLeader();
+      if (leader !== state.currentLeader) {
+        state.currentLeader = leader;
+        playLeaderSong(leader);
+      }
+      syncScoreboardLeading(leader);
+      paintArenaFrame();
+    }
+
+    if (typeof GemtokGameSettingsFab !== "undefined") {
+      GemtokGameSettingsFab.wire(openSettings, { backdropId: "settings-backdrop" });
+    } else {
+      document.getElementById("gemtok-open-settings")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openSettings();
+      });
+    }
+
+    settingsBackdrop.addEventListener("click", (e) => {
+      if (e.target === settingsBackdrop || e.target.classList.contains("settings-overlay__backdrop")) closeSettings();
+    });
+    settingsClose.addEventListener("click", closeSettings);
+
+    const tikfinityWsSave = document.getElementById("tikfinity-ws-save");
+    if (tikfinityWsSave) {
+      tikfinityWsSave.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        const inp = document.getElementById("tikfinity-ws-input");
+        const v = (inp && inp.value.trim()) || "";
+        if (v && /^wss?:\/\//i.test(v)) {
+          try {
+            localStorage.setItem(WS_STORAGE_KEY, v);
+          } catch (_e) {}
+        } else if (inp) {
+          try {
+            localStorage.removeItem(WS_STORAGE_KEY);
+          } catch (_e) {}
+        }
+        connectTikfinity({ bypassDisable: true });
+      });
+    }
+
+    const settingsPanel = document.getElementById("settings-panel");
+    if (settingsPanel) {
+      settingsPanel.addEventListener("click", (ev) => {
+        const giftTrigger = ev.target.closest("[data-gift-trigger]");
+        if (giftTrigger) {
+          ev.stopPropagation();
+          openGiftComboPopover(giftTrigger.getAttribute("data-gift-trigger"));
+          return;
+        }
+        const browsePhoto = ev.target.closest("[data-photo-browse]");
+        if (browsePhoto) {
+          ev.stopPropagation();
+          const id = browsePhoto.getAttribute("data-photo-browse");
+          document.getElementById(`file-${id}`)?.click();
+          return;
+        }
+        const browseMusic = ev.target.closest("[data-music-browse]");
+        if (browseMusic) {
+          ev.stopPropagation();
+          const id = browseMusic.getAttribute("data-music-browse");
+          const slot = browseMusic.getAttribute("data-music-slot") || "0";
+          document.getElementById(`file-music-${id}-${slot}`)?.click();
+          return;
+        }
+        const clearMusicSlot = ev.target.closest("[data-music-clear-slot]");
+        if (clearMusicSlot) {
+          ev.stopPropagation();
+          const id = clearMusicSlot.getAttribute("data-music-clear-slot");
+          const slot = clearMusicSlot.getAttribute("data-music-slot") || "0";
+          void applyTeamMusicSlot(id, slot, null);
+          return;
+        }
+        const clearMusicAll = ev.target.closest("[data-music-clear-all]");
+        if (clearMusicAll) {
+          ev.stopPropagation();
+          void applyTeamMusicClearAll(clearMusicAll.getAttribute("data-music-clear-all"));
+          return;
+        }
+        const clearPhoto = ev.target.closest("[data-photo-clear]");
+        if (clearPhoto) {
+          ev.stopPropagation();
+          applyTeamPhoto(clearPhoto.getAttribute("data-photo-clear"), "");
+          return;
+        }
+      });
+
+      settingsPanel.addEventListener("change", (ev) => {
+        const t = ev.target;
+        if (!(t instanceof HTMLInputElement)) return;
+        if (t.type === "text") {
+          const mt = /^teamPhotoUrl-(s\d+)$/.exec(t.id);
+          if (mt) applyTeamPhoto(mt[1], t.value.trim());
+          return;
+        }
+        if (t.type !== "file") return;
+        let m = /^file-music-(s\d+)-(\d)$/.exec(t.id);
+        if (m) {
+          const id = m[1];
+          const slot = m[2];
+          const f = t.files && t.files[0];
+          t.value = "";
+          if (!f) return;
+          if (!f.type.startsWith("audio/") && !/\.(mp3|m4a|aac|ogg|wav|webm|flac)$/i.test(f.name)) return;
+          void applyTeamMusicSlot(id, slot, f);
+          return;
+        }
+        m = /^file-(s\d+)$/.exec(t.id);
+        if (m) {
+          const id = m[1];
+          const f = t.files && t.files[0];
+          t.value = "";
+          if (!f || !f.type.startsWith("image/")) return;
+          fileToResizedDataUrl(f, 320, (dataUrl) => {
+            if (dataUrl) applyTeamPhoto(id, dataUrl);
+          });
+        }
+      });
+
+      settingsPanel.addEventListener("input", (ev) => {
+        const t = ev.target;
+        if (!(t instanceof HTMLInputElement)) return;
+        const mt = /^teamPhotoUrl-(s\d+)$/.exec(t.id);
+        if (!mt) return;
+        const preview = document.getElementById(`teamPhotoPreview-${mt[1]}`);
+        if (preview) preview.src = t.value.trim() || "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+      });
+    }
+
+    settingsGiftSearch?.addEventListener("input", () => {
+      if (giftComboPopoverTeamId != null) rebuildGiftComboPopover();
+    });
+
+    document.addEventListener("pointerdown", (ev) => {
+      if (!giftComboPopover || giftComboPopover.hidden) return;
+      const t = ev.target;
+      if (!(t instanceof Node)) return;
+      if (giftComboPopover.contains(t)) return;
+      if (t instanceof Element && t.closest(".gift-combo")) return;
+      closeGiftComboPopover();
+    });
+
+    function handleKeyScore(event) {
+      if (event.key === "Escape" && settingsBackdrop && !settingsBackdrop.hidden) {
+        event.preventDefault();
+        closeSettings();
+        return;
+      }
+      if (/^[0-9]$/.test(event.key)) {
+        const idx = event.key === "0" ? 9 : parseInt(event.key, 10) - 1;
+        if (idx >= 0 && idx < state.playerCount) {
+          const teamId = SLOT_IDS[idx];
+          if (!state.audioReady) initAudio();
+          state.scores[teamId] += 1;
+          spawnGiftBurst(teamId, 1);
+          updateAll();
+        }
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        state.speedMultiplier = Math.min(3, state.speedMultiplier + 0.15);
+      } else if (event.key === "ArrowDown") {
+        state.speedMultiplier = Math.max(0.35, state.speedMultiplier - 0.15);
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyScore);
+    window.addEventListener("beforeunload", () => {
+      stopLeadSong();
+      SLOT_IDS.forEach((id) => {
+        state.audios[id].removeAttribute("src");
+        state.audios[id].src = "";
+        revokeTeamMusicUrls(id);
+      });
+      disconnectTikfinity({ intentional: true });
+    });
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState !== "visible") return;
+      if (isTikfinityAutoWsDisabled()) return;
+      const w = state.tikfinity.ws;
+      if (!w || w.readyState === WebSocket.CLOSED) connectTikfinity({ bypassDisable: true });
+    });
+    window.addEventListener("pageshow", (ev) => {
+      restoreTeamCrests();
+      if (!ev.persisted) return;
+      if (isTikfinityAutoWsDisabled()) return;
+      connectTikfinity({ bypassDisable: true });
+    });
+
+    function deferArena3BackgroundWork() {
+      const run = () => {
+        void refreshGiftAssignCatalog({ force: false }).then(() => {
+          activeTeamIds().forEach((teamId) =>
+            syncGiftComboTrigger(teamId, getAssignedGiftIdForTeam(teamId))
+          );
+        });
+        void loadTeamMusicFromIDB();
+        if (settingsTeamsRoot && !settingsTeamsRoot.childElementCount) buildSettingsTeamRows();
+      };
+      if (typeof requestIdleCallback === "function") {
+        requestIdleCallback(run, { timeout: 3000 });
+      } else {
+        setTimeout(run, 80);
+      }
+    }
+
+    (async function boot() {
+      loadPlayerCountFromStorage();
+      loadLocalGiftAssignmentsToState();
+      sanitizeLocalGiftAssignments();
+      loadPhotosFromStorage();
+      initPlayerCountModeUI();
+      buildScoreboard();
+      ensureAllBallSlots();
+      layoutBallsForArena();
+
+      state.currentLeader = getLeader();
+      updateAll();
+      requestAnimationFrame(animate);
+      if (!isTikfinityAutoWsDisabled()) connectTikfinity();
+      deferArena3BackgroundWork();
+    })();
+  </script>
+  <link rel="stylesheet" href="../../sıra/gemtok-settings-theme.css" />
+  <script src="../../gemtok-game-settings-fab.js"></script>
+</body>
+</html>

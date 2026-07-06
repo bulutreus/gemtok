@@ -1,0 +1,1609 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   StreamToEarn subpage styles — scoped under `.s2e-home.subpage`
+   Reuses the home design palette (home.css) and themes the legacy
+   subpage markup (.info, .home-meta-info, .article, .game-card, etc.).
+   ═══════════════════════════════════════════════════════════════════════ */
+
+.s2e-home.subpage { color: var(--white); }
+
+.s2e-home.subpage .page-wrap {
+  padding-top: 96px;
+  padding-bottom: 80px;
+  min-height: calc(100vh - 320px);
+}
+
+/* Make the legacy .container behave like the new one inside subpages */
+.s2e-home.subpage .container {
+  max-width: 1240px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 80px;
+  position: relative;
+}
+
+/* Legacy `.page` wrappers shouldn't add side padding */
+.s2e-home.subpage .page { padding: 0; }
+
+/* ─── Typography ────────────────────────────────────────────────────── */
+.s2e-home.subpage h1,
+.s2e-home.subpage h2,
+.s2e-home.subpage h3,
+.s2e-home.subpage h4,
+.s2e-home.subpage h5 {
+  font-family: 'Ubuntu', sans-serif;
+  color: var(--white);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+.s2e-home.subpage h1 {
+  font-size: 44px;
+  line-height: 1.08;
+  margin: 8px 0 18px;
+  font-weight: 700;
+}
+.s2e-home.subpage h1 .accent { color: var(--gold); }
+.s2e-home.subpage h2 {
+  font-size: 32px;
+  line-height: 1.15;
+  margin: 24px 0 14px;
+  font-weight: 700;
+  text-align: left;
+  color: var(--white);
+}
+.s2e-home.subpage h3 {
+  font-size: 22px;
+  margin: 18px 0 10px;
+  font-weight: 600;
+  color: var(--white);
+}
+.s2e-home.subpage h4 { font-size: 18px; font-weight: 600; margin: 14px 0 8px; }
+
+.s2e-home.subpage p {
+  color: var(--cream);
+  font-size: 15px;
+  line-height: 1.65;
+  margin: 0;
+}
+.s2e-home.subpage ul,
+.s2e-home.subpage ol {
+  color: var(--cream);
+  font-size: 15px;
+  line-height: 1.7;
+  padding-left: 22px;
+}
+.s2e-home.subpage li { margin-bottom: 4px; }
+
+/* Content-area anchors get the lime accent. Header/footer/buttons keep
+   their own colors from home.css — match the welcome page exactly. */
+.s2e-home.subpage .page-wrap a,
+.s2e-home.subpage .breadcrumbs a {
+  color: #c8e26a;
+  transition: color 0.15s;
+}
+.s2e-home.subpage .page-wrap a:hover,
+.s2e-home.subpage .breadcrumbs a:hover { color: var(--lime); }
+/* Underline only true inline text links (inside paragraphs and lists).
+   Card-shaped anchors (.doc-card, .article, .game-card, etc.) shouldn't
+   underline on hover — the card itself handles attention via border/lift. */
+.s2e-home.subpage .page-wrap p a:hover,
+.s2e-home.subpage .page-wrap li a:hover,
+.s2e-home.subpage .breadcrumbs a:hover { text-decoration: underline; }
+/* Buttons inside content keep their pill-button colors, not the link color */
+.s2e-home.subpage .page-wrap a.btn,
+.s2e-home.subpage .page-wrap a.btn:hover { text-decoration: none; }
+.s2e-home.subpage .page-wrap a.btn-lime,
+.s2e-home.subpage .page-wrap a.btn-lime:hover { color: #1f3000; }
+.s2e-home.subpage .page-wrap a.btn-gold,
+.s2e-home.subpage .page-wrap a.btn-gold:hover { color: #3d2700; }
+.s2e-home.subpage .page-wrap a.btn-ghost,
+.s2e-home.subpage .page-wrap a.btn-ghost:hover { color: var(--white); }
+.s2e-home.subpage .page-wrap a.btn-mag,
+.s2e-home.subpage .page-wrap a.btn-mag:hover { color: #fff; }
+.s2e-home.subpage .page-wrap a.download,
+.s2e-home.subpage .page-wrap a.download:hover { color: #1f3000; }
+.s2e-home.subpage .page-wrap a.donwload-for-win,
+.s2e-home.subpage .page-wrap a.donwload-for-win:hover { color: #1f3000; }
+.s2e-home.subpage strong, .s2e-home.subpage b { color: var(--white); font-weight: 600; }
+.s2e-home.subpage code {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  background: rgba(195, 62, 240, 0.12);
+  color: #f1bdfa;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.s2e-home.subpage hr,
+.s2e-home.subpage hr.eee {
+  border: 0;
+  border-top: 1px solid var(--navy-line);
+  margin: 32px 0;
+}
+
+/* ─── Breadcrumbs (used by components/breadcrumbs.ejs) ──────────────── */
+.s2e-home.subpage .breadcrumbs {
+  margin: 0 auto 22px;
+  padding-top: 4px;
+}
+/* The component is `<nav class="container breadcrumbs">` and is already
+   rendered inside the page `.container`; cancel the inner container's
+   side padding so the crumbs sit flush with the page-title block. */
+.s2e-home.subpage nav.breadcrumbs.container {
+  padding-left: 0;
+  padding-right: 0;
+}
+.s2e-home.subpage .breadcrumbs-list {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  gap: 8px;
+}
+.s2e-home.subpage .breadcrumbs-list li {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+}
+.s2e-home.subpage .breadcrumbs-list li + li::before {
+  content: "/";
+  color: var(--faint);
+  user-select: none;
+  margin-right: 8px;
+}
+.s2e-home.subpage .breadcrumbs a {
+  color: var(--gold);
+  text-decoration: none;
+}
+.s2e-home.subpage .breadcrumbs a:hover {
+  color: #ffcc55;
+  text-decoration: underline;
+}
+.s2e-home.subpage .breadcrumbs [aria-current="page"] { color: var(--cream); }
+
+/* ─── Page title block (consistent intro for every subpage) ────────── */
+.s2e-home.subpage .page-title {
+  margin: 12px 0 36px;
+}
+.s2e-home.subpage .page-title .sect-eye {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  color: var(--gold); letter-spacing: 0.16em; text-transform: uppercase;
+  margin-bottom: 12px; display: inline-block;
+}
+.s2e-home.subpage .page-title h1 {
+  text-align: left;
+  font-size: 48px; line-height: 1.05;
+  margin: 6px 0 14px;
+}
+.s2e-home.subpage .page-title h1.center { text-align: center; }
+.s2e-home.subpage .page-title p.lede {
+  color: var(--cream);
+  font-size: 17px;
+  max-width: 720px;
+  margin: 0;
+}
+
+/* ─── Cards / info panels ──────────────────────────────────────────── */
+.s2e-home.subpage .card,
+.s2e-home.subpage .shot-info {
+  background: linear-gradient(160deg, rgba(43, 74, 138, 0.30) 0%, rgba(31, 52, 99, 0.10) 100%);
+  border: 1px solid var(--navy-line);
+  border-radius: 18px;
+  padding: 22px 26px;
+  margin: 16px 0;
+}
+.s2e-home.subpage .card h2,
+.s2e-home.subpage .card h3,
+.s2e-home.subpage .shot-info h2,
+.s2e-home.subpage .shot-info h3 { margin-top: 0; }
+
+.s2e-home.subpage .accent-card {
+  position: relative;
+  border-left: 3px solid var(--lime);
+}
+.s2e-home.subpage .accent-card.gold { border-color: var(--gold); }
+.s2e-home.subpage .accent-card.magenta { border-color: var(--magenta); }
+
+/* Legacy .info blocks used as content sections */
+.s2e-home.subpage .info {
+  padding: 0;
+  background: transparent;
+}
+.s2e-home.subpage .info > .container { padding-left: 0; padding-right: 0; }
+.s2e-home.subpage .min-height { min-height: 50vh; }
+
+/* Legacy .colored-hrefs is a no-op now — links already styled */
+.s2e-home.subpage .colored-hrefs a { color: #c8e26a; }
+.s2e-home.subpage .colored-hrefs a:hover { color: var(--lime); }
+
+/* ─── Two-column info row (image + text) — legacy `.home-meta-info` ─ */
+.s2e-home.subpage .home-meta-info {
+  display: grid;
+  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
+  gap: 28px;
+  align-items: center;
+  margin: 28px 0;
+  background: rgba(15, 28, 60, 0.45);
+  border: 1px solid var(--navy-line);
+  border-radius: 18px;
+  padding: 24px;
+}
+.s2e-home.subpage .home-meta-info > div { min-width: 0; }
+.s2e-home.subpage .home-meta-info .poster {
+  width: 100%;
+  max-width: 360px;
+  height: auto;
+  border-radius: 12px;
+  margin: 0;
+  display: block;
+}
+.s2e-home.subpage .home-meta-info p {
+  width: auto;
+  font-size: 15px;
+  color: var(--cream);
+  margin: 0 0 12px;
+}
+.s2e-home.subpage .home-meta-info h3 {
+  text-align: left;
+  margin-top: 0;
+}
+
+/* ─── Article grid (used by /minecraft, /docs, plugin lists, news) ─ */
+.s2e-home.subpage .articles {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 18px;
+  margin: 8px 0 28px;
+}
+.s2e-home.subpage .articles a {
+  margin: 0;
+  flex: none;
+  display: block;
+  border-radius: 16px;
+  text-decoration: none;
+}
+.s2e-home.subpage .articles a:hover { text-decoration: none; }
+.s2e-home.subpage .article {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  background: rgba(15, 28, 60, 0.5);
+  border: 1px solid var(--navy-line);
+  padding: 16px;
+  border-radius: 16px;
+  box-shadow: none;
+  transition: transform 0.18s, border-color 0.18s, background 0.18s;
+  height: 100%;
+}
+.s2e-home.subpage .articles a:hover .article {
+  transform: translateY(-3px);
+  border-color: rgba(240, 167, 34, 0.45);
+  background: rgba(15, 28, 60, 0.7);
+}
+/* The .article markup wraps the image in an unstyled div, so flex squashes
+   the wrapper (and the image inside it) along with the long description text.
+   Pin the first child to a fixed 120px and the image fills it. */
+.s2e-home.subpage .article > div:first-child {
+  flex: 0 0 120px;
+  width: 120px;
+  height: 120px;
+}
+.s2e-home.subpage .article-img {
+  width: 120px;
+  height: 120px;
+  border-radius: 12px;
+  object-fit: cover;
+  margin: 0;
+  flex-shrink: 0;
+  border: 1px solid var(--navy-line);
+}
+.s2e-home.subpage .article-name {
+  color: var(--white);
+  font-family: 'Ubuntu', sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0 0 6px;
+  text-shadow: 1px 1px black;
+}
+.s2e-home.subpage .article-description {
+  color: var(--cream);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: none;
+}
+.s2e-home.subpage .article-button-read {
+  background: var(--magenta);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 7px 16px;
+  font-family: 'Ubuntu';
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+.s2e-home.subpage .article-button-read:hover { background: #d268f5; }
+.s2e-home.subpage .article-half-wrapper { width: auto; }
+
+/* Vertical-card variant of `.articles` — square (1:1) image on top with a
+   translucent text card lifted up so it overlaps the image bottom.
+   Used by the Plugins & Articles grids on /minecraft. */
+.s2e-home.subpage .articles.articles-vertical {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+}
+.s2e-home.subpage .articles-vertical .article {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  overflow: visible;
+  height: 100%;
+  position: relative;
+}
+.s2e-home.subpage .articles-vertical .article > div:first-child {
+  flex: none;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  /* border-radius: 16px; */
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--navy-line);
+  transition: border-color 0.18s;
+}
+.s2e-home.subpage .articles-vertical .article-img {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  border: 0;
+  border-radius: 0;
+  margin: 0;
+  object-fit: cover;
+  background: rgba(0, 0, 0, 0.25);
+}
+.s2e-home.subpage .articles-vertical .article > div:last-child {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 18px 20px 20px;
+  margin: -80px 0 0;
+  background: linear-gradient(180deg,
+    rgba(15, 28, 60, 0) 0%,
+    rgba(15, 28, 60, 1) 25%);
+  /* -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px); */
+  border: 0;
+  border-radius: 0 0 16px 16px;
+  position: relative;
+  z-index: 1;
+  transition: background 0.18s;
+}
+.s2e-home.subpage .articles.articles-vertical a:hover .article {
+  transform: translateY(-3px);
+  background: transparent;
+}
+.s2e-home.subpage .articles.articles-vertical a:hover .article > div:first-child {
+  border-color: rgba(240, 167, 34, 0.45);
+}
+.s2e-home.subpage .articles-vertical .article-button-read {
+  margin-top: auto;
+  margin-left: auto;
+  align-self: flex-start;
+}
+.s2e-home.subpage .plugins-articles .article-description {
+  display: block;
+  overflow: visible;
+  max-height: none;
+  font-size: 14px;
+  line-height: 1.55;
+}
+@media (max-width: 900px) {
+  .s2e-home.subpage .articles.articles-vertical {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .s2e-home.subpage .articles.articles-vertical {
+    grid-template-columns: 1fr;
+  }
+  .s2e-home.subpage .articles.articles-vertical.plugins-articles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .s2e-home.subpage .articles-vertical .article > div:last-child {
+    margin: -70px 0 0;
+    padding: 16px 18px 18px;
+  }
+  .s2e-home.subpage .plugins-articles .article > div:last-child {
+    margin: -52px 0 0;
+    padding: 12px 12px 14px;
+  }
+  .s2e-home.subpage .plugins-articles .article-name {
+    font-size: 14px;
+    line-height: 1.2;
+  }
+  .s2e-home.subpage .plugins-articles .version {
+    font-size: 11px;
+    gap: 5px;
+  }
+  .s2e-home.subpage .plugins-articles .article-description {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+}
+
+/* Click-to-copy chip — shared between the Witcher 3 commands table and
+   the Minecraft plugin commands list. Adds a lime hover highlight and a
+   copy/check icon chip; the JS handler lives next to each usage. */
+.s2e-home.subpage .cmd-copy {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s, color 0.15s;
+  position: relative;
+}
+.s2e-home.subpage .cmd-copy:hover {
+  background: rgba(158, 199, 58, 0.12);
+  color: var(--lime);
+}
+.s2e-home.subpage .cmd-copy::after {
+  content: '';
+  display: inline-block;
+  width: 13px; height: 13px;
+  margin-left: 8px;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23c8e26a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><rect x='9' y='9' width='13' height='13' rx='2'/><path d='M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1'/></svg>");
+  vertical-align: middle;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.s2e-home.subpage .cmd-copy:hover::after { opacity: 0.7; }
+.s2e-home.subpage .cmd-copy.copied {
+  background: rgba(158, 199, 58, 0.18);
+  color: var(--lime);
+}
+.s2e-home.subpage .cmd-copy.copied::after {
+  opacity: 1;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ec73a' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='20 6 9 17 4 12'/></svg>");
+}
+
+.s2e-home.subpage .version {
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* Tag chips — work for free/pro/expert */
+.s2e-home.subpage .tag {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  margin-left: 6px;
+}
+.s2e-home.subpage .tag-free { background: var(--lime); color: #1f3000; }
+.s2e-home.subpage .tag-pro  { background: rgba(195, 62, 240, 0.85); }
+.s2e-home.subpage .tag-expert { background: var(--magenta-deep); }
+.s2e-home.subpage .tag-paid { background: var(--gold); color: #3d2700; }
+
+/* ─── Game-card grid (legacy `.games-list`) ─────────────────────────── */
+.s2e-home.subpage .games-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 18px;
+}
+.s2e-home.subpage .game-card {
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+}
+.s2e-home.subpage .game-card:hover { background: transparent; transform: none; }
+.s2e-home.subpage .game-poster {
+  position: relative;
+  width: 100%;
+  /* Allow the scaled image to render outside on hover, matching dev. */
+  overflow: visible;
+  background: transparent;
+}
+.s2e-home.subpage .mod-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 8px;
+  transition: transform 0.3s;
+}
+.s2e-home.subpage .game-card:hover .mod-img { transform: scale(1.03); }
+.s2e-home.subpage .game-label {
+  position: absolute;
+  top: 8px; left: 8px;
+  background: var(--magenta);
+  color: #fff;
+  font-family: 'JetBrains Mono';
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+  padding: 4px 7px;
+  border-radius: 6px;
+}
+.s2e-home.subpage .game-name {
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--white);
+}
+
+/* ─── Board (image + text) layout used by minecraft / game template ─ */
+.s2e-home.subpage .board {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 28px;
+  align-items: center;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  margin: 8px 0 32px;
+}
+.s2e-home.subpage .board .left,
+.s2e-home.subpage .board .right {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex: none;
+}
+.s2e-home.subpage .board .right { align-items: stretch; }
+/* Keep buttons sized to content and add margin-top for breathing room */
+.s2e-home.subpage .board .left > a.btn,
+.s2e-home.subpage .board .left > a.download,
+.s2e-home.subpage .board .left > a.donwload-for-win {
+  align-self: flex-start;
+  margin-top: 18px;
+}
+.s2e-home.subpage .img-poster {
+  width: 100%;
+  max-width: 420px;
+  border-radius: 14px;
+  border: 1px solid var(--navy-line);
+  margin: 0 auto;
+}
+.s2e-home.subpage .game-title-favicon {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--navy-line);
+}
+
+/* ─── Download / CTA buttons used by legacy pages ──────────────────── */
+.s2e-home.subpage .download {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 999px;
+  font-family: 'Ubuntu';
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--lime);
+  color: #1f3000;
+  border: 0;
+  cursor: pointer;
+  box-shadow: 0 3px 0 var(--lime-deep);
+  transition: transform 0.15s, background 0.15s;
+}
+.s2e-home.subpage .download:hover {
+  background: #b0d850;
+  color: #1f3000;
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+.s2e-home.subpage .donwload-for-win {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  border-radius: 999px;
+  background: var(--lime);
+  color: #1f3000;
+  box-shadow: 0 4px 0 var(--lime-deep);
+  font-family: 'Ubuntu';
+  font-weight: 700;
+  box-sizing: border-box;
+  width: max-content;
+}
+.s2e-home.subpage .donwload-for-win:hover {
+  background: #b0d850;
+  color: #1f3000;
+  text-decoration: none;
+}
+.s2e-home.subpage .donwload-for-win img {
+  width: 26px;
+  margin: 0;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 4px;
+  border-radius: 6px;
+}
+.s2e-home.subpage .donwload-for-win-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 16px;
+  line-height: 1.05;
+}
+.s2e-home.subpage .donwload-for-win-text-f1 {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.s2e-home.subpage .single-button-right {
+  display: flex;
+  justify-content: flex-end;
+  margin: 18px 0 32px;
+}
+
+/* Live page sticky horizontal filter bar (mirrors mod-tabs layout) */
+.live-filters-bar {
+  width: 100%;
+  position: sticky;
+  top: 68px;
+  z-index: 90;
+  background: rgba(10, 19, 48, 0.92);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  margin: 16px 0 24px;
+}
+.live-filters-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+}
+.live-filters-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+}
+/* Specificity bump to prevent dropdowns from wrapping inside filter bar */
+.s2e-home.subpage .live-filters-controls .s2e-dropdown.live-filter-dd {
+  width: auto;
+  min-width: 180px;
+  margin-bottom: 0;
+}
+.live-filters-stats {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.62);
+}
+.live-filters-stats .stat {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.live-filters-stats .stat-label { text-transform: uppercase; }
+.live-filters-stats .stat-value {
+  color: #f0a722;
+  font-weight: 700;
+  font-size: 14px;
+}
+/* Defeats any author rule that might leak `display` onto a hidden <select>
+   used as a JS-driven proxy for our custom dropdown. */
+.s2e-home.subpage select[hidden],
+.s2e-home.subpage select#platformFilter[hidden],
+.s2e-home.subpage select#gameFilter[hidden] { display: none !important; }
+.s2e-home.subpage #livesContainer {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.s2e-home.subpage .live {
+  width: auto;
+  background: rgba(15, 28, 60, 0.55);
+  border: 1px solid var(--navy-line);
+  border-radius: 14px;
+  margin: 0;
+  padding: 12px;
+  transition: transform 0.15s, border-color 0.15s;
+}
+.s2e-home.subpage .live:hover {
+  background: rgba(15, 28, 60, 0.85) !important;
+  border-color: rgba(240, 167, 34, 0.45);
+  transform: translateY(-2px);
+}
+.s2e-home.subpage .live-br { border: 1px solid var(--navy-line); }
+.s2e-home.subpage .pro-live   { border-color: rgba(228, 96, 96, 0.7) !important; }
+.s2e-home.subpage .expert-live { border-color: rgba(195, 62, 240, 0.7) !important; }
+.s2e-home.subpage .user-panel { color: var(--cream); }
+.s2e-home.subpage .user-panel > div:last-child { min-width: 0; flex: 1; }
+.s2e-home.subpage .user-panel .tiktokUsername {
+  color: var(--white);
+  font-weight: 700;
+  width: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.s2e-home.subpage .streamerAvatar { border: 2px solid var(--navy-line); }
+.s2e-home.subpage .platformName { color: var(--muted) !important; }
+
+.s2e-home.subpage .live .game {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.s2e-home.subpage .live .game-icon {
+  width: 16px;
+  height: 16px;
+  object-fit: contain;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* ─── Gifts page (catalog + region picker) ─────────────────────────── */
+.s2e-home.subpage .small-h1 {
+  font-size: 30px;
+  margin: 6px 0 10px;
+  color: var(--white);
+}
+
+/* ─── Page H1 variants ─────────────────────────────────────────────────
+   `.page-h1-game` lives on game/mod subpages where the H1 sits inside a
+   flex `.board` row alongside the poster image. Smaller than the docs
+   hero H1 to leave room for the poster.
+
+   `.page-h1-article` is the centered hero on long-form articles where
+   the H1 carries the page weight on its own.
+
+   Replaces inline `style="font-size: 35px"` patterns scattered through
+   ten templates so we can retune in one place. */
+.s2e-home.subpage h1.page-h1-game {
+  font-size: 35px;
+  margin: 0 0 18px;
+}
+.s2e-home.subpage h1.page-h1-article {
+  font-size: 35px;
+  text-align: center;
+  margin: 0 0 20px;
+}
+.s2e-home.subpage h1.docs-hero-h1 {
+  font-size: 48px;
+  line-height: 1.05;
+  margin: 6px 0 14px;
+}
+/* Plain flex-wrap grid — matches dev. No card frames, just rows of tiles.
+   Constrained to ~4 rows of cards with an inner scroll so the page itself
+   doesn't grow unbounded for big regions. Cards are ~120px tall, gap 12px,
+   so 4 rows ≈ 4×120 + 3×12 ≈ 516px. We add ~24px of padding-bottom inside
+   to make sure the last row never feels clipped. */
+.s2e-home.subpage .gifts-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 12px 0;
+  max-height: 540px;
+  overflow-y: auto;
+  padding-right: 8px;
+  align-content: flex-start;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.s2e-home.subpage .gifts-container::-webkit-scrollbar { width: 8px; }
+.s2e-home.subpage .gifts-container::-webkit-scrollbar-track { background: transparent; margin: 4px 0; }
+.s2e-home.subpage .gifts-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.s2e-home.subpage .gifts-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.32);
+  background-clip: padding-box;
+}
+
+/* Bucket-driven filter — pre-applied by the server (no flicker), swapped by
+   JS on click. "all" (or unset) shows everything. */
+.s2e-home.subpage .gifts-container[data-active-price="lt10"] .gift:not([data-price="lt10"]),
+.s2e-home.subpage .gifts-container[data-active-price="10_99"] .gift:not([data-price="10_99"]),
+.s2e-home.subpage .gifts-container[data-active-price="100_999"] .gift:not([data-price="100_999"]),
+.s2e-home.subpage .gifts-container[data-active-price="gte1k"] .gift:not([data-price="gte1k"]) {
+  display: none;
+}
+
+/* Ülke/bölge filtresi (gemtok-gift-region-filter.js) — fiyatla birlikte çalışır */
+.s2e-home.subpage .gifts-container .gift.gemtok-hide-by-region {
+  display: none !important;
+}
+
+.s2e-home.subpage .gifts-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px 0 8px;
+  font-size: 13px;
+}
+.s2e-home.subpage .gift {
+  width: 110px;
+  padding: 6px 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  text-align: center;
+}
+.s2e-home.subpage .gift img {
+  width: 70px;
+  height: 70px;
+  margin: 0 0 6px;
+  object-fit: contain;
+}
+.s2e-home.subpage .gift p { margin: 0; }
+.s2e-home.subpage .gift-name {
+  font-size: 12px;
+  color: var(--cream);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+.s2e-home.subpage .gift-price {
+  font-size: 12px;
+  color: var(--gold);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+}
+.s2e-home.subpage .region a,
+.s2e-home.subpage .cost a {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--cream);
+  font-size: 14px;
+}
+.s2e-home.subpage .region a:hover,
+.s2e-home.subpage .cost a:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--white);
+  text-decoration: none;
+}
+.s2e-home.subpage .region a.active-link,
+.s2e-home.subpage .cost a.active-link {
+  background: rgba(195, 62, 240, 0.18);
+  color: var(--white);
+}
+
+/* ─── Forge mod / events grid (game template) ──────────────────────── */
+.s2e-home.subpage .bar { display: none; }
+.s2e-home.subpage .events {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+.s2e-home.subpage .event {
+  background: rgba(15, 28, 60, 0.55);
+  border: 1px solid var(--navy-line);
+  border-radius: 12px;
+  padding: 8px;
+  text-align: center;
+  width: auto;
+}
+.s2e-home.subpage .event-img {
+  padding: 0;
+}
+.s2e-home.subpage .event-img img {
+  width: 70px;
+  height: 70px;
+  object-fit: contain;
+  margin: 0 auto;
+}
+.s2e-home.subpage .event-name {
+  font-size: 12px;
+  color: var(--cream);
+  margin-top: 6px;
+}
+.s2e-home.subpage .entity-item {
+  background: rgba(15, 28, 60, 0.6);
+  border-color: var(--navy-line);
+}
+.s2e-home.subpage .entity-name { color: var(--cream); }
+.s2e-home.subpage .extra-content { color: var(--cream); }
+
+.s2e-home.subpage .landing-event-section {
+  background: rgba(15, 28, 60, 0.55);
+  border: 1px solid var(--navy-line);
+  border-radius: 12px;
+  box-shadow: none;
+}
+.s2e-home.subpage .landing-event-header {
+  background: rgba(195, 62, 240, 0.12);
+  border-bottom: 1px solid var(--navy-line);
+  color: var(--white);
+}
+.s2e-home.subpage .landing-event-title h3 { color: var(--white); }
+.s2e-home.subpage .landing-event-description { color: var(--cream); opacity: 1; }
+.s2e-home.subpage .landing-event-entities h4 {
+  color: var(--cream);
+  border-bottom-color: var(--magenta);
+}
+.s2e-home.subpage .landing-event-info {
+  background: rgba(15, 28, 60, 0.4);
+  border-top-color: var(--navy-line);
+}
+.s2e-home.subpage .landing-event-info p { color: var(--cream); }
+.s2e-home.subpage .landing-event-info code {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--magenta);
+}
+.s2e-home.subpage .entity-img {
+  border-color: var(--navy-line);
+  background: rgba(15, 28, 60, 0.6);
+}
+.s2e-home.subpage .entity-img:hover { border-color: var(--magenta); }
+.s2e-home.subpage .entity-placeholder {
+  background: rgba(15, 28, 60, 0.6);
+  border-color: var(--navy-line);
+}
+.s2e-home.subpage .entity-placeholder:hover {
+  background: rgba(195, 62, 240, 0.12);
+  border-color: var(--magenta);
+}
+.s2e-home.subpage .placeholder-icon { color: var(--muted); }
+
+.s2e-home.subpage #show-more-events {
+  background: var(--magenta);
+  color: #fff;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 22px;
+  font-family: 'Ubuntu';
+  font-weight: 700;
+}
+.s2e-home.subpage #show-more-events:hover { background: #d268f5; }
+
+/* Events toolbar — title + counter, search input and category chips. The
+   dropdown filter it replaced was hard to scan once a game listed 10+
+   categories; chips show counts at a glance and the search narrows the
+   long tail without forcing a category pick. */
+.s2e-home.subpage .events-toolbar {
+  margin: 14px 0 22px;
+}
+.s2e-home.subpage .events-toolbar-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.s2e-home.subpage .events-toolbar-title {
+  margin: 0;
+  font-size: 26px;
+  line-height: 1.1;
+  color: var(--white);
+}
+.s2e-home.subpage .events-toolbar-meta {
+  font-size: 13px;
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+}
+.s2e-home.subpage .events-toolbar-meta #events-visible-count {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.s2e-home.subpage .events-toolbar-controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.s2e-home.subpage .events-search {
+  position: relative;
+  flex: 1 1 280px;
+  min-width: 240px;
+  max-width: 380px;
+}
+.s2e-home.subpage .events-search input {
+  width: 100%;
+  padding: 11px 14px 11px 40px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--navy-line);
+  border-radius: 12px;
+  color: var(--white);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.s2e-home.subpage .events-search input::placeholder { color: var(--muted); }
+.s2e-home.subpage .events-search input:focus {
+  border-color: rgba(240, 167, 34, 0.55);
+  background: rgba(15, 28, 60, 0.7);
+}
+.s2e-home.subpage .events-search svg {
+  position: absolute;
+  left: 14px; top: 50%;
+  width: 16px; height: 16px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.s2e-home.subpage .events-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  flex: 1 1 auto;
+}
+.s2e-home.subpage .events-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--navy-line);
+  border-radius: 999px;
+  color: var(--cream);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.s2e-home.subpage .events-chip:hover {
+  border-color: rgba(240, 167, 34, 0.45);
+  background: rgba(15, 28, 60, 0.7);
+  color: var(--white);
+}
+.s2e-home.subpage .events-chip.is-active {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #3d2700;
+}
+.s2e-home.subpage .events-chip .chip-count {
+  font-size: 11px;
+  font-weight: 700;
+  opacity: 0.7;
+}
+.s2e-home.subpage .events-chip.is-active .chip-count { opacity: 0.85; }
+
+.s2e-home.subpage .events-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 28px 0;
+  font-size: 14px;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .s2e-home.subpage .events-toolbar-title { font-size: 22px; }
+  .s2e-home.subpage .events-search { max-width: 100%; flex: 0 0 auto; }
+  .s2e-home.subpage .events-toolbar-controls { flex-direction: column; align-items: stretch; gap: 10px; }
+  .s2e-home.subpage .events-chips {
+    flex-wrap: wrap;
+    margin: 0;
+    padding: 0;
+  }
+  .s2e-home.subpage .events-chip { padding: 6px 12px; font-size: 11px; }
+}
+
+/* ─── White-box (mods download card, etc.) ─────────────────────────── */
+.s2e-home.subpage .about-minecraft-wrapper {
+  background: linear-gradient(160deg, rgba(43, 74, 138, 0.30) 0%, rgba(31, 52, 99, 0.10) 100%);
+  border: 1px solid var(--navy-line);
+  border-radius: 18px;
+  padding: 24px;
+  box-shadow: none;
+  margin: 18px 0;
+}
+.s2e-home.subpage .white-box {
+  width: 100%;
+  max-width: none;
+  float: none;
+  background: linear-gradient(160deg, rgba(43, 74, 138, 0.30) 0%, rgba(31, 52, 99, 0.10) 100%);
+  border: 1px solid var(--navy-line);
+  border-radius: 18px;
+  box-shadow: none;
+  color: var(--cream);
+  font-size: 15px;
+  padding: 28px 30px;
+  margin: 18px 0;
+}
+.s2e-home.subpage .white-box h3 { color: var(--white); margin-bottom: 10px; }
+.s2e-home.subpage .mods-download-buttons {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.s2e-home.subpage .mods-download-buttons a {
+  display: inline-flex;
+  padding: 10px 18px;
+  background: var(--magenta);
+  color: #fff;
+  border-radius: 999px;
+  font-family: 'Ubuntu';
+  font-weight: 700;
+  font-size: 13px;
+}
+.s2e-home.subpage .mods-download-buttons a:hover { background: #d268f5; text-decoration: none; }
+
+/* ─── Spacing helpers ───────────────────────────────────────────────── */
+.s2e-home.subpage .text { padding: 0; }
+.s2e-home.subpage .text > div { padding: 0; }
+
+/* ─── Responsive ────────────────────────────────────────────────────── */
+/* ─── Custom dropdown (matches home-header .lang-dropdown look) ─────── */
+.s2e-home.subpage .s2e-dropdown {
+  position: relative;
+  width: 100%;
+  margin-bottom: 10px;
+  font-family: 'Inter', sans-serif;
+}
+.s2e-home.subpage .s2e-dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--navy-line);
+  border-radius: 10px;
+  color: var(--white);
+  font-family: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+.s2e-home.subpage .s2e-dropdown-trigger:hover,
+.s2e-home.subpage .s2e-dropdown.open .s2e-dropdown-trigger {
+  border-color: rgba(240, 167, 34, 0.45);
+  background: rgba(15, 28, 60, 0.7);
+}
+.s2e-home.subpage .s2e-dropdown-chev {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-left: 10px;
+  transition: transform 0.18s;
+  opacity: 0.7;
+}
+.s2e-home.subpage .s2e-dropdown.open .s2e-dropdown-chev { transform: rotate(180deg); }
+.s2e-home.subpage .s2e-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 80;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px;
+  margin: 0;
+  list-style: none;
+  background: rgba(15, 28, 60, 0.98);
+  border: 1px solid var(--navy-line);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transform: translateY(-4px);
+  pointer-events: none;
+  transition: opacity 0.15s, transform 0.15s;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.18) transparent;
+}
+.s2e-home.subpage .s2e-dropdown-menu::-webkit-scrollbar { width: 8px; }
+.s2e-home.subpage .s2e-dropdown-menu::-webkit-scrollbar-track { background: transparent; margin: 6px 0; }
+.s2e-home.subpage .s2e-dropdown-menu::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.s2e-home.subpage .s2e-dropdown-menu::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); background-clip: padding-box; border: 2px solid transparent; }
+.s2e-home.subpage .s2e-dropdown.open .s2e-dropdown-menu {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+.s2e-home.subpage .s2e-dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  color: var(--cream);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.s2e-home.subpage .s2e-dropdown-opt-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.04);
+}
+.s2e-home.subpage .s2e-dropdown-opt-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.s2e-home.subpage .s2e-dropdown-count {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 2px 7px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+.s2e-home.subpage .s2e-dropdown-option.selected .s2e-dropdown-count,
+.s2e-home.subpage .s2e-dropdown-option:hover .s2e-dropdown-count {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.12);
+}
+.s2e-home.subpage .s2e-dropdown-option:hover,
+.s2e-home.subpage .s2e-dropdown-option:focus {
+  background: rgba(195, 62, 240, 0.18);
+  color: var(--white);
+  outline: none;
+}
+.s2e-home.subpage .s2e-dropdown-option.selected {
+  background: rgba(195, 62, 240, 0.28);
+  color: var(--white);
+}
+
+/* ─── Page-level search input (games list, etc.) ───────────────────── */
+.s2e-home.subpage .page-search {
+  position: relative;
+  max-width: 420px;
+  margin: 0 0 24px;
+}
+.s2e-home.subpage .page-search input {
+  width: 100%;
+  padding: 11px 14px 11px 40px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--navy-line);
+  border-radius: 12px;
+  color: var(--white);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.15s, background 0.15s;
+}
+.s2e-home.subpage .page-search input::placeholder { color: var(--muted); }
+.s2e-home.subpage .page-search input:focus {
+  border-color: rgba(240, 167, 34, 0.55);
+  background: rgba(15, 28, 60, 0.7);
+}
+.s2e-home.subpage .page-search svg {
+  position: absolute;
+  left: 14px; top: 50%;
+  width: 16px; height: 16px;
+  transform: translateY(-50%);
+  color: var(--muted);
+  pointer-events: none;
+}
+.s2e-home.subpage .games-empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 40px 0;
+  font-size: 14px;
+}
+
+/* ─── Legacy `.flex-table` (Witcher 3 commands, Witcher 3 creatures, etc.)
+       — dark-themed port of the original style.css rules so the table renders
+       correctly under `skipBaseStyles: true`. */
+.s2e-home.subpage .flex-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--navy-line);
+  border-radius: 12px;
+  overflow: hidden;
+  margin: 12px 0 36px;
+  background: rgba(15, 28, 60, 0.45);
+}
+.s2e-home.subpage .flex-table-row {
+  width: 100%;
+  display: flex;
+  border-bottom: 1px solid var(--navy-line);
+}
+.s2e-home.subpage .flex-table-row:last-child { border-bottom: 0; }
+.s2e-home.subpage .flex-table-row > div { flex: 1; min-width: 0; }
+.s2e-home.subpage .flex-table-row:nth-child(2n + 1) { background: rgba(255, 255, 255, 0.025); }
+.s2e-home.subpage .flex-table-header {
+  background: rgba(195, 62, 240, 0.16) !important;
+  font-family: 'Ubuntu', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--white);
+  border-bottom: 1px solid var(--navy-line-strong);
+}
+.s2e-home.subpage .flex-table-text,
+.s2e-home.subpage .flex-table-value {
+  padding: 10px 14px !important;
+  color: var(--cream);
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+}
+.s2e-home.subpage .flex-table-text {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  color: var(--white);
+  border-right: 1px solid var(--navy-line);
+}
+.s2e-home.subpage .flex-table-value { justify-content: flex-start; }
+.s2e-home.subpage .flex-table-header .flex-table-text,
+.s2e-home.subpage .flex-table-header .flex-table-value {
+  font-family: 'Ubuntu', sans-serif;
+  font-size: 13px;
+  color: var(--white);
+}
+.s2e-home.subpage .command-example {
+  display: inline-block;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  padding: 8px 14px;
+  margin: 6px 0 14px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--navy-line);
+  border-radius: 8px;
+  color: var(--white);
+}
+/* Inline action links (e.g. "About Levels", "Items List") inside the
+   commands description column — pre-existing `colored-hrefs-deep` class. */
+.s2e-home.subpage .colored-hrefs-deep a { color: #c8e26a; }
+.s2e-home.subpage .colored-hrefs-deep a:hover { color: var(--lime); text-decoration: underline; }
+@media (max-width: 700px) {
+  .s2e-home.subpage .flex-table-row { flex-direction: row; }
+  .s2e-home.subpage .flex-table-row > div {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    width: auto !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+    line-height: 1.45 !important;
+    white-space: normal !important;
+    word-break: break-word;
+  }
+  .s2e-home.subpage .flex-table-text {
+    font-size: 11px !important;
+    border-right: 1px solid var(--navy-line);
+  }
+  .s2e-home.subpage .flex-table-header { font-size: 10px !important; }
+  .s2e-home.subpage .flex-table-header > div { font-size: 10px !important; }
+  .s2e-home.subpage .flex-table-value { flex: 1.5 1 0 !important; }
+  .s2e-home.subpage .cmd-table .cmd-col-name { flex: 1.3 1 0 !important; }
+  .s2e-home.subpage .cmd-table .cmd-col-example {
+    flex: 1 1 0 !important;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--gold) !important;
+  }
+  .s2e-home.subpage .fix-mobile-tabel {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* ─── Contacts page redesign — feature cards with framed icons ────── */
+.s2e-home.subpage .contact-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin: 12px 0 36px;
+}
+.s2e-home.subpage .contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 24px;
+  background: linear-gradient(160deg, rgba(43, 74, 138, 0.30) 0%, rgba(31, 52, 99, 0.10) 100%);
+  border: 1px solid var(--navy-line);
+  border-radius: 16px;
+  transition: transform 0.18s, border-color 0.18s, background 0.18s;
+}
+.s2e-home.subpage .contact-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(240, 167, 34, 0.45);
+}
+.s2e-home.subpage .contact-card .contact-icon {
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 14px;
+  background: rgba(195, 62, 240, 0.16);
+  color: var(--magenta);
+}
+.s2e-home.subpage .contact-card.gold .contact-icon { background: rgba(240, 167, 34, 0.16); color: var(--gold); }
+.s2e-home.subpage .contact-card.lime .contact-icon { background: rgba(158, 199, 58, 0.16); color: var(--lime); }
+.s2e-home.subpage .contact-card .contact-icon svg { width: 28px; height: 28px; }
+.s2e-home.subpage .contact-card h3 { margin: 0; }
+.s2e-home.subpage .contact-card p { margin: 0; color: var(--cream); }
+.s2e-home.subpage .contact-card .contact-cta {
+  margin-top: auto;
+  display: inline-flex; align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  background: var(--magenta);
+  color: #fff;
+  font-family: 'Ubuntu', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  border-radius: 999px;
+  text-decoration: none;
+  align-self: flex-start;
+  transition: background 0.15s;
+}
+/* Each :hover must restate `color` — the broader `.page-wrap a:hover { color: lime }`
+   rule would otherwise leak the lime text color into these themed buttons. */
+.s2e-home.subpage .contact-card .contact-cta:hover { background: #d268f5; color: #fff; text-decoration: none; }
+.s2e-home.subpage .contact-card.gold .contact-cta { background: var(--gold); color: #3d2700; }
+.s2e-home.subpage .contact-card.gold .contact-cta:hover { background: #ffb938; color: #3d2700; }
+.s2e-home.subpage .contact-card.lime .contact-cta { background: var(--lime); color: #1f3000; }
+.s2e-home.subpage .contact-card.lime .contact-cta:hover { background: #b0d850; color: #1f3000; }
+.s2e-home.subpage .contact-cta-count { opacity: 0.85; font-weight: 600; margin-left: 2px; }
+/* Shared "(7.9k)" chip for any Discord button (.btn-mag, .btn-ghost, etc.) */
+.s2e-home.subpage .btn .btn-count,
+.s2e-home .btn .btn-count { opacity: 0.7; font-weight: 600; margin-left: 4px; font-size: 0.92em; }
+.s2e-home.subpage .contact-card .contact-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 14px;
+  color: var(--gold);
+  word-break: break-all;
+}
+
+@media (max-width: 1100px) {
+  .s2e-home.subpage .container { padding: 0 40px; }
+  .s2e-home.subpage .board { grid-template-columns: 1fr; }
+  .s2e-home.subpage .home-meta-info { grid-template-columns: 1fr; }
+  .s2e-home.subpage h1 { font-size: 36px; }
+  .s2e-home.subpage .page-title h1 { font-size: 38px; }
+}
+
+@media (max-width: 640px) {
+  .s2e-home.subpage .container { padding: 0 20px; }
+  .s2e-home.subpage .page-wrap { padding-top: 80px; padding-bottom: 50px; }
+  .s2e-home.subpage h1 { font-size: 28px; }
+  .s2e-home.subpage .page-title h1 { font-size: 30px; }
+  .s2e-home.subpage h2 { font-size: 24px; }
+  .s2e-home.subpage h3 { font-size: 18px; }
+  .s2e-home.subpage .article { flex-direction: column; }
+  .s2e-home.subpage .article-img { width: 100%; height: auto; max-width: 100%; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Mobile (≤ 480px) — subpage typography 2-3× tighter than current 640
+   pass, grids collapsed to 2-col, panels compacted.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (max-width: 480px) {
+  .s2e-home.subpage .container { padding: 0 12px; }
+  .s2e-home.subpage .page-wrap { padding-top: 64px; padding-bottom: 40px; }
+  /* Subpages don't carry the home-page sticky CTA — cancel the body padding
+     that home.css adds for that bar so the footer doesn't float in space. */
+  body.s2e-home.subpage { padding-bottom: 0; }
+
+  /* — typography — */
+  .s2e-home.subpage h1 { font-size: 22px; line-height: 1.15; margin: 6px 0 12px; }
+  .s2e-home.subpage h2 { font-size: 18px; line-height: 1.2; margin: 18px 0 8px; }
+  .s2e-home.subpage h3 { font-size: 15px; margin: 14px 0 6px; }
+  .s2e-home.subpage h4 { font-size: 14px; margin: 12px 0 6px; }
+  .s2e-home.subpage p, .s2e-home.subpage ul, .s2e-home.subpage ol { font-size: 13px; line-height: 1.55; }
+  .s2e-home.subpage ul, .s2e-home.subpage ol { padding-left: 18px; }
+  .s2e-home.subpage code { font-size: 11px; }
+
+  /* — page header — */
+  .s2e-home.subpage .page-title { margin: 8px 0 18px; }
+  .s2e-home.subpage .page-title h1 { font-size: 22px; line-height: 1.15; margin: 4px 0 8px; }
+  .s2e-home.subpage .page-title p.lede { font-size: 13px; }
+  .s2e-home.subpage .page-title .sect-eye { font-size: 10px; margin-bottom: 6px; }
+  .s2e-home.subpage .breadcrumbs { margin: 0 auto 12px; }
+  .s2e-home.subpage .breadcrumbs-list { font-size: 10px; gap: 6px; }
+
+  /* — cards / panels — */
+  .s2e-home.subpage .card,
+  .s2e-home.subpage .shot-info { padding: 14px 16px; border-radius: 14px; margin: 10px 0; }
+
+  /* — games-list (catalog) — */
+  .s2e-home.subpage .games-list {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .s2e-home.subpage .game-name { font-size: 12px; }
+  .s2e-home.subpage .game-label { font-size: 9px; padding: 3px 6px; }
+  .s2e-home.subpage .page-search { margin-bottom: 16px; max-width: 100%; }
+  .s2e-home.subpage .page-search input { font-size: 14px; padding: 12px 14px 12px 38px; }
+
+  /* — board / two-up image+text on subpages (minecraft, game template) — */
+  .s2e-home.subpage .board { grid-template-columns: 1fr; gap: 12px; margin: 6px 0 18px; }
+
+  /* — events grid (game template) — */
+  .s2e-home.subpage .events {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+  .s2e-home.subpage .event { padding: 6px; border-radius: 10px; }
+  .s2e-home.subpage .event-img img { width: 52px; height: 52px; }
+  .s2e-home.subpage .event-name { font-size: 11px; }
+
+  /* Two-up cards on phones */
+  .s2e-home.subpage #livesContainer { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .s2e-home.subpage .live { padding: 10px; }
+  .s2e-home.subpage .user-panel { gap: 8px; }
+  .s2e-home.subpage .streamerAvatar { width: 40px; height: 40px; margin-right: 0; flex-shrink: 0; }
+  .s2e-home.subpage .user-panel > div:last-child { min-width: 0; flex: 1; }
+  .s2e-home.subpage .user-panel .tiktokUsername {
+    width: auto;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .s2e-home.subpage .live .game-name,
+  .s2e-home.subpage .live-viewers { font-size: 12px; }
+
+  /* Clear compact mobile header */
+  .live-filters-bar {
+    top: 56px;
+    border-radius: 10px;
+    margin: 10px 0 16px;
+  }
+  .live-filters-inner { padding: 10px 12px; gap: 10px; }
+  .s2e-home.subpage .live-filters-controls .s2e-dropdown.live-filter-dd { min-width: 0; flex: 1 1 calc(50% - 5px); }
+  .live-filters-stats { gap: 12px; font-size: 11px; }
+  .live-filters-stats .stat-value { font-size: 13px; }
+}

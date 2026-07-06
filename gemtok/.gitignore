@@ -1,0 +1,12 @@
+httrack_mirror/cookies.txt
+
+# Hostinger paket çıktısı (tools/hostinger-paketle.ps1)
+hostinger-yukle/
+hostinger-yukle-*/
+
+gift-hub/data/*.sqlite
+gift-hub/node_modules/
+
+/node_modules/
+/dist/
+
