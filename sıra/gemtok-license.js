@@ -617,6 +617,10 @@
         .toLowerCase()
         .replace(/^\[|\]$/g, "");
       if (!h || h === "127.0.0.1" || h === "localhost" || h === "::1" || h === "0:0:0:0:0:0:0:1") return false;
+      // GitHub Pages statik barindirmadir ve PHP lisans API'sini calistiramaz.
+      // Bu ortamda repodaki mevcut registry JSON'u yuklenir ve anahtarlar
+      // tarayicida dogrulanir; boylece kayitli anahtar sahipleri oyunlari acar.
+      if (h === "github.io" || /\.github\.io$/.test(h)) return false;
       return true;
     } catch (eH) {
       return false;
