@@ -17,6 +17,12 @@ gift-hub/node_modules/
 **/node_modules/
 **/dist/
 
+# GitHub Pages'te dogrudan yayinlanan oyun paketleri
+!game/Arena Battle/dist/
+!game/Arena Battle/dist/**
+!game/Country Birds/dist/
+!game/Country Birds/dist/**
+
 # GitHub'in 100 MB dosya sinirini asan yerel dagitim paketleri
 GEMTOK-HOSTINGER-LISANS-V2.zip
 HOSTINGER-BUNU-YUKLE-GUNCEL.zip
