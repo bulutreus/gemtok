@@ -543,13 +543,15 @@
       try {
         bc && bc.postMessage({ t: "CLAIM", id: getClientId() });
       } catch (e) {}
+      // Yerel HTTP saglik kontrolu WebSocket baslangicini engellememeli.
+      // Canli HTTPS sayfasinda da once dogrudan TikFinity 21213 baglantisini
+      // baslat; kopru kontrolu yalnizca arka planda yardimci/fallback olarak kalir.
+      scheduleBecomeLeader();
       if (isHostedPublicSite()) {
-        triggerHostedBridgeAccess().finally(function () {
-          scheduleBecomeLeader();
-          startHostedBridgeWatch();
-        });
-      } else {
-        scheduleBecomeLeader();
+        startHostedBridgeWatch();
+        triggerHostedBridgeAccess().then(function (ok) {
+          if (ok && !isLiveSignalOk()) reconnect();
+        }).catch(function () {});
       }
     }
     var L = global.GemtokLicense;

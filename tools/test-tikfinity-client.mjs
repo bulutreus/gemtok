@@ -74,6 +74,14 @@ function makeRuntime({ storage = {}, search = "", env = null } = {}) {
 }
 
 {
+  const rt = makeRuntime();
+  const client = rt.window.GemTokTikFinity.createClient({});
+  await client.startAuto();
+  assert.equal(rt.sockets[0].url, "ws://127.0.0.1:21213");
+  client.stop();
+}
+
+{
   const rt = makeRuntime({ search: "?autoconnect=0" });
   const client = rt.window.GemTokTikFinity.createClient({});
   await client.startAuto();

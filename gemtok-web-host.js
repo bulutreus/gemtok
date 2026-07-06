@@ -46,14 +46,9 @@
   } catch (e4) {}
 
   try {
-    if (!g.__TIKFINITY_WS_URL__ && g.location && g.location.protocol !== "file:") {
-      var h = String(g.location.hostname || "")
-        .toLowerCase()
-        .replace(/^\[|\]$/g, "");
-      if (h !== "127.0.0.1" && h !== "localhost" && h !== "::1" && h !== "0:0:0:0:0:0:0:1") {
-        g.__TIKFINITY_WS_URL__ = "ws://127.0.0.1:29213";
-      }
-    }
+    // TikFinity masaustu uygulamasina her ortamda dogrudan baglan. Kullanici
+    // localStorage veya ortam degiskeniyle farkli bir URL belirleyebilir.
+    if (!g.__TIKFINITY_WS_URL__) g.__TIKFINITY_WS_URL__ = "ws://127.0.0.1:21213";
   } catch (eTf) {}
 
   g.GemtokWebHost = {
