@@ -2,7 +2,8 @@
   'use strict';
 
   const DEFAULT_WS_URL = 'ws://127.0.0.1:21213';
-  const STORAGE_KEY = 'tikfinity_ws_url';
+  const STORAGE_KEY = 'tikfinity_url';
+  const STORAGE_KEYS = ['tikfinity_url', 'tikfinity_ws_url', 'streamxt_tikfinity_ws_url', 'gemtok_tikfinity_ws_url'];
   const RECONNECT_MS = 3000;
   const MAX_QUEUE = 2000;
 
@@ -11,18 +12,19 @@
   }
 
   function isAutoConnectDisabled() {
-    const v = getQueryParam('autoconnect') ?? getQueryParam('noConnect');
-    if (v === null) return false;
-    return v === '0' || v === 'false' || v === 'no' || v === '1';
+    const auto = String(getQueryParam('autoconnect') ?? '').toLowerCase();
+    const tik = String(getQueryParam('tikfinity') ?? '').toLowerCase();
+    const tikAuto = String(getQueryParam('tikfinityAuto') ?? '').toLowerCase();
+    const noConnect = String(getQueryParam('noConnect') ?? getQueryParam('notikfinity') ?? '').toLowerCase();
+    return auto === '0' || auto === 'false' || tik === '0' || tik === 'false' || tikAuto === '0' || noConnect === '1' || noConnect === 'true';
   }
 
   function resolveWsUrl() {
-    const fromStorage = global.localStorage?.getItem(STORAGE_KEY);
-    if (fromStorage) return fromStorage;
-
     try {
-      const w = global.__TIKFINITY_WS_URL__;
-      if (typeof w === 'string' && w.trim()) return w.trim();
+      for (const key of STORAGE_KEYS) {
+        const fromStorage = global.localStorage?.getItem(key);
+        if (fromStorage && /^wss?:\/\//i.test(fromStorage.trim())) return fromStorage.trim();
+      }
     } catch {}
 
     const fromEnv =
@@ -32,12 +34,8 @@
     if (fromEnv) return fromEnv;
 
     try {
-      if (global.location && global.location.protocol === 'https:') {
-        const h = String(global.location.hostname || '').toLowerCase();
-        if (h !== '127.0.0.1' && h !== 'localhost' && h !== '::1') {
-          return 'ws://127.0.0.1:29213';
-        }
-      }
+      const w = global.__TIKFINITY_WS_URL__;
+      if (typeof w === 'string' && w.trim()) return w.trim();
     } catch {}
 
     return DEFAULT_WS_URL;
@@ -329,5 +327,6 @@
     },
     DEFAULT_WS_URL,
     STORAGE_KEY,
+    STORAGE_KEYS,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

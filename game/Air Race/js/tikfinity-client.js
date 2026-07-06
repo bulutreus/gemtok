@@ -6,13 +6,14 @@
 (function (global) {
   "use strict";
 
-  var LS_KEYS = ["hava_yarisi_tikfinity_ws_url", "streamxt_tikfinity_ws_url", "hottok_tikfinity_ws_url"];
+  var LS_KEYS = ["tikfinity_url", "hava_yarisi_tikfinity_ws_url", "streamxt_tikfinity_ws_url", "gemtok_tikfinity_ws_url"];
   var DEFAULT_WS = "ws://127.0.0.1:21213";
 
   function isTikfinityAutoDisabled() {
     try {
       var q = new URLSearchParams(String(global.location && global.location.search ? global.location.search : ""));
       if (q.get("tikfinity") === "0" || String(q.get("tikfinity")).toLowerCase() === "false") return true;
+      if (q.get("autoconnect") === "0" || String(q.get("autoconnect")).toLowerCase() === "false") return true;
       if (q.get("tikfinityAuto") === "0") return true;
       if (q.get("notikfinity") === "1") return true;
       return false;
@@ -29,6 +30,13 @@
         if (ls && String(ls).trim()) return String(ls).trim().slice(0, 512);
       }
     } catch (e0) {}
+    try {
+      var envUrl =
+        (global.__ENV__ && (global.__ENV__.TIKFINITY_WS_URL || global.__ENV__.VITE_TIKFINITY_WS_URL)) ||
+        global.TIKFINITY_WS_URL ||
+        (global.process && global.process.env && (global.process.env.TIKFINITY_WS_URL || global.process.env.VITE_TIKFINITY_WS_URL));
+      if (envUrl && String(envUrl).trim()) return String(envUrl).trim().slice(0, 512);
+    } catch (eEnv) {}
     try {
       var w = global.__TIKFINITY_WS_URL__;
       if (typeof w === "string" && w.trim()) return w.trim().slice(0, 512);
