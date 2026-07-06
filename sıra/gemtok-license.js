@@ -1,15 +1,15 @@
 ﻿/**
- * Yerel lisans anahtarÄ± kaydÄ± (admin Ã¼retir; kullanÄ±cÄ± Oyun Merkezi'nde girer).
+ * Yerel lisans anahtarı kaydı (admin üretir; kullanıcı Oyun Merkezi'nde girer).
  * sessionStorage: gemtok_oyun_lisans = { expiresAt, games, keyNorm }
- * localStorage gemtok_oyun_lisans_last_key: file:// veya farklÄ± dosya kÃ¶keninde
- * sessionStorage paylaÅŸÄ±lmadÄ±ÄŸÄ±nda oyun sayfasÄ±nÄ±n lisansÄ± registry Ã¼zerinden kurmasÄ± iÃ§in.
+ * localStorage gemtok_oyun_lisans_last_key: file:// veya farklı dosya kökeninde
+ * sessionStorage paylaşılmadığında oyun sayfasının lisansı registry üzerinden kurması için.
  */
 (function () {
   var REGISTRY_KEY = "gemtok_license_registry";
   var REGISTRY_BACKUP_KEY = "gemtok_license_registry_backup";
   var ITEMSATIS_URL_KEY = "gemtok_itemsatis_store_url";
   var ADMIN_SYNC_TOKEN_KEY = "gemtok_license_sync_token";
-  /** KayÄ±tlÄ± maÄŸaza URLâ€™si yoksa Â«Lisans satÄ±n alÂ» baÄŸlantÄ±larÄ± bu profili kullanÄ±r. */
+  /** Kayıtlı mağaza URL’si yoksa «Lisans satın al» bağlantıları bu profili kullanır. */
   var DEFAULT_ITEMSATIS_PROFILE_URL = "https://www.itemsatis.com/profil/2319676/gemtok.html";
   var SESSION_KEY = "gemtok_oyun_lisans";
   var ACTIVE_KEY_STORE = "gemtok_oyun_lisans_last_key";
@@ -38,7 +38,7 @@
     "365d": 365 * 24 * 60 * 60 * 1000,
   };
 
-  /** SÄ±nÄ±rsÄ±z: sÃ¼re yok; `expiresAt` kayÄ±tta ve oturumda null kalÄ±r. */
+  /** Sınırsız: süre yok; `expiresAt` kayıtta ve oturumda null kalır. */
   var UNLIMITED_TIER = "unl";
 
   function isUnlimitedTier(tier) {
@@ -273,10 +273,10 @@
       return {
         ok: false,
         message:
-          "Bu deÄŸer bir lisans anahtarÄ± deÄŸildir. YÃ¶netici eriÅŸimi iÃ§in Oyun Merkeziâ€™nde anahtar kutusuna yalnÄ±zca sizin bildiÄŸiniz yÃ¶netici parolasÄ±nÄ± yazÄ±p Â«AnahtarÄ± uygulaÂ» kullanÄ±n.",
+          "Bu değer bir lisans anahtarı değildir. Yönetici erişimi için Oyun Merkezi’nde anahtar kutusuna yalnızca sizin bildiğiniz yönetici parolasını yazıp «Anahtarı uygula» kullanın.",
       };
     }
-    if (!keyNorm || keyNorm.length < 6) return { ok: false, message: "GeÃ§ersiz anahtar." };
+    if (!keyNorm || keyNorm.length < 6) return { ok: false, message: "Geçersiz anahtar." };
 
     var reg = readRegistry();
     var entry = reg.keys[keyNorm];
@@ -297,8 +297,8 @@
       reg.keys[keyNorm] = entry;
       writeRegistry(reg);
     }
-    if (!entry) return { ok: false, message: "Bu anahtar kayÄ±tlÄ± deÄŸil." };
-    if (entry.revoked) return { ok: false, message: "Bu anahtar iptal edilmiÅŸ." };
+    if (!entry) return { ok: false, message: "Bu anahtar kayıtlı değil." };
+    if (entry.revoked) return { ok: false, message: "Bu anahtar iptal edilmiş." };
 
     var tier = entry.tier || "7d";
     var unl = isUnlimitedTier(tier);
@@ -307,7 +307,7 @@
 
     var games = entry.games && entry.games.length ? entry.games : ["all"];
     if (forGameId != null && String(forGameId).length && !gamesAllow(games, forGameId)) {
-      return { ok: false, message: "Bu anahtar seÃ§ilen oyun iÃ§in geÃ§erli deÄŸil." };
+      return { ok: false, message: "Bu anahtar seçilen oyun için geçerli değil." };
     }
 
     if (entry.shared !== true) {
@@ -323,7 +323,7 @@
       writeRegistry(reg);
     } else {
       if (entry.expiresAt != null && now > Number(entry.expiresAt)) {
-        return { ok: false, message: "AnahtarÄ±n sÃ¼resi dolmuÅŸ." };
+        return { ok: false, message: "Anahtarın süresi dolmuş." };
       }
     }
 
@@ -351,7 +351,7 @@
       return Promise.resolve({
         ok: false,
         message:
-          "Bu deÄŸer bir lisans anahtarÄ± deÄŸildir. YÃ¶netici eriÅŸimi iÃ§in Oyun Merkeziâ€™nde anahtar kutusuna yalnÄ±zca sizin bildiÄŸiniz yÃ¶netici parolasÄ±nÄ± yazÄ±p Â«AnahtarÄ± uygulaÂ» kullanÄ±n.",
+          "Bu değer bir lisans anahtarı değildir. Yönetici erişimi için Oyun Merkezi’nde anahtar kutusuna yalnızca sizin bildiğiniz yönetici parolasını yazıp «Anahtarı uygula» kullanın.",
       });
     }
     return registryReadyPromise.then(function () {
@@ -373,7 +373,7 @@
           if (!j || !j.ok) {
             var localTry = redeemKeyLocal(rawKey, forGameId);
             if (localTry.ok) return localTry;
-            return { ok: false, message: (j && j.message) || localTry.message || "Anahtar doÄŸrulanamadÄ±." };
+            return { ok: false, message: (j && j.message) || localTry.message || "Anahtar doğrulanamadı." };
           }
           var entry = j.entry || {};
           var games = entry.games && entry.games.length ? entry.games : ["all"];
@@ -767,9 +767,9 @@
       }
     } catch (e0) {}
     try {
-      return new URL("sÄ±ra/gemtok-license-registry.json", location.origin + "/").href;
+      return new URL("sıra/gemtok-license-registry.json", location.origin + "/").href;
     } catch (e1) {
-      return "sÄ±ra/gemtok-license-registry.json";
+      return "sıra/gemtok-license-registry.json";
     }
   }
 
