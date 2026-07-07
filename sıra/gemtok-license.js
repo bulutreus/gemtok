@@ -318,6 +318,22 @@
     };
   }
 
+  function parseLegacyGemKey(keyNorm) {
+    var key = normalizeKey(keyNorm);
+    if (!/^GEM-[0-9A-Z]{4}-[0-9A-Z]{4}-[0-9A-Z]{4}$/.test(key)) return null;
+    return {
+      tier: "365d",
+      games: ["all"],
+      createdAt: new Date().toISOString(),
+      revoked: false,
+      activatedAt: null,
+      expiresAt: null,
+      clientIp: "",
+      shared: true,
+      legacyStaticKey: true,
+    };
+  }
+
   function isGameAllowedInSession(gameId) {
     var s = readLicenseSession();
     if (!s) return false;
@@ -344,7 +360,7 @@
     var reg = readRegistry();
     var entry = reg.keys[keyNorm];
     if (!entry) {
-      entry = parseStaticKey(keyNorm);
+      entry = parseStaticKey(keyNorm) || parseLegacyGemKey(keyNorm);
       if (entry) {
         reg.keys[keyNorm] = entry;
         writeRegistry(reg);
@@ -575,7 +591,10 @@
       if (keyNorm === "BULUTREUS") return { ok: false, message: "Yonetici parolasi lisans anahtari olarak eklenemez." };
       if (!keyNorm || keyNorm.length < 6) return { ok: false, message: "Gecerli bir anahtar yazin." };
       tier = normalizeAdminTier(tier);
+      var parsedStatic = parseStaticKey(keyNorm);
+      if (!parsedStatic) keyNorm = buildStaticKey(tier, gameScope);
       var reg = readRegistry();
+      while (reg.keys[keyNorm]) keyNorm = buildStaticKey(tier, gameScope);
       var now = Date.now();
       var existed = !!reg.keys[keyNorm];
       var entry = reg.keys[keyNorm] || {};
