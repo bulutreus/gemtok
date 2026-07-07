@@ -2,24 +2,24 @@
   var PAGES = {
     home: "ANA SAYFA.html",
     gameHub: "OYUN MERKEZI.html",
-    login: "MEMBER LOGÄ°N.html",
-    register: "REGÄ°STER.html",
-    welcome: "GÄ°RÄ°Å YAPTIKTAN SONRAKÄ° WELCOME SAYFASI.html",
+    login: "MEMBER LOGİN.html",
+    register: "REGİSTER.html",
+    welcome: "GİRİŞ YAPTIKTAN SONRAKİ WELCOME SAYFASI.html",
     account: "Account A TIKLAYINCA.html",
     subscription: "Subscription A TIKLAYINCA.html",
     security: "Security E TIKLAYINCA.html",
     integrations: "Integrations.html",
     gifts: "StreamToEarn-Gifts.html",
-    terms: "Terms of Service â€” GemTok.html",
-    privacy: "Privacy Policy â€” GemTok.html",
+    terms: "Terms of Service — GemTok.html",
+    privacy: "Privacy Policy — GemTok.html",
     server: "Change Server.html",
     admin: "Admin Panel.html",
-    giftHub: "TikTok Gift YÃ¶netimi.html",
-    /** Oyunlar: WarFront, Arena Battle, â€¦ â€” vitrin listesi `buildHomeShowcaseGames` (en fazla 10). */
-    menu: "MENÃœYE GERÄ° BASINCA.html",
+    giftHub: "TikTok Gift Yönetimi.html",
+    /** Oyunlar: WarFront, Arena Battle, … — vitrin listesi `buildHomeShowcaseGames` (en fazla 10). */
+    menu: "MENÜYE GERİ BASINCA.html",
   };
 
-  /** `sÄ±ra/*.html` sayfasÄ±ndan `../game/...` yolunu tam URL yapar (https, alt klasÃ¶r, `file://`). */
+  /** `sıra/*.html` sayfasından `../game/...` yolunu tam URL yapar (https, alt klasör, `file://`). */
   function resolveFromSira(relativePath) {
     try {
       return new URL(relativePath, location.href).href;
@@ -28,7 +28,7 @@
     }
   }
 
-  /** Arena Battle: `dist/index.html` (IIFE + defer; `file://` uyumlu). CanlÄ± geliÅŸtirme: `baslat.bat`. */
+  /** Arena Battle: `dist/index.html` (IIFE + defer; `file://` uyumlu). Canlı geliştirme: `baslat.bat`. */
   function arenaBattleImageHref() {
     return resolveFromSira("../game/Arena%20Battle/kapak.png");
   }
@@ -78,7 +78,7 @@
     return resolveFromSira("../game/Air%20Race/kapak.png");
   }
 
-  /** Ana sayfa Â«IntegrationsÂ» Ä±zgarasÄ±: en fazla bu kadar oyun kartÄ±. */
+  /** Ana sayfa «Integrations» ızgarası: en fazla bu kadar oyun kartı. */
   var HOME_GAMES_MAX = 10;
 
   function hubWithOyun(gameId) {
@@ -93,7 +93,7 @@
         alt: "WarFront Arena",
         category: "Strateji",
         title: "WarFront Arena",
-        desc: "Haritada iki takÄ±m.",
+        desc: "Haritada iki takım.",
       },
       {
         href: hubWithOyun("arenaBattle"),
@@ -101,7 +101,7 @@
         alt: "Arena Battle",
         category: "TikTok Live",
         title: "Arena Battle",
-        desc: "TikTok arena; beÄŸeni ve hediye.",
+        desc: "TikTok arena; beğeni ve hediye.",
       },
       {
         href: hubWithOyun("countryBirds"),
@@ -109,7 +109,7 @@
         alt: "Country Birds",
         category: "TikTok Live",
         title: "Country Birds",
-        desc: "KuÅŸ fÄ±rlatma; TikFinity canlÄ±.",
+        desc: "Kuş fırlatma; TikFinity canlı.",
       },
       {
         href: hubWithOyun("vote5"),
@@ -117,7 +117,7 @@
         alt: "Pillar War",
         category: "TikTok Live",
         title: "Pillar War",
-        desc: "BeÅŸ sÃ¼tun canlÄ± skor.",
+        desc: "Beş sütun canlı skor.",
       },
       {
         href: hubWithOyun("arena3"),
@@ -125,7 +125,7 @@
         alt: "Arena 3-10",
         category: "TikTok Live",
         title: "Arena 3-10",
-        desc: "Hediye ile skor; Ã¼Ã§lÃ¼ tablo.",
+        desc: "Hediye ile skor; üçlü tablo.",
       },
       {
         href: hubWithOyun("arena5gen"),
@@ -133,7 +133,7 @@
         alt: "Arena 5 Gen",
         category: "TikTok Live",
         title: "Arena 5 Gen",
-        desc: "Ã‡oklu takÄ±m; hediye skoru.",
+        desc: "Çoklu takım; hediye skoru.",
       },
       {
         href: hubWithOyun("team20"),
@@ -141,7 +141,7 @@
         alt: "Team20",
         category: "TikTok Live",
         title: "Team20",
-        desc: "20 takÄ±m Ã¼lke yarÄ±ÅŸÄ±; hediye ile hÄ±z.",
+        desc: "20 takım ülke yarışı; hediye ile hız.",
       },
       {
         href: hubWithOyun("airRace"),
@@ -149,7 +149,7 @@
         alt: "Air Race",
         category: "TikTok Live",
         title: "Air Race",
-        desc: "Helikopter canlÄ± yarÄ±ÅŸ; iki takÄ±m.",
+        desc: "Helikopter canlı yarış; iki takım.",
       },
     ];
     return list.slice(0, HOME_GAMES_MAX);
@@ -215,10 +215,10 @@
   var LEGACY_ACCOUNTS = "hottok_sira_accounts";
   var LEGACY_LAST_USER = "hottok_sira_last_user";
   var LEGACY_PORTAL = "hottok_sira_portal";
-  /** Yerel demo yÃ¶netici parolasÄ± (kaynakta sabit; arayÃ¼z metinlerinde yazÄ±lmaz). */
+  /** Yerel demo yönetici parolası (kaynakta sabit; arayüz metinlerinde yazılmaz). */
   var SEED_ADMIN_HASH = "h_019412c9_9";
 
-  /** Mitolojik rastgele takma ad havuzu (yerel demo hesaplarÄ±). */
+  /** Mitolojik rastgele takma ad havuzu (yerel demo hesapları). */
   var MYTH_DISPLAY_NAMES = [
     "Zeus",
     "Hera",
@@ -306,7 +306,7 @@
     return arr[Math.floor(Math.random() * arr.length)] + String(Date.now()).slice(-4);
   }
 
-  /** Mevcut tÃ¼m hesaplara (admin hariÃ§) bir kez mitolojik takma ad atar; oturum gÃ¶rÃ¼nen adÄ± gÃ¼ncellenir. */
+  /** Mevcut tüm hesaplara (admin hariç) bir kez mitolojik takma ad atar; oturum görünen adı güncellenir. */
   function assignMythDisplayNamesOnce() {
     try {
       if (localStorage.getItem("gemtok_myth_display_v1") || localStorage.getItem("hottok_myth_display_v1")) return;
@@ -410,12 +410,12 @@
     return false;
   }
 
-  /** Sabit Ã¼st menÃ¼ iÃ§ satÄ±rÄ± (hesap sayfalarÄ± dahil tÃ¼m varyantlar). */
+  /** Sabit üst menü iç satırı (hesap sayfaları dahil tüm varyantlar). */
   function queryAllNavBarRows() {
     return document.querySelectorAll("nav.fixed.top-0.left-0.right-0 > div.flex.items-center.justify-between");
   }
 
-  /** Logo / nav-link / btn-secondary Ã¶lÃ§Ã¼lerini sayfadan baÄŸÄ±msÄ±z sabitler (rem kÃ¶kÃ¼ farklÄ± olsa bile). */
+  /** Logo / nav-link / btn-secondary ölçülerini sayfadan bağımsız sabitler (rem kökü farklı olsa bile). */
   function ensureNavUnifyStyles() {
     try {
       if (document.getElementById("gemtok-nav-unify-styles-v3")) return;
@@ -434,7 +434,7 @@
     } catch (eSt) {}
   }
 
-  /** Ãœst menÃ¼de yalnÄ±zca kiÅŸi ikonu olan giriÅŸ / hesap dÃ¼ÄŸmesine kutu gÃ¶rÃ¼nÃ¼mÃ¼ sÄ±nÄ±fÄ±. */
+  /** Üst menüde yalnızca kişi ikonu olan giriş / hesap düğmesine kutu görünümü sınıfı. */
   function wireNavAccountIconClass() {
     try {
       var as = document.querySelectorAll("nav.fixed.top-0.left-0.right-0 a.btn-secondary");
@@ -452,7 +452,7 @@
     } catch (eAcc) {}
   }
 
-  /** Ãœst menÃ¼ btn-secondary iÃ§indeki bi-* webfont ikonlarÄ±nÄ± inline SVG ile deÄŸiÅŸtirir (font yoksa tofu olmaz). */
+  /** Üst menü btn-secondary içindeki bi-* webfont ikonlarını inline SVG ile değiştirir (font yoksa tofu olmaz). */
   function replaceNavBootstrapIconsWithInlineSvg() {
     try {
       var ns = "http://www.w3.org/2000/svg";
@@ -512,7 +512,7 @@
     } catch (eSvg) {}
   }
 
-  /** Hesap / welcome satÄ±rlarÄ±nda eksik w-full ve gap â€” pazarlama sayfalarÄ±yla aynÄ± flex ÅŸeridi. */
+  /** Hesap / welcome satırlarında eksik w-full ve gap — pazarlama sayfalarıyla aynı flex şeridi. */
   function normalizeNavInnerLayout() {
     try {
       var rows = queryAllNavBarRows();
@@ -570,7 +570,7 @@
     }
   }
 
-  /** Dosya adlarÄ± TÃ¼rkÃ§e Ä° / i iÃ§erebilir; tr-TR ile eÅŸleÅŸtir (giriÅŸ formu submitâ€™inin yakalanmasÄ± iÃ§in). */
+  /** Dosya adları Türkçe İ / i içerebilir; tr-TR ile eşleştir (giriş formu submit’inin yakalanması için). */
   function isPage(name) {
     var b = String(name || "");
     try {
@@ -585,7 +585,7 @@
     return a.toLowerCase() === b.toLowerCase();
   }
 
-  /** Yerel demo yÃ¶netici parolasÄ± doÄŸrulamasÄ± (bÃ¼yÃ¼k/kÃ¼Ã§Ã¼k harf ve boÅŸluk toleranslÄ±). */
+  /** Yerel demo yönetici parolası doğrulaması (büyük/küçük harf ve boşluk toleranslı). */
   function adminPasswordAccepts(plain) {
     return String(plain || "")
       .trim()
@@ -604,7 +604,7 @@
     );
   }
 
-  /** Oyunlar http://127.0.0.1 Ã¼zerinden aÃ§Ä±lÄ±nca giriÅŸ/abonelik iÃ§in sÄ±ra klasÃ¶rÃ¼ mutlak adresi */
+  /** Oyunlar http://127.0.0.1 üzerinden açılınca giriş/abonelik için sıra klasörü mutlak adresi */
   function persistGemtokPortalBase() {
     try {
       var u = new URL(location.href);
@@ -664,7 +664,7 @@
     if (path.indexOf("/account") === 0) return PAGES.account;
     if (path.indexOf("/en/recovery") === 0) return PAGES.gameHub + "?admin=1";
     if (path === "/en/" || path === "/en" || path === "/") return PAGES.home + (url.hash || "");
-    /** gemtok.live altÄ±nda kalan yollar son satÄ±rda hep ana sayfaya gidiyordu; yerel sÄ±ra HTML dosya adlarÄ± korunur. */
+    /** gemtok.live altında kalan yollar son satırda hep ana sayfaya gidiyordu; yerel sıra HTML dosya adları korunur. */
     try {
       var leafRaw = path.split("/").pop() || "";
       var leaf = decodeURIComponent(leafRaw).trim();
@@ -903,7 +903,7 @@
         if (parsedSession && parsedSession.emailNorm) {
           return {
             email: normEmail(parsedSession.emailNorm),
-            displayName: parsedSession.displayName || normEmail(parsedSession.emailNorm).split("@")[0] || "KullanÄ±cÄ±",
+            displayName: parsedSession.displayName || normEmail(parsedSession.emailNorm).split("@")[0] || "Kullanıcı",
             provider: parsedSession.provider || "password",
             createdAt: parsedSession.createdAt || new Date().toISOString(),
           };
@@ -921,7 +921,7 @@
       if (legacyUser) {
         return {
           email: normEmail(legacyUser).replace(/^google:/, ""),
-          displayName: legacyName || normEmail(legacyUser).replace(/^google:/, "").split("@")[0] || "KullanÄ±cÄ±",
+          displayName: legacyName || normEmail(legacyUser).replace(/^google:/, "").split("@")[0] || "Kullanıcı",
           provider: legacyProvider || (String(legacyUser).indexOf("google:") === 0 ? "google" : "password"),
           createdAt: new Date().toISOString(),
         };
@@ -934,7 +934,7 @@
       if (legacyUser) {
         return {
           email: normEmail(legacyUser).replace(/^google:/, ""),
-          displayName: legacyName || normEmail(legacyUser).replace(/^google:/, "").split("@")[0] || "KullanÄ±cÄ±",
+          displayName: legacyName || normEmail(legacyUser).replace(/^google:/, "").split("@")[0] || "Kullanıcı",
           provider: legacyProvider || (String(legacyUser).indexOf("google:") === 0 ? "google" : "password"),
           createdAt: new Date().toISOString(),
         };
@@ -945,7 +945,7 @@
         if (parsed && parsed.emailNorm) {
           return {
             email: normEmail(parsed.emailNorm),
-            displayName: parsed.displayName || normEmail(parsed.emailNorm).split("@")[0] || "KullanÄ±cÄ±",
+            displayName: parsed.displayName || normEmail(parsed.emailNorm).split("@")[0] || "Kullanıcı",
             provider: parsed.provider || "password",
             createdAt: parsed.createdAt || new Date().toISOString(),
           };
@@ -970,7 +970,7 @@
     }
     var payload = {
       email: user.email || "yerel@gemtok.local",
-      displayName: user.displayName || (user.email ? user.email.split("@")[0] : "Yerel KullanÄ±cÄ±"),
+      displayName: user.displayName || (user.email ? user.email.split("@")[0] : "Yerel Kullanıcı"),
       provider: user.provider || "password",
       createdAt: user.createdAt || new Date().toISOString(),
       country: user.country || "Turkey",
@@ -1000,7 +1000,7 @@
     if (!account) {
       account = updateAccount(session.email, {
         email: normEmail(session.email),
-        displayName: session.displayName || normEmail(session.email).split("@")[0] || "KullanÄ±cÄ±",
+        displayName: session.displayName || normEmail(session.email).split("@")[0] || "Kullanıcı",
         provider: session.provider || "password",
         createdAt: session.createdAt || new Date().toISOString(),
       });
@@ -1057,7 +1057,7 @@
     }
   }
 
-  /** Hesap: aynÄ± lisans anahtarÄ± iÃ§in sabit mitoloji rumuzu (localStorage). */
+  /** Hesap: aynı lisans anahtarı için sabit mitoloji rumuzu (localStorage). */
   var GEMTOK_MYTH_NAMES = [
     "Zeus",
     "Hera",
@@ -1170,7 +1170,7 @@
       if (cached && String(cached).trim()) return String(cached).trim();
     } catch (eC) {}
     var idx = stableMythIndex(String(keyNorm) + "|myth", GEMTOK_MYTH_NAMES.length);
-    var name = GEMTOK_MYTH_NAMES[idx] || "â€”";
+    var name = GEMTOK_MYTH_NAMES[idx] || "—";
     try {
       localStorage.setItem(storeKey, name);
     } catch (eW) {}
@@ -1184,7 +1184,7 @@
       .replace(/\"/g, "&quot;");
   }
 
-  /** YÃ¶netici paneli: tam anahtar gÃ¶sterilir. DiÄŸer sayfalarda maske iÃ§in maskLicenseKeyForDisplay kullanÄ±lÄ±r. */
+  /** Yönetici paneli: tam anahtar gösterilir. Diğer sayfalarda maske için maskLicenseKeyForDisplay kullanılır. */
   function licenseKeyForAdminDisplay(k) {
     return String(k || "")
       .trim()
@@ -1192,7 +1192,7 @@
       .replace(/\s+/g, "");
   }
 
-  /** YayÄ±nda ekranda tam anahtar gÃ¶rÃ¼nmesin diye gÃ¶sterim metni (doÄŸrulama gerÃ§ek deÄŸerle yapÄ±lÄ±r). */
+  /** Yayında ekranda tam anahtar görünmesin diye gösterim metni (doğrulama gerçek değerle yapılır). */
   function maskLicenseKeyForDisplay(k) {
     var s = String(k || "")
       .trim()
@@ -1203,11 +1203,11 @@
       var parts = s.split("-");
       if (parts.length === 4 && parts[0] === "GEM") return "GEM-****-****-****";
     }
-    if (s.length <= 8) return "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢";
-    return s.slice(0, 3) + "â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢" + s.slice(-2);
+    if (s.length <= 8) return "••••••••";
+    return s.slice(0, 3) + "••••••••" + s.slice(-2);
   }
 
-  /** Hesap sayfasÄ±: uygulanan anahtar, kalan gÃ¼n / sÄ±nÄ±rsÄ±z, mitolojik rumuz (kutu DOMâ€™da olmalÄ±). */
+  /** Hesap sayfası: uygulanan anahtar, kalan gün / sınırsız, mitolojik rumuz (kutu DOM’da olmalı). */
   function fillProfileOyunBilgi() {
     if (!isPage(PAGES.account)) return;
     var box = document.getElementById("gemtok-profile-oyun-bilgi");
@@ -1220,9 +1220,9 @@
     var gl = readGameLicenseSummary();
     if (!keyNorm) {
       box.innerHTML =
-        '<p class="text-[#94a3b8] text-sm m-0">Aktif oyun lisansÄ± yok. Anahtar uygulamak iÃ§in <a class="text-cyan-400 underline font-semibold" href="' +
+        '<p class="text-[#94a3b8] text-sm m-0">Aktif oyun lisansı yok. Anahtar uygulamak için <a class="text-cyan-400 underline font-semibold" href="' +
         PAGES.gameHub +
-        '">Oyun Merkezi</a> sayfasÄ±na gidin.</p>';
+        '">Oyun Merkezi</a> sayfasına gidin.</p>';
       return;
     }
     var myth = mythNameForLicenseKey(keyNorm);
@@ -1239,7 +1239,7 @@
       '<div class="text-sm space-y-2">' +
       '<div><span class="uppercase tracking-wide text-xs font-bold text-[#64748b] block mb-0.5">Uygulanan anahtar</span><code class="block text-cyan-200/95 font-mono text-xs sm:text-sm break-all bg-[rgba(2,8,23,0.35)] rounded px-2 py-1 border border-[#0a3d59]/80">' +
       escapeHtmlLite(maskLicenseKeyForDisplay(keyNorm)) +
-      '</code><p class="text-[#64748b] text-xs mt-1 m-0">YayÄ±nda izleyicilere tam anahtar gÃ¶sterilmez; deÄŸiÅŸtirmek iÃ§in <a class="text-cyan-400 underline font-semibold" href="' +
+      '</code><p class="text-[#64748b] text-xs mt-1 m-0">Yayında izleyicilere tam anahtar gösterilmez; değiştirmek için <a class="text-cyan-400 underline font-semibold" href="' +
       PAGES.gameHub +
       '">Oyun Merkezi</a>.</p></div>' +
       '<div><span class="uppercase tracking-wide text-xs font-bold text-[#64748b]">Kalan s\u00fcre</span> ' +
@@ -1272,11 +1272,11 @@
           var gl = readGameLicenseSummary();
           var parts = [];
           if (gl) {
-            if (gl.unlimited) parts.push("SÄ±nÄ±rsÄ±z lisans");
-            else parts.push(gl.daysLeft + " gÃ¼n");
+            if (gl.unlimited) parts.push("Sınırsız lisans");
+            else parts.push(gl.daysLeft + " gün");
           }
           parts.push(plan);
-          a.setAttribute("title", parts.join(" Â· "));
+          a.setAttribute("title", parts.join(" · "));
         } else {
           a.setAttribute("href", PAGES.gameHub + "?admin=1");
           a.removeAttribute("title");
@@ -1296,7 +1296,7 @@
         box.innerHTML =
           '<p class="text-[#94a3b8] text-sm m-0">Oturum yok. <a class="text-cyan-400 underline" href="' +
           PAGES.gameHub +
-          '?admin=1">Oyun Merkezi</a> Ã¼zerinden yÃ¶netici giriÅŸi yapÄ±labilir.</p>';
+          '?admin=1">Oyun Merkezi</a> üzerinden yönetici girişi yapılabilir.</p>';
       return;
     }
     var gl = readGameLicenseSummary();
@@ -1304,19 +1304,19 @@
       if (gl && gl.unlimited) {
         licBox.innerHTML =
           '<div class="font-display text-5xl sm:text-6xl font-bold text-cyan-300 leading-none">âˆ</div>' +
-          '<div class="text-[#94a3b8] text-base sm:text-lg mt-2 font-semibold">sÄ±nÄ±rsÄ±z oyun lisansÄ±</div>';
+          '<div class="text-[#94a3b8] text-base sm:text-lg mt-2 font-semibold">sınırsız oyun lisansı</div>';
       } else if (gl && gl.daysLeft != null && gl.daysLeft >= 0) {
         licBox.innerHTML =
           '<div class="font-display text-5xl sm:text-6xl font-bold text-cyan-300 leading-none">' +
           String(gl.daysLeft) +
           '</div>' +
-          '<div class="text-[#94a3b8] text-base sm:text-lg mt-2 font-semibold">gÃ¼n kaldÄ±</div>';
+          '<div class="text-[#94a3b8] text-base sm:text-lg mt-2 font-semibold">gün kaldı</div>';
       } else {
         licBox.innerHTML =
-          '<div class="text-[#94a3b8] text-base">Aktif oyun lisansÄ± yok</div>' +
+          '<div class="text-[#94a3b8] text-base">Aktif oyun lisansı yok</div>' +
           '<a class="inline-block mt-3 text-cyan-400 font-semibold underline text-sm" href="' +
           PAGES.gameHub +
-          '">Anahtar iÃ§in Oyun Merkezi</a>';
+          '">Anahtar için Oyun Merkezi</a>';
       }
     }
     if (box) {
@@ -1379,19 +1379,19 @@
 
     if (isPage(PAGES.register)) {
       if (emailNorm.indexOf("@") < 0) {
-        showAuthMessage(form, "GeÃ§erli bir e-posta adresi girin.", "error");
+        showAuthMessage(form, "Geçerli bir e-posta adresi girin.", "error");
         return;
       }
       if (accounts[emailNorm]) {
-        showAuthMessage(form, "Bu e-posta adresi zaten kayÄ±tlÄ±. LÃ¼tfen giriÅŸ yapÄ±n.", "error");
+        showAuthMessage(form, "Bu e-posta adresi zaten kayıtlı. Lütfen giriş yapın.", "error");
         return;
       }
       if (!password || password.length < 6) {
-        showAuthMessage(form, "Åifre en az 6 karakter olmalÄ±.", "error");
+        showAuthMessage(form, "Şifre en az 6 karakter olmalı.", "error");
         return;
       }
       if (passwordConfirm && password !== passwordConfirm) {
-        showAuthMessage(form, "Åifreler eÅŸleÅŸmiyor. AynÄ± ÅŸifreyi iki kez yazÄ±n.", "error");
+        showAuthMessage(form, "Şifreler eşleşmiyor. Aynı şifreyi iki kez yazın.", "error");
         return;
       }
       accounts[emailNorm] = {
@@ -1410,7 +1410,7 @@
       try {
         sessionStorage.setItem("gemtok_local_registered", "1");
       } catch (e) {}
-      showAuthMessage(form, "Hesap oluÅŸturuldu. YÃ¶nlendiriliyorsunuz...", "ok");
+      showAuthMessage(form, "Hesap oluşturuldu. Yönlendiriliyorsunuz...", "ok");
       setTimeout(function () {
         location.href = PAGES.welcome;
       }, 350);
@@ -1470,7 +1470,7 @@
     /** TikTok Gifts: binlerce kart metni; TreeWalker gereksiz ve otomatik doldurma riski yok. */
     if (isPage(PAGES.gifts)) return;
     var emailNeedles = ["lostp092@gmail.com", "google:lostp092@gmail.com", "yerel@gemtok.local"];
-    var nameNeedles = ["Bulut", "Yerel KullanÄ±cÄ±", "Yerel Admin", "testgame"];
+    var nameNeedles = ["Bulut", "Yerel Kullanıcı", "Yerel Admin", "testgame"];
     if (extraNameNeedles && extraNameNeedles.length) {
       for (var en = 0; en < extraNameNeedles.length; en++) {
         if (extraNameNeedles[en] && nameNeedles.indexOf(extraNameNeedles[en]) < 0) nameNeedles.push(extraNameNeedles[en]);
@@ -1544,8 +1544,8 @@
     if (!user || !isAccountLikePage()) return;
     var plan = user.premium ? "Premium" : "Free Tier";
     var desc = user.premium
-      ? "Bu yerel hesap iÃ§in Premium plan etkin."
-      : "Ses tahtasÄ± ve yayÄ±n stÃ¼dyosu sÄ±nÄ±rlÄ± Ã¶zelliklerle kullanÄ±labilir.";
+      ? "Bu yerel hesap için Premium plan etkin."
+      : "Ses tahtası ve yayın stüdyosu sınırlı özelliklerle kullanılabilir.";
     var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     var node;
     while ((node = walker.nextNode())) {
@@ -1559,16 +1559,16 @@
 
   function languageLabel(code) {
     var map = {
-      en: "Ä°ngilizce",
-      tr: "TÃ¼rkÃ§e",
+      en: "İngilizce",
+      tr: "Türkçe",
       id: "Endonezce",
-      es: "Ä°spanyolca",
+      es: "İspanyolca",
       pt: "Portekizce",
       vi: "Vietnamca",
-      zh: "Ã‡ince",
-      ar: "ArapÃ§a",
+      zh: "Çince",
+      ar: "Arapça",
     };
-    return map[code] || code || "Ä°ngilizce";
+    return map[code] || code || "İngilizce";
   }
 
   function setSelectValue(selector, value) {
@@ -1594,7 +1594,7 @@
   function updatePasswordFromForm(form) {
     var session = readSession();
     if (!session || !session.email) {
-      showAuthMessage(form, "Åifre deÄŸiÅŸtirmek iÃ§in Ã¶nce giriÅŸ yapÄ±n.", "error");
+      showAuthMessage(form, "Şifre değiştirmek için önce giriş yapın.", "error");
       return;
     }
     var passwords = passwordInputs(form);
@@ -1603,18 +1603,18 @@
     var confirm = passwordValueAt(form, 2);
     if (!next && passwords.length === 1) next = current;
     if (!next || next.length < 6) {
-      showAuthMessage(form, "Yeni ÅŸifre en az 6 karakter olmalÄ±.", "error");
+      showAuthMessage(form, "Yeni şifre en az 6 karakter olmalı.", "error");
       return;
     }
     if (confirm && next !== confirm) {
-      showAuthMessage(form, "Yeni ÅŸifreler eÅŸleÅŸmiyor.", "error");
+      showAuthMessage(form, "Yeni şifreler eşleşmiyor.", "error");
       return;
     }
     var accounts = readAccounts();
     var key = normEmail(session.email);
     var row = accounts[key];
     if (row && row.passwordHash && current && passwords.length > 1 && !verifyPassword(row, current)) {
-      showAuthMessage(form, "Mevcut ÅŸifre hatalÄ±.", "error");
+      showAuthMessage(form, "Mevcut şifre hatalı.", "error");
       return;
     }
     row = updateAccount(key, {
@@ -1622,7 +1622,7 @@
       provider: "password",
     });
     if (row) saveSession(row);
-    showAuthMessage(form, "Åifre gÃ¼ncellendi.", "ok");
+    showAuthMessage(form, "Şifre güncellendi.", "ok");
   }
 
   function requireAdminSession() {
@@ -1651,7 +1651,7 @@
   }
 
   var _adminLicenseFeedback = { text: "", kind: "ok" };
-  /** Son Â«Anahtar Ã¼retÂ» ile oluÅŸturulan anahtarlar (.txt indirme iÃ§in). */
+  /** Son «Anahtar üret» ile oluşturulan anahtarlar (.txt indirme için). */
   var _lastGeneratedLicenseKeys = [];
   var _licDestructive = null;
 
@@ -1663,7 +1663,7 @@
       .filter(Boolean);
     if (!rows.length) return null;
     var lines = [];
-    lines.push(String(headerLine || "GemTok â€” lisans anahtarlarÄ±"));
+    lines.push(String(headerLine || "GemTok — lisans anahtarları"));
     try {
       lines.push("Tarih: " + new Date().toLocaleString("tr-TR"));
     } catch (eD) {
@@ -1779,7 +1779,7 @@
     var p1 = document.createElement("p");
     p1.className = "text-[#94a3b8] text-sm mb-2";
     p1.textContent =
-      "ItemSatÄ±ÅŸ maÄŸaza URLâ€™si (boÅŸ bÄ±rakÄ±lÄ±rsa varsayÄ±lan GemTok profili kullanÄ±lÄ±r). Oyun Merkezi Â«lisans satÄ±n alÂ» bu adresi aÃ§ar.";
+      "ItemSatış mağaza URL’si (boş bırakılırsa varsayılan GemTok profili kullanılır). Oyun Merkezi «lisans satın al» bu adresi açar.";
     box.appendChild(p1);
     var urlRow = document.createElement("div");
     urlRow.className = "flex flex-wrap gap-2 items-center mb-4";
@@ -1788,7 +1788,7 @@
     urlInp.id = "gemtok-admin-itemsatis-url";
     urlInp.className =
       "flex-1 min-w-[200px] rounded-lg border border-[#0a3d59] bg-[rgba(15,30,55,0.5)] px-3 py-2 text-sm text-white";
-    urlInp.placeholder = "https://www.itemsatis.com/profil/â€¦";
+    urlInp.placeholder = "https://www.itemsatis.com/profil/…";
     urlInp.value = storeUrl;
     urlRow.appendChild(urlInp);
     var urlBtn = document.createElement("button");
@@ -1801,7 +1801,7 @@
 
     var pSync = document.createElement("p");
     pSync.className = "text-[#94a3b8] text-sm mb-2 mt-4";
-    pSync.textContent = "Sunucu kayÄ±t parolasÄ± (canlÄ± sitede keylerin herkeste Ã§alÄ±ÅŸmasÄ± iÃ§in zorunlu):";
+    pSync.textContent = "Sunucu kayıt parolası (canlı sitede keylerin herkeste çalışması için zorunlu):";
     box.appendChild(pSync);
     var syncTokenRow = document.createElement("div");
     syncTokenRow.className = "flex flex-wrap gap-2 items-center mb-4";
@@ -1826,7 +1826,7 @@
 
     var p2 = document.createElement("p");
     p2.className = "text-[#94a3b8] text-sm mb-2 mt-4";
-    p2.textContent = "Yeni anahtarlar (sÃ¼re, ilk kullanÄ±mda baÅŸlar):";
+    p2.textContent = "Yeni anahtarlar (süre, ilk kullanımda başlar):";
     box.appendChild(p2);
     var genRow = document.createElement("div");
     genRow.className = "flex flex-wrap gap-2 items-center mb-4";
@@ -1834,7 +1834,7 @@
     selTier.id = "gemtok-lic-tier";
     selTier.className =
       "rounded-lg border border-[#0a3d59] bg-[rgba(15,30,55,0.5)] px-3 py-2 text-sm text-white";
-    [["7d", "1 hafta"], ["30d", "1 ay"], ["90d", "3 ay"], ["365d", "1 yÄ±l"], ["unl", "SÄ±nÄ±rsÄ±z"]].forEach(function (opt) {
+    [["7d", "1 hafta"], ["30d", "1 ay"], ["90d", "3 ay"], ["365d", "1 yıl"], ["unl", "Sınırsız"]].forEach(function (opt) {
       var o = document.createElement("option");
       o.value = opt[0];
       o.textContent = opt[1];
@@ -1855,7 +1855,7 @@
     selScope.className =
       "rounded-lg border border-[#0a3d59] bg-[rgba(15,30,55,0.5)] px-3 py-2 text-sm text-white";
     [
-      ["all", "TÃ¼m oyunlar"],
+      ["all", "Tüm oyunlar"],
       ["warFront", "WarFront"],
       ["arenaBattle", "Arena Battle"],
       ["countryBirds", "Country Birds"],
@@ -1874,7 +1874,7 @@
     var genBtn = document.createElement("button");
     genBtn.type = "button";
     genBtn.className = "btn-secondary px-4 py-2 rounded-lg font-semibold text-sm";
-    genBtn.textContent = "Anahtar Ã¼ret";
+    genBtn.textContent = "Anahtar üret";
     genBtn.setAttribute("data-admin-license-generate", "1");
     genRow.appendChild(genBtn);
     box.appendChild(genRow);
@@ -1946,19 +1946,19 @@
     var txtLast = document.createElement("button");
     txtLast.type = "button";
     txtLast.className = "btn-secondary px-4 py-2 rounded-lg font-semibold text-sm";
-    txtLast.textContent = "Son oluÅŸturulanlarÄ± metin belgesi (.txt) indir";
+    txtLast.textContent = "Son oluşturulanları metin belgesi (.txt) indir";
     txtLast.disabled = !_lastGeneratedLicenseKeys.length;
-    if (txtLast.disabled) txtLast.setAttribute("title", "Ã–nce Â«Anahtar Ã¼retÂ» ile anahtar oluÅŸturun.");
+    if (txtLast.disabled) txtLast.setAttribute("title", "Önce «Anahtar üret» ile anahtar oluşturun.");
     txtLast.addEventListener("click", function (ev) {
       ev.preventDefault();
       if (!_lastGeneratedLicenseKeys.length) return;
       var ok = downloadGemtokLicenseKeysText(
         _lastGeneratedLicenseKeys.slice(),
         "son-uretilen-anahtarlar",
-        "GemTok â€” son oluÅŸturulan lisans anahtarlarÄ±"
+        "GemTok — son oluşturulan lisans anahtarları"
       );
       if (!ok) {
-        setAdminLicenseFeedback("Metin dosyasÄ± oluÅŸturulamadÄ±.", "error");
+        setAdminLicenseFeedback("Metin dosyası oluşturulamadı.", "error");
         renderAdminLicenseBlock();
       }
     });
@@ -1966,11 +1966,11 @@
     var regExport = document.createElement("button");
     regExport.type = "button";
     regExport.className = "btn-secondary px-4 py-2 rounded-lg font-semibold text-sm";
-    regExport.textContent = "Sunucu kaydÄ± indir (.json)";
+    regExport.textContent = "Sunucu kaydı indir (.json)";
     regExport.setAttribute("data-admin-license-export-registry", "1");
     regExport.setAttribute(
       "title",
-      "Hostinger: sÄ±ra/gemtok-license-registry.json olarak yÃ¼kleyin; ziyaretÃ§iler anahtar doÄŸrulayabilir.",
+      "Hostinger: sıra/gemtok-license-registry.json olarak yükleyin; ziyaretçiler anahtar doğrulayabilir.",
     );
     txtRow.appendChild(regExport);
     var regSync = document.createElement("button");
@@ -1980,7 +1980,7 @@
     regSync.setAttribute("data-admin-license-sync-registry", "1");
     regSync.setAttribute(
       "title",
-      "TÃ¼m anahtarlarÄ± gemtok.store sunucusuna gÃ¶nderir (yÃ¶netici parolasÄ± gerekir).",
+      "Tüm anahtarları gemtok.store sunucusuna gönderir (yönetici parolası gerekir).",
     );
     txtRow.appendChild(regSync);
     box.appendChild(txtRow);
@@ -1988,13 +1988,13 @@
     var regHint = document.createElement("p");
     regHint.className = "text-[#64748b] text-xs mb-3 leading-snug";
     regHint.textContent =
-      "CanlÄ± sitede (gemtok.store): anahtar Ã¼rettiÄŸinizde otomatik sunucuya kaydedilir. PHP yoksa Â«Sunucu kaydÄ± indirÂ» ile sÄ±ra/gemtok-license-registry.json dosyasÄ±nÄ± Hostingerâ€™a yÃ¼kleyin.";
+      "Canlı sitede (gemtok.store): anahtar ürettiğinizde otomatik sunucuya kaydedilir. PHP yoksa «Sunucu kaydı indir» ile sıra/gemtok-license-registry.json dosyasını Hostinger’a yükleyin.";
     box.appendChild(regHint);
 
     if (!keys.length) {
       var empty = document.createElement("p");
       empty.className = "text-[#64748b] text-sm";
-      empty.textContent = "HenÃ¼z anahtar yok.";
+      empty.textContent = "Henüz anahtar yok.";
       box.appendChild(empty);
       return;
     }
@@ -2037,7 +2037,7 @@
       tbl.className = "w-full text-left text-xs text-[#94a3b8] border-collapse";
       var thead = document.createElement("thead");
       thead.innerHTML =
-        "<tr class='border-b border-[#0a3d59]'><th class='py-2 pr-2'>Anahtar</th><th class='py-2 pr-2'>KullanÄ±m</th><th class='py-2 pr-2'>SÃ¼re</th><th class='py-2 pr-2'>Oyun</th><th class='py-2 pr-2'>Durum</th><th class='py-2'></th></tr>";
+        "<tr class='border-b border-[#0a3d59]'><th class='py-2 pr-2'>Anahtar</th><th class='py-2 pr-2'>Kullanım</th><th class='py-2 pr-2'>Süre</th><th class='py-2 pr-2'>Oyun</th><th class='py-2 pr-2'>Durum</th><th class='py-2'></th></tr>";
       tbl.appendChild(thead);
       var tbody = document.createElement("tbody");
       for (var i = 0; i < list.length; i++) {
@@ -2053,11 +2053,11 @@
         tr.appendChild(td1);
         var tdIp = document.createElement("td");
         tdIp.className = "py-2 pr-2 font-mono text-cyan-300/90";
-        tdIp.textContent = e.shared === false ? e.clientIp || "Tekil" : "PaylaÅŸÄ±mlÄ±";
+        tdIp.textContent = e.shared === false ? e.clientIp || "Tekil" : "Paylaşımlı";
         tr.appendChild(tdIp);
         var td2 = document.createElement("td");
         td2.className = "py-2 pr-2";
-        td2.textContent = HL && HL.isUnlimitedTier && HL.isUnlimitedTier(e.tier) ? "SÄ±nÄ±rsÄ±z" : e.tier || "-";
+        td2.textContent = HL && HL.isUnlimitedTier && HL.isUnlimitedTier(e.tier) ? "Sınırsız" : e.tier || "-";
         tr.appendChild(td2);
         var td3 = document.createElement("td");
         td3.className = "py-2 pr-2";
@@ -2066,19 +2066,19 @@
         var td4 = document.createElement("td");
         td4.className = "py-2 pr-2 text-white";
         var stLabel = "";
-        if (forceStatusLabel === "bos") stLabel = "BoÅŸ";
+        if (forceStatusLabel === "bos") stLabel = "Boş";
         else if (forceStatusLabel === "aktif") stLabel = "Aktif";
         else {
-          if (e.revoked) stLabel = "Ä°ptal";
-          else if (e.expiresAt && now > Number(e.expiresAt)) stLabel = "SÃ¼resi doldu";
-          else stLabel = "â€”";
+          if (e.revoked) stLabel = "İptal";
+          else if (e.expiresAt && now > Number(e.expiresAt)) stLabel = "Süresi doldu";
+          else stLabel = "—";
         }
         td4.textContent =
           stLabel +
           (e.expiresAt != null
-            ? " Â· " + new Date(e.expiresAt).toLocaleString("tr-TR")
+            ? " · " + new Date(e.expiresAt).toLocaleString("tr-TR")
             : HL && HL.isUnlimitedTier && HL.isUnlimitedTier(e.tier) && e.activatedAt
-            ? " Â· SÄ±nÄ±rsÄ±z (bitiÅŸ yok)"
+            ? " · Sınırsız (bitiş yok)"
             : "");
         tr.appendChild(td4);
         var td5 = document.createElement("td");
@@ -2098,7 +2098,7 @@
           var rb = document.createElement("button");
           rb.type = "button";
           rb.className = "text-amber-300/90 underline text-xs";
-          rb.textContent = "Ä°ptal";
+          rb.textContent = "İptal";
           rb.setAttribute("data-admin-license-revoke", k);
           act.appendChild(rb);
         }
@@ -2129,25 +2129,25 @@
       var txtBos = document.createElement("button");
       txtBos.type = "button";
       txtBos.className = "btn-secondary px-4 py-2 rounded-lg font-semibold text-sm";
-      txtBos.textContent = "BoÅŸ anahtarlarÄ±n tamamÄ±nÄ± metin belgesi (.txt) indir (" + listBos.length + ")";
+      txtBos.textContent = "Boş anahtarların tamamını metin belgesi (.txt) indir (" + listBos.length + ")";
       txtBos.addEventListener("click", function (ev) {
         ev.preventDefault();
         var ok = downloadGemtokLicenseKeysText(
           listBos.slice(),
           "bos-anahtarlar",
-          "GemTok â€” kullanÄ±lmamÄ±ÅŸ (boÅŸ) lisans anahtarlarÄ±"
+          "GemTok — kullanılmamış (boş) lisans anahtarları"
         );
         if (!ok) {
-          setAdminLicenseFeedback("Metin dosyasÄ± oluÅŸturulamadÄ±.", "error");
+          setAdminLicenseFeedback("Metin dosyası oluşturulamadı.", "error");
           renderAdminLicenseBlock();
         }
       });
       txtBosRow.appendChild(txtBos);
       box.appendChild(txtBosRow);
     }
-    appendKeySection("BoÅŸ anahtarlar", listBos, "bos");
+    appendKeySection("Boş anahtarlar", listBos, "bos");
     appendKeySection("Aktif anahtarlar", listAktif, "aktif");
-    appendKeySection("Ä°ptal veya sÃ¼resi dolmuÅŸ", listDiger, "diger");
+    appendKeySection("İptal veya süresi dolmuş", listDiger, "diger");
   }
 
   function adminRequiresServerSync() {
@@ -2187,7 +2187,7 @@
         alt: "WarFront Arena",
         category: "Strateji",
         title: "WarFront Arena",
-        desc: "Haritada iki takÄ±m.",
+        desc: "Haritada iki takım.",
       },
       {
         href: arenaBattleHref(),
@@ -2195,7 +2195,7 @@
         alt: "Arena Battle",
         category: "TikTok Live",
         title: "Arena Battle",
-        desc: "TikTok arena; beÄŸeni ve hediye.",
+        desc: "TikTok arena; beğeni ve hediye.",
       },
       {
         href: countryBirdsHref(),
@@ -2203,7 +2203,7 @@
         alt: "Country Birds",
         category: "TikTok Live",
         title: "Country Birds",
-        desc: "KuÅŸ fÄ±rlatma; TikFinity canlÄ±.",
+        desc: "Kuş fırlatma; TikFinity canlı.",
       },
       {
         href: vote5Href(),
@@ -2211,7 +2211,7 @@
         alt: "Pillar War",
         category: "TikTok Live",
         title: "Pillar War",
-        desc: "BeÅŸ sÃ¼tun canlÄ± skor.",
+        desc: "Beş sütun canlı skor.",
       },
       {
         href: arena3Href(),
@@ -2219,7 +2219,7 @@
         alt: "Arena 3-10",
         category: "TikTok Live",
         title: "Arena 3-10",
-        desc: "Hediye ile skor; Ã¼Ã§lÃ¼ tablo.",
+        desc: "Hediye ile skor; üçlü tablo.",
       },
       {
         href: arena5genHref(),
@@ -2227,7 +2227,7 @@
         alt: "Arena 5 Gen",
         category: "TikTok Live",
         title: "Arena 5 Gen",
-        desc: "Ã‡oklu takÄ±m; hediye skoru.",
+        desc: "Çoklu takım; hediye skoru.",
       },
       {
         href: team20Href(),
@@ -2235,7 +2235,7 @@
         alt: "Team20",
         category: "TikTok Live",
         title: "Team20",
-        desc: "20 takÄ±m Ã¼lke yarÄ±ÅŸÄ±; hediye ile hÄ±z.",
+        desc: "20 takım ülke yarışı; hediye ile hız.",
       },
       {
         href: airRaceHref(),
@@ -2243,7 +2243,7 @@
         alt: "Air Race",
         category: "TikTok Live",
         title: "Air Race",
-        desc: "Helikopter canlÄ± yarÄ±ÅŸ; iki takÄ±m.",
+        desc: "Helikopter canlı yarış; iki takım.",
       },
     ];
     for (var i = 0; i < cards.length; i++) {
@@ -2275,7 +2275,7 @@
       if (
         text.indexOf("Explore All Games") >= 0 ||
         text.indexOf("Oyun Merkezi") >= 0 ||
-        text.indexOf("TÃ¼m oyunlar") >= 0
+        text.indexOf("Tüm oyunlar") >= 0
       ) {
         buttons[b].onclick = function () {
           location.href = PAGES.gameHub;
@@ -2345,8 +2345,8 @@
       } else if (
         text.indexOf("stream studio") >= 0 ||
         text.indexOf("soundboard") >= 0 ||
-        text.indexOf("yayÄ±n stÃ¼dyosu") >= 0 ||
-        text.indexOf("ses tahtasÄ±") >= 0
+        text.indexOf("yayın stüdyosu") >= 0 ||
+        text.indexOf("ses tahtası") >= 0
       ) {
         links[i].setAttribute("href", "#");
         links[i].setAttribute("data-sira-welcome-action", "coming-soon");
@@ -2358,7 +2358,7 @@
     }
   }
 
-  /** HTTrack giriÅŸ/kayÄ±t formlarÄ±: sayfa adÄ± bozulsa bile (#contact_email = giriÅŸ, #email + #password_confirm = kayÄ±t). */
+  /** HTTrack giriş/kayıt formları: sayfa adı bozulsa bile (#contact_email = giriş, #email + #password_confirm = kayıt). */
   function authFormKind(form) {
     if (!form || form.tagName !== "FORM") return "";
     var hasConfirm = !!(form.querySelector("#password_confirm") || form.querySelector('input[name="password_confirm"]'));
@@ -2398,7 +2398,35 @@
         var target = el && el.closest ? el.closest("a,button") : null;
         if (!target) return;
         if (target.getAttribute("data-gemtok-hub-license") === "1") return;
-        if (target.getAttribute("data-gemtok-play")) return;
+        var playId = target.getAttribute("data-gemtok-play");
+        if (playId) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          var playHref = target.getAttribute("data-gemtok-href") || "";
+          if (!playHref) {
+            playHref =
+              playId === "warFront"
+                ? warFrontHref()
+                : playId === "arenaBattle"
+                ? arenaBattleHref()
+                : playId === "countryBirds"
+                ? countryBirdsHref()
+                : playId === "vote5"
+                ? vote5Href()
+                : playId === "arena3"
+                ? arena3Href()
+                : playId === "arena5gen"
+                ? arena5genHref()
+                : playId === "team20"
+                ? team20Href()
+                : playId === "airRace"
+                ? airRaceHref()
+                : "";
+          }
+          playHref = mapGemtokUrl(playHref || "");
+          if (playHref && ensurePremiumForGame(playHref)) location.href = playHref;
+          return;
+        }
         var text = (target.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
         var href = target.tagName === "A" ? target.getAttribute("href") : "";
         var welcomeAction = target.getAttribute("data-sira-welcome-action");
@@ -2423,9 +2451,9 @@
             try {
               var rUrl = window.GemtokLicense.setItemsatisUrl(inp.value);
               if (rUrl && rUrl.ok) {
-                setAdminLicenseFeedback("ItemSatÄ±ÅŸ adresi kaydedildi.", "ok");
+                setAdminLicenseFeedback("ItemSatış adresi kaydedildi.", "ok");
               } else {
-                setAdminLicenseFeedback("GeÃ§erli bir https:// adresi girin veya alanÄ± boÅŸaltÄ±n.", "error");
+                setAdminLicenseFeedback("Geçerli bir https:// adresi girin veya alanı boşaltın.", "error");
               }
             } catch (eUrl) {
               setAdminLicenseFeedback("Adres kaydedilemedi.", "error");
@@ -2463,7 +2491,7 @@
           if (!requireAdminSession()) return;
           if (adminRequiresServerSync()) return;
           if (!window.GemtokLicense) {
-            setAdminLicenseFeedback("Lisans modÃ¼lÃ¼ yÃ¼klenemedi.", "error");
+            setAdminLicenseFeedback("Lisans modülü yüklenemedi.", "error");
             renderAdminLicenseBlock();
             return;
           }
@@ -2491,7 +2519,7 @@
             if (!allowedScope[scope]) scope = "all";
             var created = window.GemtokLicense.adminGenerateKeys(tier, n, scope);
             if (!created || !created.length) {
-              setAdminLicenseFeedback("Anahtar oluÅŸturulamadÄ±. TarayÄ±cÄ± depolamasÄ±nÄ± kontrol edin.", "error");
+              setAdminLicenseFeedback("Anahtar oluşturulamadı. Tarayıcı depolamasını kontrol edin.", "error");
             } else {
               _lastGeneratedLicenseKeys = created.slice();
               var newKeys = {};
@@ -2528,7 +2556,7 @@
               setAdminLicenseFeedback(String(created.length) + " anahtar olusturuldu.", "ok");
             }
           } catch (eGen) {
-            setAdminLicenseFeedback("Anahtar oluÅŸturulamadÄ±.", "error");
+            setAdminLicenseFeedback("Anahtar oluşturulamadı.", "error");
           }
           renderAdminLicenseBlock();
           return;
@@ -2645,21 +2673,21 @@
           ev.stopPropagation();
           if (!requireAdminSession()) return;
           if (!window.GemtokLicense || !window.GemtokLicense.syncRegistryToServer) {
-            setAdminLicenseFeedback("Lisans modÃ¼lÃ¼ yÃ¼klenemedi.", "error");
+            setAdminLicenseFeedback("Lisans modülü yüklenemedi.", "error");
             renderAdminLicenseBlock();
             return;
           }
           window.GemtokLicense.syncRegistryToServer().then(function (syncRes) {
             if (syncRes && syncRes.ok) {
               setAdminLicenseFeedback(
-                "Sunucu kaydÄ± gÃ¼ncellendi (" + String(syncRes.total || 0) + " anahtar).",
+                "Sunucu kaydı güncellendi (" + String(syncRes.total || 0) + " anahtar).",
                 "ok",
               );
             } else if (syncRes && syncRes.local) {
-              setAdminLicenseFeedback("Yerel ortam â€” sunucu senkronu atlandÄ±.", "ok");
+              setAdminLicenseFeedback("Yerel ortam — sunucu senkronu atlandı.", "ok");
             } else {
               setAdminLicenseFeedback(
-                "Sunucuya gÃ¶nderilemedi. Oyun Merkeziâ€™nde yÃ¶netici parolasÄ±yla giriÅŸ yapÄ±p tekrar deneyin.",
+                "Sunucuya gönderilemedi. Oyun Merkezi’nde yönetici parolasıyla giriş yapıp tekrar deneyin.",
                 "error",
               );
             }
@@ -2673,17 +2701,17 @@
           ev.stopPropagation();
           if (!requireAdminSession()) return;
           if (!window.GemtokLicense || !window.GemtokLicense.downloadServerRegistryFile) {
-            setAdminLicenseFeedback("Lisans modÃ¼lÃ¼ yÃ¼klenemedi.", "error");
+            setAdminLicenseFeedback("Lisans modülü yüklenemedi.", "error");
             renderAdminLicenseBlock();
             return;
           }
           if (window.GemtokLicense.downloadServerRegistryFile()) {
             setAdminLicenseFeedback(
-              "gemtok-license-registry.json indirildi â€” Hostinger sÄ±ra/ klasÃ¶rÃ¼ne yÃ¼kleyin.",
+              "gemtok-license-registry.json indirildi — Hostinger sıra/ klasörüne yükleyin.",
               "ok",
             );
           } else {
-            setAdminLicenseFeedback("KayÄ±t dosyasÄ± oluÅŸturulamadÄ±.", "error");
+            setAdminLicenseFeedback("Kayıt dosyası oluşturulamadı.", "error");
           }
           renderAdminLicenseBlock();
           return;
@@ -2696,7 +2724,7 @@
           if (!window.GemtokLicense) return;
           try {
             if (!tryConsumeLicenseDestructive("revoke", revLic)) {
-              setAdminLicenseFeedback("Ä°ptal iÃ§in aynÄ± anahtarÄ±n Â«Ä°ptalÂ»ine 8 saniye iÃ§inde tekrar basÄ±n.", "warn");
+              setAdminLicenseFeedback("İptal için aynı anahtarın «İptal»ine 8 saniye içinde tekrar basın.", "warn");
               renderAdminLicenseBlock();
               return;
             }
@@ -2710,7 +2738,7 @@
             }
             setAdminLicenseFeedback("Anahtar iptal edildi.", "ok");
           } catch (eRev) {
-            setAdminLicenseFeedback("Ä°ptal uygulanamadÄ±.", "error");
+            setAdminLicenseFeedback("İptal uygulanamadı.", "error");
           }
           renderAdminLicenseBlock();
           return;
@@ -2723,7 +2751,7 @@
           if (!window.GemtokLicense || !window.GemtokLicense.adminDeleteKey) return;
           try {
             if (!tryConsumeLicenseDestructive("delete", delLic)) {
-              setAdminLicenseFeedback("Silmek iÃ§in aynÄ± anahtarÄ±n Â«SilÂ»ine 8 saniye iÃ§inde tekrar basÄ±n.", "warn");
+              setAdminLicenseFeedback("Silmek için aynı anahtarın «Sil»ine 8 saniye içinde tekrar basın.", "warn");
               renderAdminLicenseBlock();
               return;
             }
@@ -2733,7 +2761,7 @@
             }
             setAdminLicenseFeedback("Anahtar silindi.", "ok");
           } catch (eDel) {
-            setAdminLicenseFeedback("Silme uygulanamadÄ±.", "error");
+            setAdminLicenseFeedback("Silme uygulanamadı.", "error");
           }
           renderAdminLicenseBlock();
           return;
@@ -2749,7 +2777,7 @@
           ev.stopPropagation();
           return;
         }
-        if (text === "logout" || text === "Ã§Ä±kÄ±ÅŸ" || text.indexOf("logout") >= 0) {
+        if (text === "logout" || text === "çıkış" || text.indexOf("logout") >= 0) {
           ev.preventDefault();
           ev.stopPropagation();
           clearSession();
@@ -2825,7 +2853,7 @@
         if (row.getAttribute("data-gemtok-nav-grid") === "1") continue;
         row.setAttribute("data-gemtok-nav-grid", "1");
         row.style.display = "grid";
-        /* 1fr yanlarÄ± min 0 verebiliyor; logo / saÄŸ blok kÃ¼Ã§Ã¼lmesin (Oyun Merkezi dahil). */
+        /* 1fr yanları min 0 verebiliyor; logo / sağ blok küçülmesin (Oyun Merkezi dahil). */
         row.style.gridTemplateColumns = "minmax(min-content, 1fr) auto minmax(min-content, 1fr)";
         row.style.alignItems = "center";
         row.style.columnGap = "1rem";
@@ -2838,7 +2866,7 @@
     } catch (e) {}
   }
 
-  /** Ãœst sabit menÃ¼ yÃ¼ksekliÄŸi ve iÃ§ satÄ±r geniÅŸliÄŸi â€” sayfa bazlÄ± farklÄ± flex/markup kaynaklÄ± sÄ±Ã§ramayÄ± azaltÄ±r. */
+  /** Üst sabit menü yüksekliği ve iç satır genişliği — sayfa bazlı farklı flex/markup kaynaklı sıçramayı azaltır. */
   function normalizeFixedNavHeight() {
     try {
       var navs = document.querySelectorAll("nav.fixed.top-0.left-0.right-0");
@@ -2856,7 +2884,7 @@
     } catch (eNavH) {}
   }
 
-  /** Ãœst menÃ¼ satÄ±rÄ±nda sol (logo) ve saÄŸ aksiyonlarÄ±n flex/grid sÄ±kÄ±ÅŸmasÄ±nÄ± engeller. */
+  /** Üst menü satırında sol (logo) ve sağ aksiyonların flex/grid sıkışmasını engeller. */
   function stabilizeNavHubRow() {
     try {
       var rows = queryAllNavBarRows();
@@ -2875,7 +2903,7 @@
     } catch (eStab) {}
   }
 
-  /** Ãœst menÃ¼ logosu: Ã§ok hafif saÄŸa (translateX), grid/flex uyumlu. */
+  /** Üst menü logosu: çok hafif sağa (translateX), grid/flex uyumlu. */
   function nudgeHeaderLogoRight() {
     try {
       var shiftPx = 12;
@@ -2910,8 +2938,8 @@
   }
 
   /**
-   * Tam sayfa geÃ§iÅŸlerinde tarayÄ±cÄ± View Transitions (aynÄ± kÃ¶ken) + hafif prefetch.
-   * TasarÄ±m sÄ±nÄ±flarÄ±na dokunmaz; yalnÄ±zca headâ€™e meta/style ekler.
+   * Tam sayfa geçişlerinde tarayıcı View Transitions (aynı köken) + hafif prefetch.
+   * Tasarım sınıflarına dokunmaz; yalnızca head’e meta/style ekler.
    */
   function installGemtokPageFlowEarly() {
     try {
@@ -2984,7 +3012,7 @@
     );
   }
 
-  /** Metin kiÅŸiselleÅŸtirmesini birkaÃ§ frameâ€™e yayar; ardÄ±ÅŸÄ±k â€œtitremeâ€yi azaltÄ±r. */
+  /** Metin kişiselleştirmesini birkaç frame’e yayar; ardışık “titreme”yi azaltır. */
   function scheduleSyncUserTextSmooth() {
     if (prefersReducedMotion()) {
       setTimeout(function () {

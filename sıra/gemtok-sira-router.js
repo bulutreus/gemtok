@@ -2398,7 +2398,35 @@
         var target = el && el.closest ? el.closest("a,button") : null;
         if (!target) return;
         if (target.getAttribute("data-gemtok-hub-license") === "1") return;
-        if (target.getAttribute("data-gemtok-play")) return;
+        var playId = target.getAttribute("data-gemtok-play");
+        if (playId) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          var playHref = target.getAttribute("data-gemtok-href") || "";
+          if (!playHref) {
+            playHref =
+              playId === "warFront"
+                ? warFrontHref()
+                : playId === "arenaBattle"
+                ? arenaBattleHref()
+                : playId === "countryBirds"
+                ? countryBirdsHref()
+                : playId === "vote5"
+                ? vote5Href()
+                : playId === "arena3"
+                ? arena3Href()
+                : playId === "arena5gen"
+                ? arena5genHref()
+                : playId === "team20"
+                ? team20Href()
+                : playId === "airRace"
+                ? airRaceHref()
+                : "";
+          }
+          playHref = mapGemtokUrl(playHref || "");
+          if (playHref && ensurePremiumForGame(playHref)) location.href = playHref;
+          return;
+        }
         var text = (target.textContent || "").replace(/\s+/g, " ").trim().toLowerCase();
         var href = target.tagName === "A" ? target.getAttribute("href") : "";
         var welcomeAction = target.getAttribute("data-sira-welcome-action");
