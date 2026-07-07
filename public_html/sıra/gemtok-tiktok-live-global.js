@@ -85,11 +85,13 @@
   function setState(s, extra) {
     state = s;
     if (extra && extra.url) lastWsUrl = String(extra.url);
+    broadcastStatus();
   }
 
   function touchEvent(typ) {
     lastEventType = String(typ || "");
     lastEventAt = Date.now();
+    broadcastStatus();
   }
 
   function isLocalOnlyHubBase(base) {
@@ -242,7 +244,28 @@
       if (d.t === "FBATCH" && !isLeader && Array.isArray(d.batch)) {
         dispatchPayloads(d.batch);
       }
+      if (d.t === "STATUS" && !isLeader && d.id !== getClientId()) {
+        remoteLeader = true;
+        state = String(d.state || state || "disconnected");
+        lastWsUrl = String(d.url || lastWsUrl || "");
+        lastEventType = String(d.lastEventType || lastEventType || "");
+        lastEventAt = Number(d.lastEventAt || lastEventAt || 0);
+      }
     };
+  }
+
+  function broadcastStatus() {
+    if (!bc || !isLeader) return;
+    try {
+      bc.postMessage({
+        t: "STATUS",
+        id: getClientId(),
+        state: state,
+        url: lastWsUrl,
+        lastEventType: lastEventType,
+        lastEventAt: lastEventAt,
+      });
+    } catch (e) {}
   }
 
   function broadcastBatches(batch) {
@@ -397,6 +420,7 @@
   function isLiveSignalOk() {
     if (!shouldAttemptTikfinityBridge()) return false;
     if (isLeader && state === "connected") return true;
+    if (remoteLeader && state === "connected") return true;
     if (!isLeader && lastEventAt && Date.now() - lastEventAt < 3500) return true;
     return false;
   }
@@ -543,13 +567,15 @@
       try {
         bc && bc.postMessage({ t: "CLAIM", id: getClientId() });
       } catch (e) {}
+      // Yerel HTTP saglik kontrolu WebSocket baslangicini engellememeli.
+      // Canli HTTPS sayfasinda da once dogrudan TikFinity 21213 baglantisini
+      // baslat; kopru kontrolu yalnizca arka planda yardimci/fallback olarak kalir.
+      scheduleBecomeLeader();
       if (isHostedPublicSite()) {
-        triggerHostedBridgeAccess().finally(function () {
-          scheduleBecomeLeader();
-          startHostedBridgeWatch();
-        });
-      } else {
-        scheduleBecomeLeader();
+        startHostedBridgeWatch();
+        triggerHostedBridgeAccess().then(function (ok) {
+          if (ok && !isLiveSignalOk()) reconnect();
+        }).catch(function () {});
       }
     }
     var L = global.GemtokLicense;
