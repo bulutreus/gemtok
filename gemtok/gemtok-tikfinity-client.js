@@ -13,8 +13,8 @@
 
   var LS_KEYS = ["streamxt_tikfinity_ws_url", "gemtok_tikfinity_ws_url"];
   var DEFAULT_WS = "ws://127.0.0.1:21213";
-  var BRIDGE_WS = "ws://127.0.0.1:29213";
-  var GIFT_HUB_TIKFINITY_WS = "ws://127.0.0.1:8787/tikfinity";
+  var DEFAULT_WS_CANDIDATES = ["ws://127.0.0.1:21213", "ws://localhost:21213", "ws://[::1]:21213"];
+  var CONNECT_TIMEOUT_MS = 2600;
 
   function isHostedPublicSite() {
     try {
@@ -30,42 +30,18 @@
   }
 
   function preflightHostedLocalBridge() {
-    if (!isHostedPublicSite()) return Promise.resolve(true);
-    var checks = ["http://127.0.0.1:29213/health", "http://127.0.0.1:8787/health"];
-    var i = 0;
-    function next() {
-      if (i >= checks.length) return Promise.resolve(false);
-      var url = checks[i++];
-      return fetch(url, { mode: "cors", cache: "no-store", credentials: "omit" })
-        .then(function (r) {
-          if (r.ok) return true;
-          return next();
-        })
-        .catch(function () {
-          return next();
-        });
-    }
-    return next();
+    return Promise.resolve(true);
   }
 
-  /** HTTPS sitede yerel ağ izni + köprü testi (Chrome/Edge izin penceresini tetikler). */
+  /** Backward-compatible hook; the production path is the TikFinity desktop app WebSocket. */
   function requestHostedBridgeAccess() {
-    return preflightHostedLocalBridge().then(function (ok) {
-      try {
-        global.dispatchEvent(
-          new CustomEvent("gemtok-tikfinity-bridge-preflight", { detail: { ok: !!ok } })
-        );
-      } catch (eEv) {}
-      return !!ok;
-    });
+    try {
+      global.dispatchEvent(new CustomEvent("gemtok-tikfinity-bridge-preflight", { detail: { ok: true } }));
+    } catch (eEv) {}
+    return Promise.resolve(true);
   }
 
-  function installHostedBridgeDefaults() {
-    if (!isHostedPublicSite()) return;
-    try {
-      global.__GEMTOK_HOSTED_BRIDGE_FALLBACK__ = global.__GEMTOK_HOSTED_BRIDGE_FALLBACK__ || BRIDGE_WS;
-    } catch (e0) {}
-  }
+  function installHostedBridgeDefaults() {}
 
   function pushUniqueUrl(list, url) {
     var u = String(url || "").trim().slice(0, 512);
@@ -116,7 +92,6 @@
   function getTikfinityWsUrlCandidates(serverSuggestedUrl) {
     var urls = [];
     var i;
-    var hosted = isHostedPublicSite();
     try {
       if (global.localStorage) {
         var _tikUrl = global.localStorage.getItem("tikfinity_url");
@@ -144,10 +119,8 @@
       }
     } catch (e2) {}
     pushCandidate(urls, serverSuggestedUrl);
-    pushUniqueUrl(urls, DEFAULT_WS);
-    if (hosted) {
-      pushUniqueUrl(urls, BRIDGE_WS);
-      pushUniqueUrl(urls, GIFT_HUB_TIKFINITY_WS);
+    for (i = 0; i < DEFAULT_WS_CANDIDATES.length; i++) {
+      pushUniqueUrl(urls, DEFAULT_WS_CANDIDATES[i]);
     }
     return urls.length ? urls : [DEFAULT_WS];
   }
@@ -504,6 +477,7 @@
     var socket = null;
     var gen = 0;
     var reconnectTimer = null;
+    var connectTimer = null;
     var reconnectAttempt = 0;
     var userClosed = false;
     var queue = [];
@@ -518,6 +492,13 @@
       if (reconnectTimer != null) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
+      }
+    }
+
+    function clearConnectTimer() {
+      if (connectTimer != null) {
+        clearTimeout(connectTimer);
+        connectTimer = null;
       }
     }
 
@@ -582,9 +563,7 @@
         if (typeof options.onStatus === "function") {
           options.onStatus({
             phase: "local_network_blocked",
-            message: isHostedPublicSite()
-              ? "TikFinity koprusu yok. GemTok-TikFinity-Kopru.bat calistirin; Chrome yerel ag izni verin."
-              : "TikFinity baglantisi kurulamadi.",
+            message: "TikFinity masaustu uygulamasina baglanilamadi. TikFinity acik olmali ve WebSocket API portu 21213 olmalidir.",
           });
         }
         scheduleReconnect();
@@ -610,9 +589,20 @@
         return;
       }
       socket = sock;
+      clearConnectTimer();
+      connectTimer = global.setTimeout(function () {
+        if (gen !== myGen) return;
+        try {
+          sock.close();
+        } catch (eTimeout) {}
+        if (urlCandidateIndex < urlCandidates.length) {
+          tryConnectCandidate();
+        }
+      }, CONNECT_TIMEOUT_MS);
 
       sock.onopen = function () {
         if (gen !== myGen) return;
+        clearConnectTimer();
         reconnectAttempt = 0;
         clearReconnect();
         if (typeof options.onStatus === "function") options.onStatus({ phase: "connected", url: url });
@@ -631,6 +621,7 @@
 
       sock.onclose = function () {
         if (gen !== myGen) return;
+        clearConnectTimer();
         socket = null;
         if (userClosed) return;
         if (urlCandidateIndex < urlCandidates.length) {
@@ -644,6 +635,7 @@
 
       sock.onerror = function () {
         if (gen !== myGen) return;
+        clearConnectTimer();
         try {
           sock.close();
         } catch (e3) {}
@@ -655,9 +647,7 @@
           options.onStatus({
             phase: "local_network_blocked",
             url: url,
-            message: isHostedPublicSite()
-              ? "TikFinity koprusu yok. GemTok-TikFinity-Kopru.bat calistirin; Chrome yerel ag izni verin."
-              : "TikFinity baglantisi kurulamadi.",
+            message: "TikFinity masaustu uygulamasina baglanilamadi. TikFinity acik olmali ve WebSocket API portu 21213 olmalidir.",
           });
         }
       };
@@ -699,6 +689,7 @@
       stop: function () {
         userClosed = true;
         clearReconnect();
+        clearConnectTimer();
         gen += 1;
         try {
           if (socket) socket.close();
@@ -716,7 +707,7 @@
 
   global.GemTokTikFinity = {
     DEFAULT_WS: DEFAULT_WS,
-    BRIDGE_WS: BRIDGE_WS,
+    DEFAULT_WS_CANDIDATES: DEFAULT_WS_CANDIDATES,
     LS_KEYS: LS_KEYS,
     isHostedPublicSite: isHostedPublicSite,
     isLocalDirectTikfinityUrl: isLocalDirectTikfinityUrl,

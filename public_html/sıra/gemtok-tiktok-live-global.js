@@ -494,10 +494,11 @@
         return;
       }
       triggerHostedBridgeAccess().then(function (ok) {
+        reconnect();
         if (ok) return;
         try {
           global.alert(
-            "TikFinity köprüsü bulunamadı.\n\n1) TikFinity masaüstü uygulamasını açın\n2) Bilgisayarınızda GemTok-TikFinity-Kopru.bat çalıştırın\n3) Chrome/Edge yerel ağ erişimine izin verin\n4) Bu düğmeye tekrar tıklayın"
+            "TikFinity masaüstü uygulamasına bağlanılamadı.\n\nTikFinity açık olmalı ve WebSocket API portu 21213 olmalıdır.\n\nBu düğmeye tekrar tıklayarak yeniden bağlanmayı deneyebilirsiniz."
           );
         } catch (eA) {}
       });
@@ -521,7 +522,7 @@
         } else if (ok) {
           lab.textContent = "TikTok Live · Bağlı";
         } else if (hosted) {
-          lab.textContent = "TikTok Live · Köprü gerekli";
+          lab.textContent = "TikTok Live · TikFinity bekleniyor";
         } else {
           lab.textContent = "TikTok Live · Bağlı değil";
         }
@@ -537,7 +538,7 @@
           ? "\nTikFinity için Oyun Merkezi'nde lisans anahtarı uygulayın."
           : !ok
             ? hosted
-              ? "\nTıklayın: yerel ağ izni + köprü testi\n1) TikFinity açık\n2) GemTok-TikFinity-Kopru.bat\n3) Chrome yerel ağ izni" +
+              ? "\nTıklayın: TikFinity masaüstü uygulamasına yeniden bağlanmayı dene\nTikFinity WebSocket API: ws://127.0.0.1:21213" +
                 (bridgeStatusHint ? "\n" + bridgeStatusHint : "")
               : "\nTikFinity masaüstü uygulamasını açın (ws://127.0.0.1:21213)"
             : "");

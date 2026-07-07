@@ -13,8 +13,8 @@
 
   var LS_KEYS = ["streamxt_tikfinity_ws_url", "gemtok_tikfinity_ws_url"];
   var DEFAULT_WS = "ws://127.0.0.1:21213";
-  var BRIDGE_WS = "ws://127.0.0.1:29213";
-  var GIFT_HUB_TIKFINITY_WS = "ws://127.0.0.1:8787/tikfinity";
+  var DEFAULT_WS_CANDIDATES = ["ws://127.0.0.1:21213", "ws://localhost:21213", "ws://[::1]:21213"];
+  var CONNECT_TIMEOUT_MS = 2600;
 
   function isHostedPublicSite() {
     try {
@@ -30,42 +30,18 @@
   }
 
   function preflightHostedLocalBridge() {
-    if (!isHostedPublicSite()) return Promise.resolve(true);
-    var checks = ["http://127.0.0.1:29213/health", "http://127.0.0.1:8787/health"];
-    var i = 0;
-    function next() {
-      if (i >= checks.length) return Promise.resolve(false);
-      var url = checks[i++];
-      return fetch(url, { mode: "cors", cache: "no-store", credentials: "omit" })
-        .then(function (r) {
-          if (r.ok) return true;
-          return next();
-        })
-        .catch(function () {
-          return next();
-        });
-    }
-    return next();
+    return Promise.resolve(true);
   }
 
-  /** HTTPS sitede yerel ağ izni + köprü testi (Chrome/Edge izin penceresini tetikler). */
+  /** Backward-compatible hook; the production path is the TikFinity desktop app WebSocket. */
   function requestHostedBridgeAccess() {
-    return preflightHostedLocalBridge().then(function (ok) {
-      try {
-        global.dispatchEvent(
-          new CustomEvent("gemtok-tikfinity-bridge-preflight", { detail: { ok: !!ok } })
-        );
-      } catch (eEv) {}
-      return !!ok;
-    });
+    try {
+      global.dispatchEvent(new CustomEvent("gemtok-tikfinity-bridge-preflight", { detail: { ok: true } }));
+    } catch (eEv) {}
+    return Promise.resolve(true);
   }
 
-  function installHostedBridgeDefaults() {
-    if (!isHostedPublicSite()) return;
-    try {
-      global.__GEMTOK_HOSTED_BRIDGE_FALLBACK__ = global.__GEMTOK_HOSTED_BRIDGE_FALLBACK__ || BRIDGE_WS;
-    } catch (e0) {}
-  }
+  function installHostedBridgeDefaults() {}
 
   function pushUniqueUrl(list, url) {
     var u = String(url || "").trim().slice(0, 512);
@@ -96,6 +72,11 @@
 
   function getEnvTikfinityWsUrl() {
     try {
+      var injected = global.__ENV__ && (global.__ENV__.TIKFINITY_WS_URL || global.__ENV__.VITE_TIKFINITY_WS_URL);
+      if (injected) return String(injected).trim().slice(0, 512);
+      if (global.TIKFINITY_WS_URL) return String(global.TIKFINITY_WS_URL).trim().slice(0, 512);
+    } catch (eInjected) {}
+    try {
       var proc = global.process;
       if (proc && proc.env) {
         return String(proc.env.TIKFINITY_WS_URL || proc.env.VITE_TIKFINITY_WS_URL || "").trim().slice(0, 512);
@@ -111,7 +92,6 @@
   function getTikfinityWsUrlCandidates(serverSuggestedUrl) {
     var urls = [];
     var i;
-    var hosted = isHostedPublicSite();
     try {
       if (global.localStorage) {
         var _tikUrl = global.localStorage.getItem("tikfinity_url");
@@ -139,10 +119,8 @@
       }
     } catch (e2) {}
     pushCandidate(urls, serverSuggestedUrl);
-    pushUniqueUrl(urls, DEFAULT_WS);
-    if (hosted) {
-      pushUniqueUrl(urls, BRIDGE_WS);
-      pushUniqueUrl(urls, GIFT_HUB_TIKFINITY_WS);
+    for (i = 0; i < DEFAULT_WS_CANDIDATES.length; i++) {
+      pushUniqueUrl(urls, DEFAULT_WS_CANDIDATES[i]);
     }
     return urls.length ? urls : [DEFAULT_WS];
   }
@@ -324,8 +302,29 @@
     for (ri = 0; ri < list.length; ri++) {
       var root = list[ri];
       if (!root || typeof root !== "object") continue;
-      var ev = String(root.event != null ? root.event : root.type != null ? root.type : root.name != null ? root.name : "").toLowerCase();
+      var ev = String(
+        root.event != null
+          ? root.event
+          : root.eventType != null
+            ? root.eventType
+            : root.event_type != null
+              ? root.event_type
+              : root.type != null
+                ? root.type
+                : root.name != null
+                  ? root.name
+                  : "",
+      ).toLowerCase();
+      ev = ev.replace(/^tiktok[_:-]?/, "").replace(/[_:-]?event$/, "");
       var data = root.data != null && typeof root.data === "object" ? root.data : root;
+      if (typeof root.data === "string") {
+        try {
+          var nested = JSON.parse(root.data);
+          if (nested && typeof nested === "object") data = nested;
+        } catch (eData) {}
+      }
+      if (data && data.eventData && typeof data.eventData === "object") data = data.eventData;
+      if (data && data.data && typeof data.data === "object" && data.data !== data) data = data.data;
       if (!ev && (data.giftName != null || data.giftId != null || data.giftKey != null || data.diamondCount != null))
         ev = "gift";
 
@@ -420,11 +419,11 @@
         continue;
       }
 
-      if (ev === "follow" || ev === "subscribe") {
+      if (ev === "follow" || ev === "subscribe" || ev === "subscription" || ev === "sub") {
         var fo = buildTikfinityUserBase(data.user, data);
         if (!fo.userId) continue;
         out.push({
-          type: ev === "subscribe" ? "subscribe" : "follow",
+          type: ev === "subscribe" || ev === "subscription" || ev === "sub" ? "subscribe" : "follow",
           userId: fo.userId,
           nickname: fo.nickname,
           avatarUrl: fo.avatarUrl,
@@ -455,7 +454,7 @@
         continue;
       }
 
-      if (ev === "member") {
+      if (ev === "member" || ev === "join" || ev === "viewer") {
         var mb = buildTikfinityUserBase(data.user, data);
         if (!mb.userId) continue;
         out.push({ type: "member", userId: mb.userId, nickname: mb.nickname, avatarUrl: mb.avatarUrl, team: "auto", ...(mb.user ? { user: mb.user } : {}) });
@@ -478,11 +477,13 @@
     var socket = null;
     var gen = 0;
     var reconnectTimer = null;
+    var connectTimer = null;
     var reconnectAttempt = 0;
     var userClosed = false;
     var queue = [];
     var flushRaf = null;
     var eventsPerFrame = Math.max(4, Math.min(120, Number(options.eventsPerFrame) || 32));
+    var maxQueueSize = Math.max(100, Math.min(10000, Number(options.maxQueueSize) || 2000));
     var cachedServerUrl = "";
     var urlCandidates = [];
     var urlCandidateIndex = 0;
@@ -494,13 +495,18 @@
       }
     }
 
+    function clearConnectTimer() {
+      if (connectTimer != null) {
+        clearTimeout(connectTimer);
+        connectTimer = null;
+      }
+    }
+
     function scheduleReconnect() {
       clearReconnect();
       if (userClosed) return;
-      var delay = Math.min(30000, 1000 * Math.pow(2, reconnectAttempt));
       reconnectAttempt += 1;
-      if (delay < 1000) delay = 1000;
-      delay += Math.floor(Math.random() * 400);
+      var delay = 3000 + Math.floor(Math.random() * 1500);
       reconnectTimer = setTimeout(function () {
         reconnectTimer = null;
         connect();
@@ -538,6 +544,7 @@
     }
 
     function enqueueRaw(parsed) {
+      if (queue.length >= maxQueueSize) queue.splice(0, queue.length - maxQueueSize + 1);
       queue.push(parsed);
       if (flushRaf == null) flushRaf = global.requestAnimationFrame(flushQueue);
     }
@@ -556,9 +563,7 @@
         if (typeof options.onStatus === "function") {
           options.onStatus({
             phase: "local_network_blocked",
-            message: isHostedPublicSite()
-              ? "TikFinity koprusu yok. GemTok-TikFinity-Kopru.bat calistirin; Chrome yerel ag izni verin."
-              : "TikFinity baglantisi kurulamadi.",
+            message: "TikFinity masaustu uygulamasina baglanilamadi. TikFinity acik olmali ve WebSocket API portu 21213 olmalidir.",
           });
         }
         scheduleReconnect();
@@ -584,9 +589,20 @@
         return;
       }
       socket = sock;
+      clearConnectTimer();
+      connectTimer = global.setTimeout(function () {
+        if (gen !== myGen) return;
+        try {
+          sock.close();
+        } catch (eTimeout) {}
+        if (urlCandidateIndex < urlCandidates.length) {
+          tryConnectCandidate();
+        }
+      }, CONNECT_TIMEOUT_MS);
 
       sock.onopen = function () {
         if (gen !== myGen) return;
+        clearConnectTimer();
         reconnectAttempt = 0;
         clearReconnect();
         if (typeof options.onStatus === "function") options.onStatus({ phase: "connected", url: url });
@@ -605,6 +621,7 @@
 
       sock.onclose = function () {
         if (gen !== myGen) return;
+        clearConnectTimer();
         socket = null;
         if (userClosed) return;
         if (urlCandidateIndex < urlCandidates.length) {
@@ -616,7 +633,24 @@
         scheduleReconnect();
       };
 
-      sock.onerror = function () {};
+      sock.onerror = function () {
+        if (gen !== myGen) return;
+        clearConnectTimer();
+        try {
+          sock.close();
+        } catch (e3) {}
+        if (urlCandidateIndex < urlCandidates.length) {
+          tryConnectCandidate();
+          return;
+        }
+        if (typeof options.onStatus === "function") {
+          options.onStatus({
+            phase: "local_network_blocked",
+            url: url,
+            message: "TikFinity masaustu uygulamasina baglanilamadi. TikFinity acik olmali ve WebSocket API portu 21213 olmalidir.",
+          });
+        }
+      };
     }
 
     return {
@@ -631,9 +665,10 @@
             return;
           }
           var getter = options.getServerSuggestedWsUrl;
-          var chain = Promise.resolve().then(function () {
-            return preflightHostedLocalBridge();
-          });
+          // WebSocket'i HTTP kopru on kontrolune baglama. TikFinity masaustu
+          // uygulamasi varsayilan 21213 portunda dogrudan dinler; on kontrol
+          // GitHub Pages/HTTPS ortaminda mixed-content nedeniyle bekleyebilir.
+          var chain = Promise.resolve();
           if (typeof getter === "function") {
             chain = chain
               .then(function () {
@@ -654,6 +689,7 @@
       stop: function () {
         userClosed = true;
         clearReconnect();
+        clearConnectTimer();
         gen += 1;
         try {
           if (socket) socket.close();
@@ -671,7 +707,7 @@
 
   global.GemTokTikFinity = {
     DEFAULT_WS: DEFAULT_WS,
-    BRIDGE_WS: BRIDGE_WS,
+    DEFAULT_WS_CANDIDATES: DEFAULT_WS_CANDIDATES,
     LS_KEYS: LS_KEYS,
     isHostedPublicSite: isHostedPublicSite,
     isLocalDirectTikfinityUrl: isLocalDirectTikfinityUrl,
