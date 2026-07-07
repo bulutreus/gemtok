@@ -14,16 +14,21 @@
     return "c_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
   }
 
+  var clientId = "";
+
   function getClientId() {
+    if (clientId) return clientId;
     try {
       var k = "gemtok_tiktok_live_client_id";
-      var c = global.localStorage && global.localStorage.getItem(k);
+      var c = global.sessionStorage && global.sessionStorage.getItem(k);
       if (c && String(c).trim()) return String(c).trim();
       c = uuid();
-      global.localStorage.setItem(k, c);
-      return c;
+      if (global.sessionStorage) global.sessionStorage.setItem(k, c);
+      clientId = c;
+      return clientId;
     } catch (e) {
-      return uuid();
+      clientId = uuid();
+      return clientId;
     }
   }
 
@@ -423,6 +428,18 @@
     if (remoteLeader && state === "connected") return true;
     if (!isLeader && lastEventAt && Date.now() - lastEventAt < 3500) return true;
     return false;
+  }
+
+  function hasActiveLicenseSession() {
+    try {
+      var L = global.GemtokLicense;
+      if (L && typeof L.readLicenseSession === "function") return !!L.readLicenseSession();
+    } catch (e0) {}
+    try {
+      return !!(global.sessionStorage && global.sessionStorage.getItem("gemtok_oyun_lisans"));
+    } catch (e1) {
+      return false;
+    }
   }
 
   function isHostedPublicSite() {

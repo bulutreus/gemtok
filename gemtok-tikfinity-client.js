@@ -642,7 +642,25 @@
         scheduleReconnect();
       };
 
-      sock.onerror = function () {};
+      sock.onerror = function () {
+        if (gen !== myGen) return;
+        try {
+          sock.close();
+        } catch (e3) {}
+        if (urlCandidateIndex < urlCandidates.length) {
+          tryConnectCandidate();
+          return;
+        }
+        if (typeof options.onStatus === "function") {
+          options.onStatus({
+            phase: "local_network_blocked",
+            url: url,
+            message: isHostedPublicSite()
+              ? "TikFinity koprusu yok. GemTok-TikFinity-Kopru.bat calistirin; Chrome yerel ag izni verin."
+              : "TikFinity baglantisi kurulamadi.",
+          });
+        }
+      };
     }
 
     return {
