@@ -25,4 +25,11 @@ gift-hub/node_modules/
 
 # GitHub'in 100 MB dosya sinirini asan yerel dagitim paketleri
 GEMTOK-HOSTINGER-LISANS-V2.zip
+GEMTOK-HOSTINGER-LISANS-V3-FIX.zip
 HOSTINGER-BUNU-YUKLE-GUNCEL.zip
+
+# Canli lisans sistemi secretlari GitHub'a yuklenmez
+public_html/.gemtok-private/config.php
+public_html/.gemtok-private/licenses.json
+public_html/.gemtok-private/licenses.lock
+public_html/.gemtok-private/rate.json

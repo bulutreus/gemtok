@@ -13,6 +13,7 @@
   var DEFAULT_ITEMSATIS_PROFILE_URL = "https://www.itemsatis.com/profil/2319676/gemtok.html";
   var SESSION_KEY = "gemtok_oyun_lisans";
   var ACTIVE_KEY_STORE = "gemtok_oyun_lisans_last_key";
+  var DEVICE_KEY = "gemtok_license_device_id";
 
   (function migrateLegacyLicenseKeysOnce() {
     try {
@@ -323,45 +324,69 @@
           "Bu deÄŸer bir lisans anahtarÄ± deÄŸildir. YÃ¶netici eriÅŸimi iÃ§in Oyun Merkeziâ€™nde anahtar kutusuna yalnÄ±zca sizin bildiÄŸiniz yÃ¶netici parolasÄ±nÄ± yazÄ±p Â«AnahtarÄ± uygulaÂ» kullanÄ±n.",
       });
     }
-    return registryReadyPromise
-      .then(function () {
-        return fetch(resolveServerSyncUrl(), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            action: "redeem",
-            key: keyNorm,
-            gameId: forGameId != null ? String(forGameId) : "",
-          }),
-          cache: "no-store",
+    return registryReadyPromise.then(function () {
+        var deviceId = getOrCreateDeviceId();
+        return postServerAction({
+          action: "redeem",
+          key: keyNorm,
+          gameId: forGameId != null ? String(forGameId) : "",
+          deviceId: deviceId,
         });
       })
-      .then(function (r) {
-        return r.json().then(function (j) {
-          if (!j || !j.ok) {
-            var localTry = redeemKeyLocal(rawKey, forGameId);
-            if (localTry.ok) return localTry;
-            return { ok: false, message: (j && j.message) || localTry.message || "Anahtar doÄŸrulanamadÄ±." };
-          }
-          var entry = j.entry || {};
-          var games = entry.games && entry.games.length ? entry.games : ["all"];
-          var reg = readRegistry();
-          reg.keys[keyNorm] = entry;
-          writeRegistry(reg);
-          writeLicenseSession({
-            keyNorm: keyNorm,
-            expiresAt: entry.expiresAt == null ? null : Number(entry.expiresAt),
-            games: games,
-            tier: entry.tier || "7d",
-            clientIp: String(entry.clientIp || ""),
-            shared: entry.shared !== false,
-          });
-          return { ok: true, expiresAt: entry.expiresAt };
+      .then(function (res) {
+        var r = res.response;
+        var j = res.json;
+        if (!r.ok || !j || !j.ok) {
+          var localTry = redeemKeyLocal(rawKey, forGameId);
+          if (localTry.ok) return localTry;
+          return { ok: false, message: (j && j.message) || localTry.message || "Anahtar doÄŸrulanamadÄ±." };
+        }
+        var entry = j.entry || {};
+        var games = entry.games && entry.games.length ? entry.games : ["all"];
+        var reg = readRegistry();
+        reg.keys[keyNorm] = entry;
+        writeRegistry(reg);
+        writeLicenseSession({
+          keyNorm: keyNorm,
+          expiresAt: entry.expiresAt == null ? null : Number(entry.expiresAt),
+          games: games,
+          tier: entry.tier || "7d",
+          clientIp: String(entry.clientIp || ""),
+          shared: entry.shared !== false,
+          token: String(j.token || ""),
+          deviceId: String(j.deviceId || deviceId),
         });
+        return { ok: true, expiresAt: entry.expiresAt };
       })
       .catch(function () {
-        return redeemKeyLocal(rawKey, forGameId);
+        return { ok: false, message: "Lisans sunucusuna ulaşılamadı. İnternet bağlantınızı kontrol edin." };
       });
+  }
+
+  function getOrCreateDeviceId() {
+    try {
+      var old = localStorage.getItem(DEVICE_KEY);
+      if (old && old.length >= 16) return old;
+      var bytes = new Uint8Array(24);
+      crypto.getRandomValues(bytes);
+      var id = Array.prototype.map.call(bytes, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+      localStorage.setItem(DEVICE_KEY, id);
+      return id;
+    } catch (e) { return "browser-" + String(Math.random()).slice(2) + String(Date.now()); }
+  }
+
+  function validateServerSessionAsync(gameId) {
+    if (!isPublicHostedSite()) return Promise.resolve(!!readLicenseSession());
+    var s = null;
+    try { s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); } catch (e) {}
+    if (!s || !s.token) { clearLicenseSession(); return Promise.resolve(false); }
+    return postServerAction({ action: "validate", token: s.token, gameId: String(gameId || "") }).then(function (res) {
+      var r = res.response;
+      var j = res.json;
+      if (!r.ok || !j || !j.ok) { clearLicenseSession(); return false; }
+      s.token = String(j.token || s.token); s.expiresAt = j.entry.expiresAt == null ? null : Number(j.entry.expiresAt);
+      s.games = j.entry.games || ["all"]; s.tier = j.entry.tier || s.tier; writeLicenseSession(s); return true;
+    }).catch(function () { clearLicenseSession(); return false; });
   }
 
   function allocateClientIpForKey(reg) {
@@ -587,6 +612,8 @@
         .toLowerCase()
         .replace(/^\[|\]$/g, "");
       if (!h || h === "127.0.0.1" || h === "localhost" || h === "::1" || h === "0:0:0:0:0:0:0:1") return false;
+      if (h === "github.io" || /\.github\.io$/.test(h)) return false;
+      if (h === "gemtok.store" || h === "www.gemtok.store") return false;
       return true;
     } catch (eH) {
       return false;
@@ -620,15 +647,53 @@
       for (var i = 0; i < scripts.length; i++) {
         var src = String(scripts[i].src || "");
         if (src.indexOf("gemtok-license.js") >= 0) {
-          return src.replace(/gemtok-license\.js(\?.*)?$/i, "gemtok-license-sync.php");
+          return src.replace(/gemtok-license\.js(\?.*)?$/i, "gemtok-license-api.php");
         }
       }
     } catch (e0) {}
     try {
-      return new URL("sÄ±ra/gemtok-license-sync.php", location.origin + "/").href;
+      return new URL("sıra/gemtok-license-api.php", location.origin + "/").href;
     } catch (e1) {
-      return "sÄ±ra/gemtok-license-sync.php";
+      return "sıra/gemtok-license-api.php";
     }
+  }
+
+  function resolveServerSyncUrls() {
+    var primary = resolveServerSyncUrl();
+    var urls = [];
+    function add(u) {
+      u = String(u || "");
+      if (u && urls.indexOf(u) < 0) urls.push(u);
+    }
+    add(primary);
+    try {
+      add(primary.replace("/s%C4%B1ra/", "/sira/"));
+      add(primary.replace("/sıra/", "/sira/"));
+      add(primary.replace("/sira/", "/s%C4%B1ra/"));
+    } catch (e0) {}
+    return urls;
+  }
+
+  function postServerAction(payload) {
+    var urls = resolveServerSyncUrls();
+    function attempt(i) {
+      if (i >= urls.length) return Promise.reject(new Error("server_unreachable"));
+      return fetch(urls[i], {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload || {}),
+        cache: "no-store",
+      })
+        .then(function (r) {
+          return r.json().then(function (j) {
+            return { response: r, json: j, url: urls[i] };
+          });
+        })
+        .catch(function () {
+          return attempt(i + 1);
+        });
+    }
+    return attempt(0);
   }
 
   function syncRegistryToServer(adminToken, keysSubset) {
@@ -643,24 +708,19 @@
     if (!keys || typeof keys !== "object") {
       keys = readRegistry().keys || {};
     }
-    return fetch(resolveServerSyncUrl(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "merge", adminToken: token, keys: keys }),
-      cache: "no-store",
-    })
-      .then(function (r) {
-        return r.json().then(function (j) {
-          if (!r.ok || !j || !j.ok) {
-            return {
-              ok: false,
-              message: (j && j.message) || "sync_failed",
-              status: r.status,
-            };
-          }
-          return loadServerRegistryAsync().then(function () {
-            return { ok: true, added: j.added || 0, updated: j.updated || 0, total: j.total || 0 };
-          });
+    return postServerAction({ action: "merge", adminToken: token, keys: keys })
+      .then(function (res) {
+        var r = res.response;
+        var j = res.json;
+        if (!r.ok || !j || !j.ok) {
+          return {
+            ok: false,
+            message: (j && j.message) || "sync_failed",
+            status: r.status,
+          };
+        }
+        return loadServerRegistryAsync().then(function () {
+          return { ok: true, added: j.added || 0, updated: j.updated || 0, total: j.total || 0 };
         });
       })
       .catch(function (eSync) {
@@ -673,16 +733,11 @@
     var token = String(adminToken || getAdminSyncToken() || "").trim();
     if (!token) return Promise.resolve({ ok: false, message: "no_token" });
     var kn = normalizeKey(keyNorm);
-    return fetch(resolveServerSyncUrl(), {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "delete", adminToken: token, key: kn }),
-      cache: "no-store",
-    })
-      .then(function (r) {
-        return r.json().then(function (j) {
-          return { ok: !!(r.ok && j && j.ok), message: (j && j.message) || "" };
-        });
+    return postServerAction({ action: "delete", adminToken: token, key: kn })
+      .then(function (res) {
+        var r = res.response;
+        var j = res.json;
+        return { ok: !!(r.ok && j && j.ok), message: (j && j.message) || "" };
       })
       .catch(function () {
         return { ok: false, message: "delete_error" };
@@ -717,6 +772,9 @@
   }
 
   function loadServerRegistryAsync() {
+    if (isPublicHostedSite()) {
+      return validateServerSessionAsync("").finally(function () { finishRegistryReady(); });
+    }
     var primary = resolveServerRegistryUrl();
     var fallback = "";
     try {
@@ -808,6 +866,7 @@
     isGameAllowedInSession: isGameAllowedInSession,
     redeemKey: redeemKey,
     redeemKeyAsync: redeemKeyAsync,
+    validateServerSessionAsync: validateServerSessionAsync,
     adminGenerateKeys: adminGenerateKeys,
     adminUpsertKey: adminUpsertKey,
     adminExtendKey: adminExtendKey,
