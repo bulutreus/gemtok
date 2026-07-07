@@ -14,6 +14,20 @@
   var SESSION_KEY = "gemtok_oyun_lisans";
   var ACTIVE_KEY_STORE = "gemtok_oyun_lisans_last_key";
   var DEVICE_KEY = "gemtok_license_device_id";
+  var STATIC_KEY_ALPHABET = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+  var STATIC_KEY_SALT = "GEMTOK-GITHUB-PAGES-20260707";
+  var STATIC_TIER_CODES = { "7": "7d", M: "30d", Q: "90d", Y: "365d", L: "unl" };
+  var STATIC_GAME_CODES = {
+    A: "all",
+    W: "warFront",
+    B: "arenaBattle",
+    C: "countryBirds",
+    V: "vote5",
+    R: "arena3",
+    G: "arena5gen",
+    T: "team20",
+    F: "airRace",
+  };
 
   (function migrateLegacyLicenseKeysOnce() {
     try {
@@ -242,6 +256,68 @@
     return false;
   }
 
+  function staticChecksum(data) {
+    var n = 2166136261;
+    var s = String(data || "") + "|" + STATIC_KEY_SALT;
+    for (var i = 0; i < s.length; i++) {
+      n ^= s.charCodeAt(i);
+      n = Math.imul(n, 16777619) >>> 0;
+    }
+    var mod = STATIC_KEY_ALPHABET.length * STATIC_KEY_ALPHABET.length;
+    n = n % mod;
+    return STATIC_KEY_ALPHABET.charAt(Math.floor(n / STATIC_KEY_ALPHABET.length)) + STATIC_KEY_ALPHABET.charAt(n % STATIC_KEY_ALPHABET.length);
+  }
+
+  function staticGameCode(gameScope) {
+    var g = String(gameScope || "all");
+    for (var code in STATIC_GAME_CODES) {
+      if (STATIC_GAME_CODES[code] === g) return code;
+    }
+    return "A";
+  }
+
+  function staticTierCode(tier) {
+    var t = normalizeAdminTier(tier);
+    for (var code in STATIC_TIER_CODES) {
+      if (STATIC_TIER_CODES[code] === t) return code;
+    }
+    return "7";
+  }
+
+  function randomStaticChars(len) {
+    var out = "";
+    for (var i = 0; i < len; i++) out += STATIC_KEY_ALPHABET.charAt(Math.floor(Math.random() * STATIC_KEY_ALPHABET.length));
+    return out;
+  }
+
+  function buildStaticKey(tier, gameScope) {
+    var data = staticTierCode(tier) + staticGameCode(gameScope) + randomStaticChars(8);
+    var check = staticChecksum(data);
+    return "GEM-" + data.slice(0, 4) + "-" + data.slice(4, 8) + "-" + data.slice(8, 10) + check;
+  }
+
+  function parseStaticKey(keyNorm) {
+    var compact = String(keyNorm || "").replace(/^GEM-/, "").replace(/-/g, "");
+    if (!/^[0-9A-Z]{12}$/.test(compact)) return null;
+    var data = compact.slice(0, 10);
+    var check = compact.slice(10);
+    if (staticChecksum(data) !== check) return null;
+    var tier = STATIC_TIER_CODES[data.charAt(0)];
+    var game = STATIC_GAME_CODES[data.charAt(1)];
+    if (!tier || !game) return null;
+    return {
+      tier: tier,
+      games: game === "all" ? ["all"] : [game],
+      createdAt: new Date().toISOString(),
+      revoked: false,
+      activatedAt: null,
+      expiresAt: null,
+      clientIp: "",
+      shared: true,
+      staticKey: true,
+    };
+  }
+
   function isGameAllowedInSession(gameId) {
     var s = readLicenseSession();
     if (!s) return false;
@@ -267,6 +343,13 @@
 
     var reg = readRegistry();
     var entry = reg.keys[keyNorm];
+    if (!entry) {
+      entry = parseStaticKey(keyNorm);
+      if (entry) {
+        reg.keys[keyNorm] = entry;
+        writeRegistry(reg);
+      }
+    }
     if (!entry) return { ok: false, message: "Bu anahtar kayÄ±tlÄ± deÄŸil." };
     if (entry.revoked) return { ok: false, message: "Bu anahtar iptal edilmiÅŸ." };
 
@@ -440,16 +523,9 @@
         gsc = "all";
       var games = gsc === "all" ? ["all"] : [gsc];
 
-      function randChunk() {
-        var chars = "0123456789ABCDEFGHJKLMNPQRSTUVWXYZ";
-        var s = "";
-        for (var i = 0; i < 4; i++) s += chars.charAt(Math.floor(Math.random() * chars.length));
-        return s;
-      }
-
       for (var n = 0; n < count; n++) {
-        var keyNorm = "GEM-" + randChunk() + "-" + randChunk() + "-" + randChunk();
-        while (reg.keys[keyNorm]) keyNorm = "GEM-" + randChunk() + "-" + randChunk() + "-" + randChunk();
+        var keyNorm = buildStaticKey(tier, gsc);
+        while (reg.keys[keyNorm]) keyNorm = buildStaticKey(tier, gsc);
 
         reg.keys[keyNorm] = {
           tier: tier,
