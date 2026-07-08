@@ -45,13 +45,26 @@
     return Promise.resolve();
   }
 
+  function hasLocalGameAccess(gameId) {
+    try {
+      return !!(
+        g.GemtokLicense &&
+        typeof g.GemtokLicense.isGameAllowedInSession === "function" &&
+        g.GemtokLicense.isGameAllowedInSession(String(gameId || ""))
+      );
+    } catch (eL) {
+      return false;
+    }
+  }
+
   function runGate(gameId, opt) {
     opt = opt || {};
     if (opt.skipOnLocalDev !== false && isLocalDev()) return Promise.resolve();
     return whenLicenseReady().then(function () {
+      if (hasLocalGameAccess(gameId)) return;
       if (g.GemtokLicense && typeof g.GemtokLicense.validateServerSessionAsync === "function") {
         return g.GemtokLicense.validateServerSessionAsync(String(gameId || "")).then(function (ok) {
-          if (ok) return;
+          if (ok || hasLocalGameAccess(gameId)) return;
           var serverMsg =
             opt.message ||
             "Bu oyun için geçerli bir lisans anahtarı gerekir. Lisansınızı Oyun Merkezi'nde yeniden doğrulayın.";
@@ -60,9 +73,7 @@
           throw new Error("game_access_blocked");
         });
       }
-      try {
-        if (g.GemtokLicense && g.GemtokLicense.isGameAllowedInSession(String(gameId || ""))) return;
-      } catch (e3) {}
+      if (hasLocalGameAccess(gameId)) return;
       var msg =
         opt.message ||
         "Bu oyun için geçerli bir lisans anahtarı gerekir. Anahtar silindi veya süresi dolduysa Oyun Merkezi'nde yeni anahtar girin.";
