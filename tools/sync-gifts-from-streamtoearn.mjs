@@ -1,6 +1,6 @@
 /**
  * StreamToEarn (streamtoearn.io/gifts) bölge sayfalarındaki hediye kartları + TikTok webcast gift/list
- * eşlemesi → sıra/gift-images/gift-list.json (+ loader) + isteğe bağlı ikon indirme.
+ * eşlemesi → sira/gift-images/gift-list.json (+ loader) + isteğe bağlı ikon indirme.
  *
  * Eşleme: TikTok CDN ikon URL’sindeki 32 hex (resource/…png veya ~tplv öncesi) → resmi API’deki aynı ikon.
  * Yedek: isim + jeton (TikTok diamond_count) tam eşleşmesi (tek aday varsa).
@@ -15,7 +15,7 @@
  *   node tools/sync-gifts-from-streamtoearn.mjs --html "C:/path/TikTok gifts list by countries.html"
  *   node tools/sync-gifts-from-streamtoearn.mjs --s2e-offline   (yalnızca yerel HTML; bölge ağı yok)
  *
- * Yerel anlık görüntü: önce `sıra/StreamToEarn-Gifts.html` (node tools/mirror-streamtoearn-gifts-page.mjs), sonra gift-hub/giftlist, uploads yedeği.
+ * Yerel anlık görüntü: önce `sira/hediyeler.html` (node tools/mirror-streamtoearn-gifts-page.mjs), sonra gift-hub/giftlist, uploads yedeği.
  */
 import fs from "fs";
 import path from "path";
@@ -34,7 +34,7 @@ const CONFIG_CANDIDATES = [
 
 const DEFAULT_MD = path.join(REPO_ROOT, "uploads", "gifts-0.md");
 /** Ağdan indirilen streamtoearn.io/gifts aynası (öncelikli). */
-const DEFAULT_LOCAL_S2E_HTML_MIRROR = path.join(REPO_ROOT, "sıra", "StreamToEarn-Gifts.html");
+const DEFAULT_LOCAL_S2E_HTML_MIRROR = path.join(REPO_ROOT, "sıra", "hediyeler.html");
 /** Tarayıcıdan kaydedilen tam sayfa — gift-hub/giftlist, yedek uploads. */
 const DEFAULT_LOCAL_S2E_HTML_HUB = path.join(
   REPO_ROOT,
@@ -507,7 +507,7 @@ async function main() {
   if (args.s2eOffline) {
     if (!args.htmlPath) {
       console.error(
-        "--s2e-offline için --html veya sıra/StreamToEarn-Gifts.html (veya gift-hub/uploads yedeği) gerekli.",
+        "--s2e-offline için --html veya sira/hediyeler.html (veya gift-hub/uploads yedeği) gerekli.",
       );
       process.exit(1);
     }

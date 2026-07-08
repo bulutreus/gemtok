@@ -1,5 +1,5 @@
 /**
- * SQLite şema + tohum (tek kaynak: sıra/gift-images/gift-list.json).
+ * SQLite şema + tohum (tek kaynak: sira/gift-images/gift-list.json).
  */
 import fs from "fs";
 import path from "path";
@@ -185,7 +185,7 @@ export function syncGiftsFromJson(db) {
         diamond_count: Math.max(0, Math.floor(Number(row.coins) || 0)),
         image_file: String(row.file || "").trim(),
         metadata_json: JSON.stringify({
-          source: "sıra/gift-images/gift-list.json",
+          source: "sira/gift-images/gift-list.json",
           original: row,
         }),
       });

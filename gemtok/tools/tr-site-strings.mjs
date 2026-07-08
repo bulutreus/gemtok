@@ -1,7 +1,7 @@
 /**
- * Yerel arşiv: sıra/*.html ortak çeviri yaması (idempotent).
+ * Yerel arşiv: sira/*.html ortak çeviri yaması (idempotent).
  * Ana sayfa başlığındaki bozuk karakter için ayrıca kökte şu komutu kullanın:
- *   node -e "const fs=require('fs');const p='sıra/ANA SAYFA.html';let s=fs.readFileSync(p,'utf8');s=s.replace(/All-in-One Streaming Dashboard[\\s\\S]{0,3}GemTok/,'GemTok — Canlı yayın merkezi');fs.writeFileSync(p,s);"
+ *   node -e "const fs=require('fs');const p='sira/index.html';let s=fs.readFileSync(p,'utf8');s=s.replace(/All-in-One Streaming Dashboard[\\s\\S]{0,3}GemTok/,'GemTok — Canlı yayın merkezi');fs.writeFileSync(p,s);"
  * Çalıştır: node tools/tr-site-strings.mjs
  */
 import fs from "fs";
@@ -46,7 +46,7 @@ for (const name of fs.readdirSync(sıraDir)) {
   if (name.endsWith(".html")) patchSiraHtml(name);
 }
 
-patchSiraHtml("ANA SAYFA.html", [
+patchSiraHtml("index.html", [
   ["THE ULTIMATE", "EN ÜST DÜZEY"],
   ["LIVE STREAMING TOOLS", "CANLI YAYIN ARAÇLARI"],
   ['<div class="text-[#64748b] text-sm mt-1">Thousand Streamers</div>', '<div class="text-[#64748b] text-sm mt-1">Bin yayıncı</div>'],
@@ -97,7 +97,7 @@ patchSiraHtml("ANA SAYFA.html", [
   ["Ready to Stream Smarter?", "Daha akıllı yayına hazır mısınız?"],
 ]);
 
-patchSiraHtml("Admin Panel.html", [
+patchSiraHtml("admin.html", [
   ["<title>Admin Panel — GemTok</title>", "<title>Yönetici paneli — GemTok</title>"],
   ['">Admin Panel</h1>', '">Yönetici paneli</h1>'],
   [">Admin</a>", ">Yönetici</a>"],

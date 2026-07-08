@@ -1,6 +1,6 @@
 /**
  * GemTok — oyun sayfalarında TikTok Live (TikFinity) köprüsünü başlatır.
- * Önkoşul: gemtok-license.js, gemtok-tikfinity-client.js, sıra/gemtok-tiktok-live-global.js
+ * Önkoşul: gemtok-license.js, gemtok-tikfinity-client.js, sira/gemtok-tiktok-live-global.js
  */
 (function (g) {
   'use strict';

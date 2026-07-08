@@ -1,6 +1,6 @@
 /**
  * GemTok — yerel oyun başlatıcı (yalnızca 127.0.0.1).
- * `sıra/OYUN MERKEZI.html` tıklamada GET /launch?game=… arka planda tetikleyebilir (baslat/BASLAT);
+ * `sira/oyun-merkezi.html` tıklamada GET /launch?game=… arka planda tetikleyebilir (baslat/BASLAT);
  * tarayıcı doğrudan derlenmiş oyuna gider; delayMs yanıt alanı geriye dönük uyumluluk içindir.
  */
 import http from "http";

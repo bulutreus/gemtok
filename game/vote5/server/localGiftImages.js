@@ -1,5 +1,5 @@
 /**
- * Sunucu: sıra/gift-images → /gift-images URL
+ * Sunucu: sira/gift-images → /gift-images URL
  */
 const path = require('path');
 const fs = require('fs');

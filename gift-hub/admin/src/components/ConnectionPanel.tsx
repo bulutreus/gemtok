@@ -31,7 +31,7 @@ export function ConnectionPanel() {
     >
       <h2 style={{ margin: "0 0 12px", fontSize: 15, color: "var(--text)" }}>TikFinity köprü durumu</h2>
       <p style={{ margin: "0 0 8px", fontSize: 13, color: "var(--muted)" }}>
-        Ana sayfa (<code style={{ color: "var(--accent)" }}>sıra/ANA SAYFA.html</code>) açıkken tarayıcı buraya durum gönderir. TikFinity:{" "}
+        Ana sayfa (<code style={{ color: "var(--accent)" }}>sira/index.html</code>) açıkken tarayıcı buraya durum gönderir. TikFinity:{" "}
         <code style={{ color: "var(--accent)" }}>ws://127.0.0.1:21213</code> (veya{" "}
         <code style={{ color: "var(--accent)" }}>localStorage.tikfinity_url</code> / <code>gemtok_tikfinity_ws_url</code>).
       </p>

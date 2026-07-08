@@ -1,7 +1,7 @@
 /**
  * https://streamtoearn.io/gifts → yerel ayna:
- *   sıra/StreamToEarn-Gifts.html
- *   sıra/streamtoearn-gifts-assets/** (styles, js, images, favicon)
+ *   sira/hediyeler.html
+ *   sira/streamtoearn-gifts-assets/** (styles, js, images, favicon)
  *
  * CSS içindeki url(/…) göreli yollara çevrilir (file:// uyumu).
  * Son adım: GemTok sıra sayfası ile aynı üst menü + parçacık arka planı (StreamToEarn üst çubuğu gizlenir).
@@ -15,7 +15,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 const SIRA = path.join(REPO_ROOT, "sıra");
-const OUT_HTML = path.join(SIRA, "StreamToEarn-Gifts.html");
+const OUT_HTML = path.join(SIRA, "hediyeler.html");
 const ASSET_DIR_NAME = "streamtoearn-gifts-assets";
 const OUT_ASSETS = path.join(SIRA, ASSET_DIR_NAME);
 const BASE = "https://streamtoearn.io";
@@ -130,7 +130,7 @@ function rewriteHtml(html) {
       const qpart = q || "";
       return `${attr}="${prefix}${clean.replace(/^\/+/, "")}${qpart}"`;
     }
-    if (attr === "href" && (clean === "/gifts" || clean === "/gifts/")) return 'href="StreamToEarn-Gifts.html"';
+    if (attr === "href" && (clean === "/gifts" || clean === "/gifts/")) return 'href="hediyeler.html"';
     if (clean.startsWith("/") && !clean.startsWith("//")) return `${attr}="#"`;
     return full;
   });
@@ -159,15 +159,15 @@ function stripStreamtoearnBrandingForGemtokMirror(html) {
 function injectGemtokSiraChrome(html) {
   let h = stripStreamtoearnBrandingForGemtokMirror(html);
   if (h.includes('id="gemtok-s2e-chrome"')) return h;
-  h = h.replace(/<html\s+lang="[^"]*"/i, '<html lang="tr" data-gemtok-sira-page="StreamToEarn-Gifts.html"');
+  h = h.replace(/<html\s+lang="[^"]*"/i, '<html lang="tr" data-gemtok-sira-page="hediyeler.html"');
 
   const headSnippet = `
     <link href="../httrack_mirror/www.gemtok.live/manifest.json" rel="manifest">
     <meta content="#1e88e5" name="theme-color">
     <link rel="icon" type="image/png" href="../gemtok/gemtok.png">
-    <link href="./ANA SAYFA_files/css2" rel="stylesheet">
-    <link href="./ANA SAYFA_files/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="./ANA SAYFA_files/common.min.css" rel="stylesheet">
+    <link href="./index-assets/css2" rel="stylesheet">
+    <link href="./index-assets/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="./index-assets/common.min.css" rel="stylesheet">
     <style id="gemtok-s2e-chrome">
       #siteHeader.site-header,
       #siteDrawer.site-drawer { display: none !important; }
@@ -188,10 +188,10 @@ function injectGemtokSiraChrome(html) {
   <div class="main-content">
     <nav class="fixed top-0 left-0 right-0 z-50 pl-8 pr-4 sm:pl-9 sm:pr-6 py-4 backdrop-blur-md bg-[rgba(2,8,23,0.3)] border-b border-[rgba(0,212,255,0.1)]">
       <div class="w-full flex items-center justify-between gap-3 sm:gap-4 flex-wrap">
-        <a class="font-display text-2xl font-bold tracking-wider text-white flex items-center gap-2" href="ANA SAYFA.html"><img src="../logo.png?v=2" alt="GemTok" style="height:64px;width:auto;max-height:72px;object-fit:contain"></a>
+        <a class="font-display text-2xl font-bold tracking-wider text-white flex items-center gap-2" href="index.html"><img src="../logo.png?v=2" alt="GemTok" style="height:64px;width:auto;max-height:72px;object-fit:contain"></a>
         <div class="hidden md:flex items-center gap-8">
-          <a class="nav-link font-medium" href="ANA SAYFA.html">Platforms</a>
-          <a class="nav-link font-medium" href="OYUN MERKEZI.html">Integrations</a>
+          <a class="nav-link font-medium" href="index.html">Platforms</a>
+          <a class="nav-link font-medium" href="oyun-merkezi.html">Integrations</a>
         </div>
         <div id="gemtok-nav-actions" class="flex items-center gap-3 sm:gap-4 shrink-0 flex-wrap justify-end"></div>
       </div>

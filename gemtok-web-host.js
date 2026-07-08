@@ -22,9 +22,9 @@
       }
     } catch (e1) {}
     try {
-      return new URL("sıra/gift-images/", g.location.origin + "/").href;
+      return new URL("sira/gift-images/", g.location.origin + "/").href;
     } catch (e2) {
-      return "sıra/gift-images/";
+      return "sira/gift-images/";
     }
   }
 

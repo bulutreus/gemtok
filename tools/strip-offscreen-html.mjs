@@ -78,7 +78,7 @@ for (const p of files) {
   let s = fs.readFileSync(p, "utf8");
   const before = s.length;
   s = cleanHtml(s);
-  if (rel === "ANA SAYFA.html") s = removeModalDemo(s);
+  if (rel === "index.html") s = removeModalDemo(s);
   if (s.length !== before) {
     fs.writeFileSync(p, s, "utf8");
     console.log("cleaned", rel.replace(/\\/g, "/"), "bytes", before, "->", s.length);

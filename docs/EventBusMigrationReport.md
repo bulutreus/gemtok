@@ -7,7 +7,7 @@ Bu rapor, **tek TikFinity WebSocket** (merkezi `GemTokTikTokLive` + `BroadcastCh
 | Dosya | Rol |
 |--------|-----|
 | `gemtok-tikfinity-client.js` (kök) | TikFinity JSON → düz payload (`gift`, `like`, …). |
-| `sıra/gemtok-tiktok-live-global.js` | Tek öncü sekme WebSocket + `GemTokTikTokLive.eventBus` + çok sekme senkronu. |
+| `sira/gemtok-tiktok-live-global.js` | Tek öncü sekme WebSocket + `GemTokTikTokLive.eventBus` + çok sekme senkronu. |
 | `gemtok-live-game-bridge.js` (kök) | `GemTokLiveGameBridge.ensure()` → `bootstrap`, `onPayload()` → tüm TikTok olaylarına abone olma yardımcısı. |
 
 **Geri uyumluluk:** Köprü script’leri yoksa veya `GemTokTikTokLive` yüklenemezse, oyunlar önceki **doğrudan WebSocket** yoluna düşer (WarFront, arena3/5gen, Arena Battle, Country Birds, vote5).
@@ -41,11 +41,11 @@ Bu rapor, **tek TikFinity WebSocket** (merkezi `GemTokTikTokLive` + `BroadcastCh
 - **Dosyalar:** `game/vote5/client/index.html`, `client/tikfinityLive.js` (`attachTikfinityBridge` içinde portal dalı).
 - **Not:** Birincil canlı akış `tiktok-live-connector` ile sunucuya gider; TikFinity köprüsü isteğe bağlı sütun modu için kullanılmaya devam eder.
 - **Derleme:** `game/vote5` içinde `npm run build` ile `play/` güncellenir (Vite `outDir`: `../play`).
-- **Launcher:** `sıra/OYUN MERKEZI.html` vote5 bağlantısı `../game/vote5/play/index.html` ile bu çıktıya yönlendirilir (eski `client/dist` yolu kullanılmıyordu).
+- **Launcher:** `sira/oyun-merkezi.html` vote5 bağlantısı `../game/vote5/play/index.html` ile bu çıktıya yönlendirilir (eski `client/dist` yolu kullanılmıyordu).
 
 ### Sıra / portal (önceden yapılmıştı)
 
-- `sıra/ANA SAYFA.html`, `OYUN MERKEZI.html`, `Integrations.html` — `GemTokTikTokLive.bootstrap` + nav rozeti.
+- `sira/index.html`, `oyun-merkezi.html`, `entegrasyonlar.html` — `GemTokTikTokLive.bootstrap` + nav rozeti.
 
 ## TypeScript paket (`@gemtok/live`)
 
@@ -66,6 +66,6 @@ Bu rapor, **tek TikFinity WebSocket** (merkezi `GemTokTikTokLive` + `BroadcastCh
 
 ## Doğrulama önerisi
 
-1. Ana sayfayı açın (`sıra/ANA SAYFA.html`) — TikTok Live köprüsü çalışsın.
+1. Ana sayfayı açın (`sira/index.html`) — TikTok Live köprüsü çalışsın.
 2. Oyunu aynı tarayıcıda başka sekmede açın — öncü sekme bağlıyken oyun **izleyici** olarak olay almalı.
 3. Yalnızca oyun URL’sini açın (portal yok) — oyun sekmesi öncü olur; yine tek WebSocket kuralı korunur.

@@ -2,7 +2,7 @@
   "name": "GemTok (yerel arşiv)",
   "short_name": "GemTok",
   "description": "Yerel GemTok arşivi — oyunlar ve sıra sayfaları.",
-  "start_url": "../sıra/ANA SAYFA.html",
+  "start_url": "../sira/index.html",
   "scope": "../",
   "display": "standalone",
   "background_color": "#020817",

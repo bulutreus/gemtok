@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
 const sub = fs.readdirSync(REPO_ROOT, { withFileTypes: true });
-const siraEnt = sub.find((d) => d.isDirectory() && fs.existsSync(path.join(REPO_ROOT, d.name, "ANA SAYFA.html")));
+const siraEnt = sub.find((d) => d.isDirectory() && fs.existsSync(path.join(REPO_ROOT, d.name, "index.html")));
 const SIRA = siraEnt ? path.join(REPO_ROOT, siraEnt.name) : null;
 if (!SIRA) {
   console.error("sıra bulunamadı");
@@ -26,7 +26,7 @@ for (const name of fs.readdirSync(SIRA)) {
   if (s !== before) {
     fs.writeFileSync(fp, s, "utf8");
     n++;
-    console.log("sıra/", name);
+    console.log("sira/", name);
   }
 }
 console.log("Güncellenen:", n);

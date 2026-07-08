@@ -1,6 +1,6 @@
 /**
  * streamtoearn.io/gifts?region=XX sayfalarından hediye görsel URL'lerini toplar;
- * çıktı: sıra/streamtoearn-gifts-assets/gift-regions.json
+ * çıktı: sira/streamtoearn-gifts-assets/gift-regions.json
  *   { "host/path": ["TR","DE", ...], ... }
  *
  * Repo kökü: node tools/fetch-streamtoearn-gift-regions.mjs
@@ -12,7 +12,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..");
-const SIRA_HTML = path.join(REPO_ROOT, "sıra", "StreamToEarn-Gifts.html");
+const SIRA_HTML = path.join(REPO_ROOT, "sıra", "hediyeler.html");
 const OUT_JSON = path.join(REPO_ROOT, "sıra", "streamtoearn-gifts-assets", "gift-regions.json");
 
 const BASE = "https://streamtoearn.io/gifts";

@@ -7,7 +7,7 @@ Bu doküman, TikTok canlı olaylarının oyunlara **tek bir iletişim katmanı**
 Yerel HTML/Vite oyunları, doğrudan TikFinity WebSocket açmak yerine şu sırayı kullanır:
 
 1. `gemtok-tikfinity-client.js`
-2. `sıra/gemtok-tiktok-live-global.js`
+2. `sira/gemtok-tiktok-live-global.js`
 3. `gemtok-live-game-bridge.js`
 4. `GemTokLiveGameBridge.ensure({ hubBase })` ve `onPayload(...)` veya `GemTokTikTokLive.eventBus.on(...)`
 
@@ -41,7 +41,7 @@ flowchart LR
   GM --> API[(Gift Hub\n/api/v1/live/discover-gift)]
 ```
 
-- **Portal sayfaları** (`sıra/ANA SAYFA.html` vb.): `GemTokTikTokLive.bootstrap` zaten tek WebSocket + çok sekme köprüsünü kurar.
+- **Portal sayfaları** (`sira/index.html` vb.): `GemTokTikTokLive.bootstrap` zaten tek WebSocket + çok sekme köprüsünü kurar.
 - **TypeScript paketi** (`src/`): `TikTokConnectionManager.start({ portalBridge: "auto" })` varsayılan olarak `GemTokTikTokLive` varsa ondan olayları **rAF kuyruğu** ile `EventBus`’a aktarır; **ikinci WebSocket açılmaz**.
 - **Portal dışı** gömülü oyun (yalnızca `gemtok-tikfinity-client.js` yüklü): `portalBridge: false` ile doğrudan `GemTokTikFinity.createClient` kullanılır; yine oyunlar yalnızca EventBus dinler.
 
@@ -124,5 +124,5 @@ npm run build
 ## İlgili yerel dosyalar
 
 - `gemtok-tikfinity-client.js` — TikFinity WebSocket istemcisi.
-- `sıra/gemtok-tiktok-live-global.js` — Öncü sekme, BroadcastChannel, vanilla `eventBus` (TS köprüsüyle aynı olaylar hizalanır).
+- `sira/gemtok-tiktok-live-global.js` — Öncü sekme, BroadcastChannel, vanilla `eventBus` (TS köprüsüyle aynı olaylar hizalanır).
 - `gift-hub` — REST + SQLite hediye kataloğu ve canlı keşif uçları.

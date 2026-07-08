@@ -181,7 +181,7 @@ Do not redesign existing components unless explicitly requested.
 
 Platform-wide **yerel ayarlar** görünümü mockup ile aynıdır. Uygulama:
 
-* `sıra/gemtok-settings-theme.css` — ortak neon / navy / radius; yalnızca `.gemtok-settings-theme` altında geçerli.
+* `sira/gemtok-settings-theme.css` — ortak neon / navy / radius; yalnızca `.gemtok-settings-theme` altında geçerli.
 * Her oyun **mevcut** ayar HTML’ine dokunmadan kök sarmalayıcıya `class="… gemtok-settings-theme"` ekler (WarFront `#settingsModal`, arena3/5gen `#settings-backdrop`, Arena Battle `#settings-backdrop`, Country Birds `#settingsOverlay`, vote5 ayar paneli + backdrop).
 * Piksel referansı: `docs/mockups/gemtok-unified-game-settings.html`.
 
@@ -211,7 +211,7 @@ Any future game added to GEMTOK must automatically work with:
 * Event Bus
 * Gift Manager
 * Admin Mapping System
-* **Unified local settings look** — link `sıra/gemtok-settings-theme.css` and add `gemtok-settings-theme` on the game’s existing settings root (no duplicate settings UI).
+* **Unified local settings look** — link `sira/gemtok-settings-theme.css` and add `gemtok-settings-theme` on the game’s existing settings root (no duplicate settings UI).
 
 without requiring a new WebSocket connection.
 
@@ -242,4 +242,4 @@ New gifts must automatically appear in all games and the admin panel.
 
 ## Dil (yerel arşiv)
 
-Statik `sıra/*.html` arayüz metinleri Türkçedir (nav, ana sayfa, oyun merkezi, entegrasyonlar özeti, hediye sayfası meta açıklamaları vb.). Kullanım şartları ve gizlilik sayfalarının **gövde metni** HTTrack arşivinde İngilizce kalabilir; başlık çubuğu Türkçeleştirilmiştir. Yeniden çeviri toplu güncellemesi: `tools/tr-site-strings.mjs` (ve gerektiğinde `ANA SAYFA.html` başlığı için `All-in-One…` satırına regex ile müdahale).
+Statik `sira/*.html` arayüz metinleri Türkçedir (nav, ana sayfa, oyun merkezi, entegrasyonlar özeti, hediye sayfası meta açıklamaları vb.). Kullanım şartları ve gizlilik sayfalarının **gövde metni** HTTrack arşivinde İngilizce kalabilir; başlık çubuğu Türkçeleştirilmiştir. Yeniden çeviri toplu güncellemesi: `tools/tr-site-strings.mjs` (ve gerektiğinde `index.html` başlığı için `All-in-One…` satırına regex ile müdahale).

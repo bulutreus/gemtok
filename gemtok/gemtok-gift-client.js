@@ -54,17 +54,17 @@
       }
     } catch (e1) {}
     try {
-      return new URL("sıra/gift-images/", global.location.origin + "/").href;
+      return new URL("sira/gift-images/", global.location.origin + "/").href;
     } catch (e2) {
-      return "sıra/gift-images/";
+      return "sira/gift-images/";
     }
   }
 
   function resolveStaticGiftListJsonUrl() {
     try {
-      return new URL("sıra/gift-images/gift-list.json", global.location.origin + "/").href;
+      return new URL("sira/gift-images/gift-list.json", global.location.origin + "/").href;
     } catch (e0) {
-      return "sıra/gift-images/gift-list.json";
+      return "sira/gift-images/gift-list.json";
     }
   }
 

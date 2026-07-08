@@ -18,8 +18,8 @@ Yerel **SQLite** veritabanı + **REST API** + **React** admin paneli. Tüm oyunl
 
 ## Veri kaynağı
 
-- **Hediyeler:** `sıra/gift-images/gift-list.json` — sunucu açılışında ve admin panelden «yeniden içe aktar» ile DB’ye senkronlanır. Dosyaya yeni satır eklendiğinde bir sonraki senkronla **tüm oyunlar** aynı kaydı görür (ayrı kopya yok).
-- **Görseller:** `GET /gift-images/<dosya>` ile `sıra/gift-images/` üzerinden sunulur.
+- **Hediyeler:** `sira/gift-images/gift-list.json` — sunucu açılışında ve admin panelden «yeniden içe aktar» ile DB’ye senkronlanır. Dosyaya yeni satır eklendiğinde bir sonraki senkronla **tüm oyunlar** aynı kaydı görür (ayrı kopya yok).
+- **Görseller:** `GET /gift-images/<dosya>` ile `sira/gift-images/` üzerinden sunulur.
 
 ## Oyun entegrasyonu
 

@@ -1,5 +1,5 @@
 import "./styles.css";
-import "../../../sıra/gemtok-settings-theme.css";
+import "../../../sira/gemtok-settings-theme.css";
 import { GameEngine } from "./game/engine";
 import { GIFT_LABELS } from "./game/constants";
 import {

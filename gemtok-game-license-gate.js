@@ -1,6 +1,6 @@
 /**
  * GemTok — oyun sayfası lisans kapısı (statik web / yerel geliştirme).
- * Önkoşul: sıra/gemtok-license.js
+ * Önkoşul: sira/gemtok-license.js
  */
 (function (g) {
   "use strict";
@@ -9,12 +9,12 @@
     try {
       var portal =
         g.localStorage.getItem("gemtok_sira_portal") || g.localStorage.getItem("hottok_sira_portal") || "";
-      if (portal) return portal + "OYUN MERKEZI.html";
+      if (portal) return portal + "oyun-merkezi.html";
     } catch (e0) {}
     try {
-      return new URL("../../../sıra/OYUN MERKEZI.html", g.location.href).href;
+      return new URL("../../../sira/oyun-merkezi.html", g.location.href).href;
     } catch (e1) {
-      return "../../../sıra/OYUN MERKEZI.html";
+      return "../../../sira/oyun-merkezi.html";
     }
   }
 

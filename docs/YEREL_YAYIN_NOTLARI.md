@@ -6,7 +6,7 @@ Bu depo **yerel arşiv** olarak tasarlanmıştır; tek turda “tüm siteyi üre
 
 | Konu | Aksiyon |
 |------|---------|
-| PWA `manifest.json` 404 | Tüm `sıra/*.html` ve `gemtok/sıra/*.html` içindeki `../httrack_mirror/www.gemtok.live/manifest.json` bağlantıları **`../gemtok/manifest.json`** olarak güncellendi; kökte `gemtok/manifest.json` eklendi. |
+| PWA `manifest.json` 404 | Tüm `sira/*.html` ve `gemtok/sira/*.html` içindeki `../httrack_mirror/www.gemtok.live/manifest.json` bağlantıları **`../gemtok/manifest.json`** olarak güncellendi; kökte `gemtok/manifest.json` eklendi. |
 | Kök `index.html` | Var olmayan `httrack_mirror/...` bağlantısı kaldırıldı (404 önlenir). |
 | Vote5 Vite girişi | `game/vote5/client/index.html` içinde `src="/main.jsx"` → **`./main.jsx`** (`file://` ve statik sunucu için daha güvenilir). |
 
@@ -25,7 +25,7 @@ Bu depo **yerel arşiv** olarak tasarlanmıştır; tek turda “tüm siteyi üre
 
 ## Önerilen elle doğrulama (15–30 dk)
 
-1. `sıra/ANA SAYFA.html` → Oyun Merkezi → her oyun kartı.
+1. `sira/index.html` → Oyun Merkezi → her oyun kartı.
 2. Tarayıcı geliştirici araçları **Konsol / Ağ**: kırmızı 404 ve tekrarlayan başarısız istekler.
 3. `npm run build` (vote5) ve kullandığınız diğer paketler için mevcut `package.json` betikleri.
 

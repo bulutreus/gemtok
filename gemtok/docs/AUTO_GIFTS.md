@@ -6,7 +6,7 @@ Bu belge, canlı yayında gelen hediye olaylarının merkezi SQLite kataloğuna 
 
 | Katman | Görev |
 |--------|--------|
-| **TikFinity / köprü** | `gemtok-tikfinity-client.js` ve `sıra/gemtok-tiktok-live-global.js` hediye payload’ına `giftKey` (TikTok hediye kodu), görünen ad, elmas, ikon URL’si ekler. |
+| **TikFinity / köprü** | `gemtok-tikfinity-client.js` ve `sira/gemtok-tiktok-live-global.js` hediye payload’ına `giftKey` (TikTok hediye kodu), görünen ad, elmas, ikon URL’si ekler. |
 | **Keşif** | Köprü, `POST /api/v1/live/discover-gift` (gift-hub) ile hediyeyi upsert eder. Admin gerekmez; localhost hız sınırı vardır. |
 | **Veritabanı** | `gift-hub/lib/db.mjs` — `gifts` tablosu: `tiktok_id`, `name`, `diamond_count`, `image_file` / metadata, `first_seen`, `last_seen`, `category`, `active`. |
 | **Sürüm** | Her başarılı keşif veya admin senkronundan sonra `giftsCatalogVersion` artar (`GET /api/v1/gifts/catalog-version`, liste yanıtlarında da döner). |

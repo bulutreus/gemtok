@@ -76,7 +76,7 @@ Yayına girmeden sütunlara hediye seçebilmek için proje kökünde **`config/g
 
 ### GemTok Gift Hub (merkezi hediye listesi)
 
-İstemci **`gemtok-gift-client.js`** ile `http://127.0.0.1:8787` (veya `localStorage` anahtarı **`gemtok_gift_hub_url`**) adresindeki **gift-hub** sunucusundan hediye listesini çeker; katalog `sıra/gift-images/gift-list.json` ile senkron SQLite’tan gelir. Hub çalışıyorsa ayar paleti ve TikFinity tarafı bu görselleri / elmas değerlerini kullanır; sunucu veya TikTok’tan gelen satırlar aynı ID’de listeyi günceller (hub görselleri, canlı olaylar http görsel verirse onlar öncelikli olabilir). Hub kapalıysa davranış önceki gibi **tohum JSON** ve `/api/gifts` / Socket ile devam eder.
+İstemci **`gemtok-gift-client.js`** ile `http://127.0.0.1:8787` (veya `localStorage` anahtarı **`gemtok_gift_hub_url`**) adresindeki **gift-hub** sunucusundan hediye listesini çeker; katalog `sira/gift-images/gift-list.json` ile senkron SQLite’tan gelir. Hub çalışıyorsa ayar paleti ve TikFinity tarafı bu görselleri / elmas değerlerini kullanır; sunucu veya TikTok’tan gelen satırlar aynı ID’de listeyi günceller (hub görselleri, canlı olaylar http görsel verirse onlar öncelikli olabilir). Hub kapalıysa davranış önceki gibi **tohum JSON** ve `/api/gifts` / Socket ile devam eder.
 
 ## Not
 

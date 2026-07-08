@@ -1,0 +1,48 @@
+﻿<!doctype html>
+<html lang="tr" data-gemtok-sira-page="TikTok Gift YÃ¶netimi.html">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TikTok Hediye YÃ¶netimi â€” GemTok</title>
+  <link href="../gemtok/manifest.json" rel="manifest">
+  <meta content="#1e88e5" name="theme-color">
+  <link rel="icon" type="image/png" href="../gemtok/gemtok.png">
+  <link href="./index-assets/css2" rel="stylesheet">
+  <link href="./index-assets/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="./index-assets/common.min.css" rel="stylesheet">
+</head>
+<body>
+  <canvas id="particles-canvas" width="1920" height="945"></canvas>
+  <div class="glow-blob blob-1"></div>
+  <div class="glow-blob blob-2"></div>
+  <div class="grid-overlay"></div>
+  <div class="main-content">
+    <nav class="fixed top-0 left-0 right-0 z-50 pl-8 pr-4 sm:pl-9 sm:pr-6 py-4 backdrop-blur-md bg-[rgba(2,8,23,0.3)] border-b border-[rgba(0,212,255,0.1)]">
+      <div class="w-full flex items-center justify-between gap-3 sm:gap-4">
+        <a class="font-display text-2xl font-bold tracking-wider text-white flex items-center gap-2" href="index.html"><img src="../logo.png?v=2" alt="GemTok" style="height:64px;width:auto;max-height:72px;object-fit:contain"></a>
+        <div class="flex gap-4 flex-wrap">
+          <a class="btn-secondary px-5 py-2.5 rounded-lg font-semibold text-sm" href="admin.html"><i class="bi-shield-lock mr-2"></i>YÃ¶netici</a>
+          <a class="btn-secondary px-5 py-2.5 rounded-lg font-semibold text-sm" href="hediyeler.html"><i class="bi-gift mr-2"></i>Hediye kataloÄŸu (StreamToEarn)</a>
+          <a class="btn-secondary px-5 py-2.5 rounded-lg font-semibold text-sm" href="index.html"><i class="bi-house-door mr-2"></i>Ana sayfa</a>
+        </div>
+      </div>
+    </nav>
+
+    <section class="py-3 px-3 max-w-6xl mx-auto overflow-hidden mt-24 mb-12">
+      <div class="rounded-2xl bg-[rgba(15,30,55,0.3)] border border-[#0a3d59] backdrop-blur-sm">
+        <div class="p-4 border-b border-[#0a3d59]">
+          <h1 class="font-display text-2xl font-bold text-white mb-1">TikTok Hediye YÃ¶netimi</h1>
+          <p class="text-[#94a3b8] text-sm mb-2">Merkezi katalog ve oyun aksiyon eÅŸlemeleri yerel <strong class="text-cyan-200/90 font-semibold">Gift Hub</strong> sunucusunda (SQLite). Ã–nce kÃ¶kte <code class="text-cyan-200/90">GemTok-Gift-Hub.bat</code> veya <code class="text-cyan-200/90">gift-hub/baslat.bat</code> Ã§alÄ±ÅŸtÄ±rÄ±n; ardÄ±ndan aÅŸaÄŸÄ±daki panel aÃ§Ä±lÄ±r.</p>
+          <p class="text-[#94a3b8] text-xs">Oyunlar aynÄ± APIâ€™yi kullanÄ±r: <code class="text-cyan-200/90">../gemtok-gift-client.js</code> â€” <code class="text-cyan-200/90">http://127.0.0.1:8787</code></p>
+        </div>
+        <div class="p-2 sm:p-4">
+          <p class="text-[#94a3b8] text-xs mb-2">Hub Ã§alÄ±ÅŸmÄ±yorsa doÄŸrudan: <a class="text-cyan-300 font-semibold" href="http://127.0.0.1:8787/admin/" target="_blank" rel="noopener noreferrer">127.0.0.1:8787/admin</a></p>
+          <iframe id="gemtok-gift-hub-frame" title="Gift Hub yÃ¶netimi" class="w-full rounded-xl border border-[#0a3d59] bg-[#0a1020]" style="min-height:85vh" src="http://127.0.0.1:8787/admin/"></iframe>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script src="./gemtok-particles-bg.js"></script>
+  <script src="./gemtok-sira-router.js?v=20260707-router2"></script>
+</body>
+</html>

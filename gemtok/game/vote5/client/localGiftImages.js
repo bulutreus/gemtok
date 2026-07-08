@@ -1,5 +1,5 @@
 /**
- * Yerel sıra/gift-images + Gift Hub görsel URL çözümü.
+ * Yerel sira/gift-images + Gift Hub görsel URL çözümü.
  * `gift-list.loader.js` → window.__GEMTOK_GIFT_LIST__
  */
 
@@ -80,7 +80,7 @@ export function giftImageUrlCandidatesForId(id) {
         push(`${origin}/gift-images/${encodeURIComponent(file)}`);
       } else if (protocol === 'file:') {
         try {
-          push(new URL(`../../../sıra/gift-images/${encodeURIComponent(file)}`, href).href);
+          push(new URL(`../../../sira/gift-images/${encodeURIComponent(file)}`, href).href);
         } catch (_) {
           /* ignore */
         }

@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles.css';
-import '../../../sıra/gemtok-settings-theme.css';
+import '../../../sira/gemtok-settings-theme.css';
 
 /* file:// bazı GPU sürücülerinde backdrop-filter tüm sayfayı siyah/boş boyar; CSS ile kapatılır */
 if (typeof window !== 'undefined' && window.location.protocol === 'file:') {

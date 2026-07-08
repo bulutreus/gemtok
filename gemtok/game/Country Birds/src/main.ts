@@ -1,5 +1,5 @@
 import "./style.css";
-import "../../../sıra/gemtok-settings-theme.css";
+import "../../../sira/gemtok-settings-theme.css";
 import { resolveTikfinityWsUrl, shouldAutoConnectFromSearch } from "./tikfinity/config";
 import { createTikfinityClient } from "./tikfinity/client";
 import type { GameAction } from "./tikfinity/actions";

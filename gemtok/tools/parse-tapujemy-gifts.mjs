@@ -1,5 +1,5 @@
 /**
- * Tapujemy gifts markdown → sıra/gift-images/gift-list.json
+ * Tapujemy gifts markdown → sira/gift-images/gift-list.json
  * Kaynak: https://tapujemy.pl/gifts (export veya uploads/gifts-0.md)
  * Blok: isim, boş, jeton, boş, isim (tekrar), boş, #tiktok_id
  */

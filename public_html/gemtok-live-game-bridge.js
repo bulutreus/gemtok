@@ -1,6 +1,6 @@
 /**
  * GemTok — oyun sayfaları için merkezi TikTok Live köprüsü.
- * Önkoşul: gemtok-tikfinity-client.js + sıra/gemtok-tiktok-live-global.js (GemTokTikTokLive).
+ * Önkoşul: gemtok-tikfinity-client.js + sira/gemtok-tiktok-live-global.js (GemTokTikTokLive).
  *
  * Oyunlar doğrudan WebSocket açmaz; GemTokTikTokLive.bootstrap + eventBus kullanır.
  */
