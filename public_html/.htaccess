@@ -1,11 +1,11 @@
-# GemTok yerel arşiv — Hostinger / Apache / LiteSpeed uyumlu
-# Not: Statik dosyalar tarayıcıdan alınabildiği sürece %100 “kopyalanamaz” yapılamaz.
-# UA + robots ile sıradan HTTrack/wget sürümleri sınırlanır; UA taklitlenebilir, gerçek koruma için sunucu tarafı oturum/token gerekir.
+# GemTok yerel arsiv - Apache / LiteSpeed uyumlu
+# Not: Statik dosyalar tarayicidan alinabildigi surece tamamen kopyalanamaz yapilamaz.
+# UA + robots ile siradan HTTrack/wget surumleri sinirlanir; UA taklitlenebilir, gercek koruma icin sunucu tarafi oturum/token gerekir.
 
 DirectoryIndex index.html
 AddDefaultCharset UTF-8
 
-# Dizin listelemesi kapalı
+# Dizin listelemesi kapali
 Options -Indexes
 
 <IfModule mod_headers.c>
@@ -17,13 +17,13 @@ Options -Indexes
   Header always set Strict-Transport-Security "max-age=15552000" env=HTTPS
 </IfModule>
 
-# Sıkıştırma (metin tabanlı tipler)
+# Sikistirma (metin tabanli tipler)
 <IfModule mod_deflate.c>
   AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css
   AddOutputFilterByType DEFLATE application/javascript application/json application/xml image/svg+xml
 </IfModule>
 
-# Önbellek: HTML kısa, varlıklar daha uzun
+# Onbellek: HTML kisa, varliklar daha uzun
 <IfModule mod_expires.c>
   ExpiresActive On
   ExpiresByType text/html "access plus 5 minutes"
@@ -48,12 +48,12 @@ Options -Indexes
   </FilesMatch>
 </IfModule>
 
-# --- Oyun klasörü: bilinen kopyalayıcı / indirgeç User-Agent (varsayılan UA) ---
+# --- Oyun klasoru: bilinen kopyalayici / indirici User-Agent ---
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-  # İstek yolu /game/ altında ve UA eşleşiyorsa 403
+  # Istek yolu /game/ altinda ve UA eslesiyorsa 403
   RewriteCond %{REQUEST_URI} (^|/)game/ [NC]
   RewriteCond %{HTTP_USER_AGENT} (HTTrack|WinHTTrack|WebCopier|WebReaper|WebZIP|SiteSnagger|Teleport|SiteSucker|Wget|libwww-perl|Go-http-client|python-requests|Scrapy|aiohttp|java/|Apache-HttpClient) [NC,OR]
   RewriteCond %{HTTP_USER_AGENT} ^curl/ [NC,OR]

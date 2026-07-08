@@ -56,7 +56,7 @@ Bu rapor, **tek TikFinity WebSocket** (merkezi `GemTokTikTokLive` + `BroadcastCh
 
 | Öğe | Sebep |
 |------|--------|
-| `hostinger-yukle/...` altındaki Car Race kopyası | Ayrı dağıtım paketi; köprüyü elle aynı script sırasıyla ekleyin. |
+| Ayrı statik yayın kopyaları | Köprüyü aynı script sırasıyla ekleyin. |
 | `game/WarFront Arena/public/gemtok-tikfinity-client.js` | Yerel kopya; kök `gemtok-tikfinity-client.js` ile senkron tutulmalı (mevcut README uyarısı). |
 
 ## Gelecek oyun kuralı

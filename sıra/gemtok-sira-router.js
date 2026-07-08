@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   var PAGES = {
     home: "ANA SAYFA.html",
     gameHub: "OYUN MERKEZI.html",
@@ -1970,7 +1970,7 @@
     regExport.setAttribute("data-admin-license-export-registry", "1");
     regExport.setAttribute(
       "title",
-      "Hostinger: sıra/gemtok-license-registry.json olarak yükleyin; ziyaretçiler anahtar doğrulayabilir.",
+      "GitHub: sıra/gemtok-license-registry.json dosyasını repoya ekleyin; ziyaretçiler anahtar doğrulayabilir.",
     );
     txtRow.appendChild(regExport);
     var regSync = document.createElement("button");
@@ -1988,7 +1988,7 @@
     var regHint = document.createElement("p");
     regHint.className = "text-[#64748b] text-xs mb-3 leading-snug";
     regHint.textContent =
-      "Canlı sitede (gemtok.store): anahtar ürettiğinizde otomatik sunucuya kaydedilir. PHP yoksa «Sunucu kaydı indir» ile sıra/gemtok-license-registry.json dosyasını Hostinger’a yükleyin.";
+      "Canlı sitede anahtar ürettiğinizde sunucu API varsa otomatik kaydedilir. Statik GitHub yayınında Sunucu kaydı indir ile sıra/gemtok-license-registry.json dosyasını repoya ekleyip yeniden yayınlayın.";
     box.appendChild(regHint);
 
     if (!keys.length) {
@@ -2169,7 +2169,7 @@
     var msg = syncRes && syncRes.message ? String(syncRes.message) : "";
     if (msg === "no_token") return "Sunucu parolasi yok. Admin Panel'de sunucu kayit parolasini kaydedin.";
     if (msg === "unauthorized") return "Sunucu parolasi hatali. Dogru yonetici parolasini kaydedin.";
-    if (msg === "write_failed") return "Sunucu registry dosyasina yazamadi. Hostinger dosya izinlerini kontrol edin.";
+    if (msg === "write_failed") return "Sunucu registry dosyasina yazamadi. Statik GitHub yayininda registry dosyasini repoya ekleyip yeniden yayinlayin.";
     if (msg === "lock_failed" || msg === "lock_busy") return "Sunucu registry kilidi alinamadi. Biraz sonra tekrar deneyin.";
     return fallback || "Sunucuya kaydedilemedi.";
   }
@@ -2707,7 +2707,7 @@
           }
           if (window.GemtokLicense.downloadServerRegistryFile()) {
             setAdminLicenseFeedback(
-              "gemtok-license-registry.json indirildi — Hostinger sıra/ klasörüne yükleyin.",
+              "gemtok-license-registry.json indirildi - sıra/ klasörüne ekleyip GitHub yayınına gönderin.",
               "ok",
             );
           } else {

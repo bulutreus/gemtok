@@ -1,12 +1,5 @@
 httrack_mirror/cookies.txt
 
-# Hostinger paket çıktısı (tools/hostinger-paketle.ps1)
-hostinger-yukle/
-hostinger-yukle-*/
-
-# Hostinger FTP sifreleri
-hostinger-deploy.env
-
 gift-hub/data/*.sqlite
 gift-hub/node_modules/
 
@@ -24,9 +17,6 @@ gift-hub/node_modules/
 !game/Country Birds/dist/**
 
 # GitHub'in 100 MB dosya sinirini asan yerel dagitim paketleri
-GEMTOK-HOSTINGER-LISANS-V2.zip
-GEMTOK-HOSTINGER-LISANS-V3-FIX.zip
-HOSTINGER-BUNU-YUKLE-GUNCEL.zip
 
 # Canli lisans sistemi secretlari GitHub'a yuklenmez
 public_html/.gemtok-private/config.php

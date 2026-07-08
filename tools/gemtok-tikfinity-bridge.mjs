@@ -1,5 +1,5 @@
 /**
- * TikFinity WebSocket köprüsü — Hostinger (HTTPS) sitesinden yerel TikFinity'ye.
+ * TikFinity WebSocket köprüsü — statik HTTPS sitesinden yerel TikFinity'ye.
  * ws://127.0.0.1:29213 → ws://127.0.0.1:21213
  */
 import { createServer } from "http";

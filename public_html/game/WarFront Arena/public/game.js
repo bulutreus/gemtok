@@ -4,7 +4,7 @@
  */
 /** GemTok sıra / farklı porttan açılınca API+WS bu köke yönlendirilir (3847 tespiti). */
 let streamxtEmbedApiBase = null;
-/** Hostinger gibi statik sitede Node sunucusu yok — yalnızca tarayıcı + TikFinity. */
+/** Statik sitede Node sunucusu yok — yalnızca tarayıcı + TikFinity. */
 let streamxtStaticWebMode =
   typeof window !== "undefined" && !!window.__STREAMXT_STATIC_WEB__;
 

@@ -1,4 +1,4 @@
-/** Tarayıcıda dosyadan (file://) veya Hostinger gibi statik sitede Node/sunucu yoktur. */
+/** Tarayıcıda dosyadan (file://) veya statik sitede Node/sunucu yoktur. */
 export function isStaticHostedSite() {
   if (typeof window === 'undefined') return false;
   if (window.location.protocol === 'file:') return false;

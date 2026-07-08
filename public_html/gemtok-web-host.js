@@ -1,5 +1,5 @@
 /**
- * GemTok — statik web (Hostinger) ortamı: hediye görselleri ve site kökü.
+ * GemTok — statik web ortamı: hediye görselleri ve site kökü.
  */
 (function (g) {
   "use strict";

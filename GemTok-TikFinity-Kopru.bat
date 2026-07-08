@@ -15,7 +15,7 @@ if not exist "tools\node_modules\ws" (
 )
 echo TikFinity koprusu ve yerel oyun merkezi baslatiliyor...
 echo TikFinity masaustu uygulamasinin acik oldugundan emin olun.
-echo Hostinger sitesinde Chrome/Edge yerel ag erisimine izin verin.
+echo GitHub Pages sitesinde Chrome/Edge yerel ag erisimine izin verin.
 echo.
 start "GemTok TikFinity Koprusu" /min node "tools\gemtok-tikfinity-bridge.mjs"
 timeout /t 2 /nobreak >nul

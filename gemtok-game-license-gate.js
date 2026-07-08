@@ -1,5 +1,5 @@
 /**
- * GemTok — oyun sayfası lisans kapısı (Hostinger / yerel geliştirme).
+ * GemTok — oyun sayfası lisans kapısı (statik web / yerel geliştirme).
  * Önkoşul: sıra/gemtok-license.js
  */
 (function (g) {
