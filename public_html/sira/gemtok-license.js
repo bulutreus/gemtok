@@ -458,7 +458,9 @@
         return { ok: true, expiresAt: entry.expiresAt };
       })
       .catch(function () {
-        return { ok: false, message: "Lisans sunucusuna ulaşılamadı. İnternet bağlantınızı kontrol edin." };
+        var localTry = redeemKeyLocal(rawKey, forGameId);
+        if (localTry.ok) return localTry;
+        return { ok: false, message: localTry.message || "Lisans sunucusuna ulaşılamadı. İnternet bağlantınızı kontrol edin." };
       });
   }
 
@@ -478,14 +480,14 @@
     if (!isPublicHostedSite()) return Promise.resolve(!!readLicenseSession());
     var s = null;
     try { s = JSON.parse(sessionStorage.getItem(SESSION_KEY) || "null"); } catch (e) {}
-    if (!s || !s.token) { clearLicenseSession(); return Promise.resolve(false); }
+    if (!s || !s.token) return Promise.resolve(isGameAllowedInSession(gameId));
     return postServerAction({ action: "validate", token: s.token, gameId: String(gameId || "") }).then(function (res) {
       var r = res.response;
       var j = res.json;
-      if (!r.ok || !j || !j.ok) { clearLicenseSession(); return false; }
+      if (!r.ok || !j || !j.ok) return isGameAllowedInSession(gameId);
       s.token = String(j.token || s.token); s.expiresAt = j.entry.expiresAt == null ? null : Number(j.entry.expiresAt);
       s.games = j.entry.games || ["all"]; s.tier = j.entry.tier || s.tier; writeLicenseSession(s); return true;
-    }).catch(function () { clearLicenseSession(); return false; });
+    }).catch(function () { return isGameAllowedInSession(gameId); });
   }
 
   function allocateClientIpForKey(reg) {

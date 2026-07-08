@@ -483,9 +483,9 @@
     pill.id = "gemtok-live-nav-pill";
     pill.setAttribute("role", "status");
     pill.style.cssText =
-      "display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:9999px;font:600 12px/1.2 system-ui,sans-serif;cursor:default;white-space:nowrap;max-width:min(42vw,220px);border:1px solid rgba(255,255,255,0.12);background:rgba(15,30,55,0.75);color:#e2e8f0;";
+      "display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:9999px;font:700 12px/1.2 system-ui,sans-serif;cursor:default;white-space:nowrap;max-width:min(42vw,220px);border:1px solid rgba(239,68,68,0.55);background:rgba(127,29,29,0.72);color:#fee2e2;";
     pill.innerHTML =
-      '<span id="gemtok-live-nav-dot" style="flex-shrink:0;width:9px;height:9px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,0.35)"></span><span id="gemtok-live-nav-label" style="overflow:hidden;text-overflow:ellipsis">TikTok Live · Bağlı değil</span>';
+      '<span id="gemtok-live-nav-dot" style="flex-shrink:0;width:9px;height:9px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 2px rgba(239,68,68,0.35)"></span><span id="gemtok-live-nav-label" style="overflow:hidden;text-overflow:ellipsis">TikFinity</span>';
     host.appendChild(pill);
     pill.addEventListener("click", function () {
       if (!hasActiveLicenseSession() || isLiveSignalOk()) return;
@@ -516,15 +516,20 @@
         dot.style.background = ok ? "#22c55e" : "#ef4444";
         dot.style.boxShadow = ok ? "0 0 0 2px rgba(34,197,94,0.35)" : "0 0 0 2px rgba(239,68,68,0.35)";
       }
+      if (pill) {
+        pill.style.borderColor = ok ? "rgba(34,197,94,0.65)" : "rgba(239,68,68,0.55)";
+        pill.style.background = ok ? "rgba(20,83,45,0.72)" : "rgba(127,29,29,0.72)";
+        pill.style.color = ok ? "#dcfce7" : "#fee2e2";
+      }
       if (lab) {
         if (!hasActiveLicenseSession()) {
-          lab.textContent = "TikTok Live · Lisans gerekli";
+          lab.textContent = "TikFinity";
         } else if (ok) {
-          lab.textContent = "TikTok Live · Bağlı";
+          lab.textContent = "TikFinity";
         } else if (hosted) {
-          lab.textContent = "TikTok Live · TikFinity bekleniyor";
+          lab.textContent = "TikFinity";
         } else {
-          lab.textContent = "TikTok Live · Bağlı değil";
+          lab.textContent = "TikFinity";
         }
       }
       if (pill) pill.style.cursor = !ok && hasActiveLicenseSession() ? "pointer" : "default";
