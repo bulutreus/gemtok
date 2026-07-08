@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GemTok yonlendiriliyor</title>
+  <meta name="robots" content="noindex">
+  <script>
+    (function () {
+      var pageMap = {
+        "ANA SAYFA.html": "index.html",
+        "OYUN MERKEZI.html": "oyun-merkezi.html",
+        "MEMBER LOGİN.html": "giris.html",
+        "MEMBER LOG\u0130N.html": "giris.html",
+        "REGİSTER.html": "kayit.html",
+        "REG\u0130STER.html": "kayit.html",
+        "GİRİŞ YAPTIKTAN SONRAKİ WELCOME SAYFASI.html": "panel.html",
+        "G\u0130R\u0130\u015e YAPTIKTAN SONRAK\u0130 WELCOME SAYFASI.html": "panel.html",
+        "Account A TIKLAYINCA.html": "hesap.html",
+        "Subscription A TIKLAYINCA.html": "abonelik.html",
+        "Security E TIKLAYINCA.html": "guvenlik.html",
+        "Integrations.html": "entegrasyonlar.html",
+        "StreamToEarn-Gifts.html": "hediyeler.html",
+        "TikTok Gift Yönetimi.html": "hediye-yonetimi.html",
+        "TikTok Gift Y\u00f6netimi.html": "hediye-yonetimi.html",
+        "Terms of Service — GemTok.html": "kullanim-sartlari.html",
+        "Terms of Service \u2014 GemTok.html": "kullanim-sartlari.html",
+        "Privacy Policy — GemTok.html": "gizlilik-politikasi.html",
+        "Privacy Policy \u2014 GemTok.html": "gizlilik-politikasi.html",
+        "Change Server.html": "sunucu-degistir.html",
+        "Admin Panel.html": "admin.html",
+        "MENÜYE GERİ BASINCA.html": "menu.html",
+        "MEN\u00dcYE GER\u0130 BASINCA.html": "menu.html"
+      };
+
+      var path = window.location.pathname;
+      var decodedPath;
+      try {
+        decodedPath = decodeURIComponent(path);
+      } catch (error) {
+        decodedPath = path;
+      }
+
+      var normalizedPath = decodedPath.replace(/\/sıra\//g, "/sira/");
+      var fileName = normalizedPath.split("/").pop();
+      var replacement = pageMap[fileName];
+      var target = null;
+
+      if (replacement && normalizedPath.indexOf("/sira/") !== -1) {
+        target = normalizedPath.replace(/\/sira\/[^/]*$/, "/sira/" + replacement);
+      } else if (normalizedPath === "/sıra" || normalizedPath === "/sıra/") {
+        target = "/sira/";
+      } else if (normalizedPath === "/sira") {
+        target = "/sira/";
+      }
+
+      if (!target) {
+        target = "/sira/";
+      }
+
+      window.location.replace(target + window.location.search + window.location.hash);
+    }());
+  </script>
+</head>
+<body>
+  <p>GemTok yonlendiriliyor...</p>
+  <p><a href="/sira/">Devam et</a></p>
+</body>
+</html>
