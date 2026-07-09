@@ -1953,6 +1953,12 @@
     }
 
     function resolveGiftDiamondPerUnit(data) {
+      const gid = giftIdFromTikfinityData(data);
+      if (gid != null) {
+        const row = giftRowById(gid);
+        const cat = Math.floor(Number(row && row.diamond_count));
+        if (cat > 0) return cat;
+      }
       const direct = Math.floor(
         Number(
           data.diamondCount ??
@@ -1965,12 +1971,6 @@
         )
       );
       if (direct > 0) return direct;
-      const gid = giftIdFromTikfinityData(data);
-      if (gid != null) {
-        const row = giftRowById(gid);
-        const cat = Math.floor(Number(row && row.diamond_count));
-        if (cat > 0) return cat;
-      }
       return 1;
     }
 
