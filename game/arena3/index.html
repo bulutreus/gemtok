@@ -1843,19 +1843,7 @@
         return d.replace(/^sent\s+/i, "").trim();
       };
 
-      const rawGid =
-        data.giftId != null
-          ? data.giftId
-          : data.giftID != null
-            ? data.giftID
-            : data.gift_id != null
-              ? data.gift_id
-              : data.extendedGiftInfo && data.extendedGiftInfo.giftId != null
-                ? data.extendedGiftInfo.giftId
-                : data.giftDetails && data.giftDetails.giftId != null
-                  ? data.giftDetails.giftId
-                  : data.gift && (data.gift.gift_id != null ? data.gift.gift_id : data.gift.id);
-      const gid = rawGid != null && rawGid !== "" ? parseInt(String(rawGid), 10) : NaN;
+      const gid = parseTikTokGiftId(data);
       if (Number.isFinite(gid) && state.localGiftToTeam.has(gid)) {
         const mappedTeam = state.localGiftToTeam.get(gid);
         return activeTeamIds().includes(mappedTeam) ? mappedTeam : null;
@@ -1922,21 +1910,34 @@
       updateAll();
     }
 
+    function parseTikTokGiftId(data) {
+      const candidates = [
+        data.giftKey,
+        data.gift_key,
+        data.giftId,
+        data.giftID,
+        data.gift_id,
+        data.extendedGiftInfo?.giftKey,
+        data.extendedGiftInfo?.giftId,
+        data.extendedGiftInfo?.gift_id,
+        data.giftDetails?.giftKey,
+        data.giftDetails?.giftId,
+        data.giftDetails?.gift_id,
+        data.gift?.giftKey,
+        data.gift?.giftId,
+        data.gift?.gift_id,
+        data.gift?.id
+      ];
+      for (const raw of candidates) {
+        if (raw == null || raw === "") continue;
+        const gid = parseInt(String(raw), 10);
+        if (Number.isFinite(gid) && gid > 0) return gid;
+      }
+      return null;
+    }
+
     function giftIdFromTikfinityData(data) {
-      const rawGid =
-        data.giftId != null
-          ? data.giftId
-          : data.giftID != null
-            ? data.giftID
-            : data.gift_id != null
-              ? data.gift_id
-              : data.extendedGiftInfo && data.extendedGiftInfo.giftId != null
-                ? data.extendedGiftInfo.giftId
-                : data.giftDetails && data.giftDetails.giftId != null
-                  ? data.giftDetails.giftId
-                  : data.gift && (data.gift.gift_id != null ? data.gift.gift_id : data.gift.id);
-      const gid = rawGid != null && rawGid !== "" ? parseInt(String(rawGid), 10) : NaN;
-      return Number.isFinite(gid) && gid > 0 ? gid : null;
+      return parseTikTokGiftId(data);
     }
 
     /** TikTok streak (giftType 1): yalnizca repeatEnd=true tek olay; ara combo tiklari sayilmaz */
