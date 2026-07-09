@@ -1970,23 +1970,30 @@
     }
 
     function resolveGiftComboCount(data) {
-      const raw = Math.floor(
-        Number(
-          data.repeatCount ??
-            data.repeat_count ??
-            data.giftCombo ??
-            data.comboCount ??
-            data.groupCount ??
-            data.gift?.repeat_count ??
-            1
-        )
-      );
-      return Math.min(120, Math.max(1, Number.isFinite(raw) && raw > 0 ? raw : 1));
+      const candidates = [
+        data.repeatCount,
+        data.repeat_count,
+        data.giftCombo,
+        data.comboCount,
+        data.groupCount,
+        data.combo,
+        data.gift?.repeatCount,
+        data.gift?.repeat_count,
+        data.gift?.comboCount,
+        data.gift?.groupCount,
+        data.gift?.combo
+      ];
+      const raw = candidates.reduce((best, v) => {
+        const n = Math.floor(Number(v));
+        return Number.isFinite(n) && n > best ? n : best;
+      }, 1);
+      return Math.max(1, raw);
     }
 
     function computeTikfinityGiftPoints(data) {
       const diamondPerUnit = resolveGiftDiamondPerUnit(data);
-      return Math.max(1, diamondPerUnit);
+      const combo = resolveGiftComboCount(data);
+      return Math.max(1, diamondPerUnit * combo);
     }
 
     function giftEventValue(data, keys) {
