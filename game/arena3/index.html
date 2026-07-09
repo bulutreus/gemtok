@@ -1860,15 +1860,6 @@
         const mappedTeam = state.localGiftToTeam.get(gid);
         return activeTeamIds().includes(mappedTeam) ? mappedTeam : null;
       }
-      const idToSlotIndex = {
-        5655: 3,
-        5269: 0,
-        5827: 1,
-        6064: 2
-      };
-      if (Number.isFinite(gid) && idToSlotIndex[gid] !== undefined) {
-        return slotFromIndex(idToSlotIndex[gid]);
-      }
 
       const raw =
         pick(data.giftName) ||
@@ -1878,12 +1869,25 @@
         "";
 
       const n = raw.normalize("NFC").toLowerCase();
-      if (!n) return null;
-      for (const [giftId, mappedTeam] of state.localGiftToTeam.entries()) {
-        const row = giftRowById(giftId);
-        const rowName = String(row && row.name ? row.name : "").normalize("NFC").toLowerCase().trim();
-        if (rowName && rowName === n && activeTeamIds().includes(mappedTeam)) return mappedTeam;
+      if (n) {
+        for (const [giftId, mappedTeam] of state.localGiftToTeam.entries()) {
+          const row = giftRowById(giftId);
+          const rowName = String(row && row.name ? row.name : "").normalize("NFC").toLowerCase().trim();
+          if (rowName && rowName === n && activeTeamIds().includes(mappedTeam)) return mappedTeam;
+        }
       }
+      if (state.localGiftToTeam.size > 0) return null;
+
+      const idToSlotIndex = {
+        5655: 3,
+        5269: 0,
+        5827: 1,
+        6064: 2
+      };
+      if (Number.isFinite(gid) && idToSlotIndex[gid] !== undefined) {
+        return slotFromIndex(idToSlotIndex[gid]);
+      }
+      if (!n) return null;
       const spaced = n.replace(/\s+/g, " ").trim();
       const compact = spaced.replace(/ /g, "");
 
