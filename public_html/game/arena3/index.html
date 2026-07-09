@@ -852,7 +852,8 @@
         reconnectTimer: null,
         intentionalClose: false,
         bridgeUnsub: null,
-        portalHudTimer: null
+        portalHudTimer: null,
+        recentGiftEvents: new Map()
       }
     };
 
@@ -1989,6 +1990,54 @@
       return Math.min(60, Math.max(1, diamondPerUnit * combo));
     }
 
+    function giftEventValue(data, keys) {
+      for (const key of keys) {
+        const parts = key.split(".");
+        let cur = data;
+        for (const part of parts) {
+          cur = cur && typeof cur === "object" ? cur[part] : undefined;
+        }
+        if (cur != null && cur !== "") return String(cur);
+      }
+      return "";
+    }
+
+    function shouldSkipDuplicateGiftEvent(data, teamId, points) {
+      const now = performance.now();
+      const recent = state.tikfinity.recentGiftEvents;
+      recent.forEach((time, key) => {
+        if (now - time > 1400) recent.delete(key);
+      });
+
+      const eventId = giftEventValue(data, [
+        "eventId",
+        "event_id",
+        "msgId",
+        "messageId",
+        "id",
+        "data.eventId",
+        "data.msgId"
+      ]);
+      const user = giftEventValue(data, [
+        "userId",
+        "uniqueId",
+        "nickname",
+        "user.uniqueId",
+        "user.userId",
+        "user.nickname"
+      ]);
+      const gid = giftIdFromTikfinityData(data) || giftEventValue(data, ["giftName", "gift.giftName", "gift.name"]);
+      const combo = resolveGiftComboCount(data);
+      const key = eventId
+        ? `id:${eventId}`
+        : `sig:${teamId}|${gid}|${user}|${combo}|${points}`;
+
+      const last = recent.get(key);
+      if (last != null && now - last < 900) return true;
+      recent.set(key, now);
+      return false;
+    }
+
     function handleGemTokPortalGift(p) {
       if (!p || typeof p !== "object") return;
       if (String(p.type || "").toLowerCase() !== "gift") return;
@@ -2006,7 +2055,9 @@
       const giftTeam = teamIdFromGiftData(data);
       if (!giftTeam) return;
 
-      applyTikfinityPoints(giftTeam, computeTikfinityGiftPoints(data));
+      const points = computeTikfinityGiftPoints(data);
+      if (shouldSkipDuplicateGiftEvent(data, giftTeam, points)) return;
+      applyTikfinityPoints(giftTeam, points);
     }
 
     function handleTikfinityRawLine(line) {
@@ -3733,6 +3784,7 @@
         closeSettings();
         return;
       }
+      if (event.repeat) return;
       if (/^[0-9]$/.test(event.key)) {
         const idx = event.key === "0" ? 9 : parseInt(event.key, 10) - 1;
         if (idx >= 0 && idx < state.playerCount) {
