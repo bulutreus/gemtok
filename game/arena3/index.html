@@ -1986,8 +1986,7 @@
 
     function computeTikfinityGiftPoints(data) {
       const diamondPerUnit = resolveGiftDiamondPerUnit(data);
-      const combo = resolveGiftComboCount(data);
-      return Math.min(60, Math.max(1, diamondPerUnit * combo));
+      return Math.max(1, diamondPerUnit);
     }
 
     function giftEventValue(data, keys) {
