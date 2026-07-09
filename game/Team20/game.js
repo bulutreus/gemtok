@@ -444,7 +444,7 @@ function drawFlag(country, x, cy, w = LAYOUT.flagW, h = LAYOUT.flagH) {
 }
 
 const RUNNER_SPRITE_W = 200;
-const RUNNER_FIT_SCALE = 1.08;
+const RUNNER_TARGET_HEIGHT_RATIO = 0.94;
 const RUNNER_FOOT_Y_RATIO = 0.5 + LAYOUT.flagH / (2 * laneH);
 
 const CHARACTER_PACKAGES = [
@@ -453,7 +453,6 @@ const CHARACTER_PACKAGES = [
     name: 'Karakter 1',
     videos: [
       'character1/110d21b53a6d828ef3fe2b938eeeb7cb.webm',
-      'character1/2225c29a07227c1000b034050f0d6880 (1).webm',
       'character1/2225c29a07227c1000b034050f0d6880.webm',
       'character1/bbc58138bb1b33a777193500bd5b4c41.webm',
       'character1/fb31f98bfea4c6cd9c7ca220944d94ea.webm',
@@ -465,7 +464,6 @@ const CHARACTER_PACKAGES = [
     videos: [
       'character2/4380c32abddbdc7ff0f54fa199d7b3ef (1).webm',
       'character2/4380c32abddbdc7ff0f54fa199d7b3ef.webm',
-      'character2/f8689f28f1cfcc59e10fe6be388f485b (1).webm',
       'character2/f8689f28f1cfcc59e10fe6be388f485b.webm',
     ],
   },
@@ -473,8 +471,6 @@ const CHARACTER_PACKAGES = [
     id: 'character3',
     name: 'Karakter 3',
     videos: [
-      'character3/4380c32abddbdc7ff0f54fa199d7b3ef (2).webm',
-      'character3/66b38d592400327fb0b5d72f4928bdb5 (1).webm',
       'character3/66b38d592400327fb0b5d72f4928bdb5.webm',
       'character3/89fa2c8a54cb8c463a5e8a6d587dedda.webm',
       'character3/8b3e7007ca20e710e6448a7a9c376e8e.webm',
@@ -498,7 +494,6 @@ const CHARACTER_PACKAGES = [
       'character5/5ce0ace151821b42665ebf2ab9368111.webm',
       'character5/771e91da834ab57a74778f391995bdf5.webm',
       'character5/d1d7f56d835e377ebcdc790449adc0f4 (1).webm',
-      'character5/d1d7f56d835e377ebcdc790449adc0f4.webm',
       'character5/e756f30cf56e3583b914f74b7d7068cb.webm',
     ],
   },
@@ -508,7 +503,6 @@ const CHARACTER_PACKAGES = [
     videos: [
       'character6/6314434e849291966063d73c2a124851.webm',
       'character6/7b1db30e957fa57e8d62469b43f838cf (1).webm',
-      'character6/7b1db30e957fa57e8d62469b43f838cf.webm',
       'character6/ac216a11eae4845310e20b1abe8beddb.webm',
     ],
   },
@@ -525,7 +519,12 @@ const CHARACTER_PACKAGES = [
   {
     id: 'character9',
     name: 'Karakter 9',
-    videos: ['character9/7ab79c48cb9f5c2960465eb31f77cad0 (1).webm'],
+    videos: [
+      'character9/344a6fdb01e506d7b765b95aae8d833b.webm',
+      'character9/3475409b66aeea0def6daa5a561833d6.webm',
+      'character9/7ab79c48cb9f5c2960465eb31f77cad0 (1).webm',
+      'character9/9a86ec2933221d2706eee6a961a073d7.webm',
+    ],
   },
   {
     id: 'character10',
@@ -561,7 +560,7 @@ function toVideoSrc(path) {
   return `${path.slice(0, slash + 1)}${encodeURIComponent(path.slice(slash + 1))}`;
 }
 
-const VIDEO_FIT_STORAGE_KEY = 'team20-video-fits-v3';
+const VIDEO_FIT_STORAGE_KEY = 'team20-video-fits-v4';
 const videoFitCache = new Map();
 const videoFitPending = new Map();
 let runnerLayerSize = { w: 0, h: 0 };
@@ -578,6 +577,17 @@ function saveStoredVideoFit(path, fit) {
   const stored = loadStoredVideoFits();
   stored[path] = fit;
   localStorage.setItem(VIDEO_FIT_STORAGE_KEY, JSON.stringify(stored));
+}
+
+function getFallbackVideoBounds(vw, vh) {
+  const bw = Math.max(1, Math.round(vw * 0.52));
+  const bh = Math.max(1, Math.round(vh * 0.76));
+  return {
+    bx: Math.max(0, Math.round((vw - bw) / 2)),
+    by: Math.max(0, Math.round(vh * 0.12)),
+    bw,
+    bh,
+  };
 }
 
 function detectContentBounds(imageData, vw, vh) {
@@ -600,12 +610,14 @@ function detectContentBounds(imageData, vw, vh) {
   }
 
   if (maxX >= minX) {
-    return trimEmptyEdges(data, vw, vh, {
+    const alphaBounds = trimEmptyEdges(data, vw, vh, {
       bx: minX,
       by: minY,
       bw: maxX - minX + 1,
       bh: maxY - minY + 1,
     }, alphaMin);
+    const coversFrame = alphaBounds.bw >= vw * 0.92 && alphaBounds.bh >= vh * 0.92;
+    if (!coversFrame) return alphaBounds;
   }
 
   const sample = (sx, sy) => {
@@ -636,7 +648,7 @@ function detectContentBounds(imageData, vw, vh) {
     }
   }
 
-  if (maxX < minX) return { bx: 0, by: 0, bw: vw, bh: vh };
+  if (maxX < minX) return getFallbackVideoBounds(vw, vh);
   return trimEmptyEdges(data, vw, vh, {
     bx: minX,
     by: minY,
@@ -719,7 +731,7 @@ function captureVideoFrameBounds(video, vw, vh) {
   try {
     bounds = detectContentBounds(ctx.getImageData(0, 0, sw, sh), sw, sh);
   } catch {
-    return { bx: 0, by: 0, bw: vw, bh: vh };
+    return getFallbackVideoBounds(vw, vh);
   }
 
   if (sampleScale === 1) return bounds;
@@ -734,9 +746,21 @@ function captureVideoFrameBounds(video, vw, vh) {
 
 function seekVideo(video, time) {
   return new Promise((resolve) => {
-    const done = () => resolve();
+    let settled = false;
+    const done = () => {
+      if (settled) return;
+      settled = true;
+      video.removeEventListener('seeked', done);
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(done, 220);
     video.addEventListener('seeked', done, { once: true });
-    video.currentTime = time;
+    try {
+      video.currentTime = time;
+    } catch {
+      done();
+    }
   });
 }
 
@@ -759,7 +783,8 @@ function analyzeVideoFit(path) {
       const vh = video.videoHeight || 1;
       const duration = Number.isFinite(video.duration) ? video.duration : 0;
       const sampleTimes = duration > 0
-        ? [0.12, 0.28, 0.44, 0.6, 0.76].map((ratio) => Math.min(duration - 0.04, Math.max(0.04, duration * ratio)))
+        ? [0.05, 0.14, 0.23, 0.32, 0.41, 0.5, 0.59, 0.68, 0.77, 0.86, 0.95]
+          .map((ratio) => Math.min(duration - 0.04, Math.max(0.04, duration * ratio)))
         : [0.08];
 
       let merged = null;
@@ -768,7 +793,7 @@ function analyzeVideoFit(path) {
         merged = unionVideoBounds(merged, captureVideoFrameBounds(video, vw, vh));
       }
 
-      finish({ vw, vh, ...merged });
+      finish({ vw, vh, ...(merged || getFallbackVideoBounds(vw, vh)) });
     };
 
     video.src = toVideoSrc(path);
@@ -807,7 +832,8 @@ function applyVideoFitToElement(video, fit, slotW, slotH) {
   if (!video || !fit || slotW <= 0 || slotH <= 0) return;
 
   const { vw, vh, bx, by, bw, bh } = fit;
-  const scale = Math.min(slotW / bw, slotH / bh) * RUNNER_FIT_SCALE;
+  const targetHeight = slotH * RUNNER_TARGET_HEIGHT_RATIO;
+  const scale = Math.min(targetHeight / bh, slotW / bw);
   const footY = slotH * RUNNER_FOOT_Y_RATIO;
   const tx = -bx * scale;
   const ty = footY - (by + bh) * scale;
@@ -830,6 +856,13 @@ function refreshRunnerFit(video) {
   const fit = videoFitCache.get(path);
   if (!fit || runnerLayerSize.w <= 0 || runnerLayerSize.h <= 0) return;
   applyVideoFitToElement(video, fit, runnerLayerSize.w, runnerLayerSize.h);
+}
+
+function applyFallbackRunnerFit(video) {
+  const vw = video.videoWidth || video.naturalWidth || 1;
+  const vh = video.videoHeight || video.naturalHeight || 1;
+  if (runnerLayerSize.w <= 0 || runnerLayerSize.h <= 0) return;
+  applyVideoFitToElement(video, { vw, vh, ...getFallbackVideoBounds(vw, vh) }, runnerLayerSize.w, runnerLayerSize.h);
 }
 
 function refreshAllRunnerFits() {
@@ -902,14 +935,24 @@ function setRunnerVideo(video, src, force = false) {
   video.dataset.characterSrc = src;
   video.src = toVideoSrc(src);
   video.load();
+  video.play().catch(() => {});
+
+  const applyInitialFit = () => {
+    applyFallbackRunnerFit(video);
+    video.play().catch(() => {});
+  };
 
   const applyFit = async () => {
+    applyInitialFit();
     const fit = await getVideoFit(src);
     if (fit && runnerLayerSize.w > 0 && runnerLayerSize.h > 0) {
       applyVideoFitToElement(video, fit, runnerLayerSize.w, runnerLayerSize.h);
     }
     video.play().catch(() => {});
   };
+
+  if (video.readyState >= 1) applyInitialFit();
+  else video.addEventListener('loadedmetadata', applyInitialFit, { once: true });
 
   if (video.readyState >= 2) applyFit();
   else video.addEventListener('loadeddata', applyFit, { once: true });
@@ -1208,15 +1251,15 @@ function syncRunnerSprites() {
     const { slot, video } = runnerSlots[i];
     const laneTop = i * laneH;
     const runnerX = getGroupX(r) + LAYOUT.flagW + RACE.flagGap;
-    const visible = runnerX < finishX - 10;
+    const slotX = Math.min(runnerX, finishX - 8);
 
-    slot.style.left = `${(runnerX / W) * 100}%`;
+    slot.style.left = `${(slotX / W) * 100}%`;
     slot.style.top = `${(laneTop / H) * 100}%`;
     slot.style.width = `${slotWidthPct}%`;
     slot.style.height = `${laneHeightPct}%`;
-    slot.style.display = visible ? 'block' : 'none';
+    slot.style.display = 'block';
 
-    if (visible && sizeChanged) refreshRunnerFit(video);
+    if (sizeChanged) refreshRunnerFit(video);
   });
 }
 

@@ -562,6 +562,23 @@
         <div class="settings-mode-row" id="player-count-mode"></div>
       </div>
 
+      <div class="settings-mode-block">
+        <p class="settings-mode-label">Oyun hizi</p>
+        <div class="settings-field">
+          <input
+            type="range"
+            class="settings-input"
+            id="settings-speed-range"
+            min="0.35"
+            max="3"
+            step="0.05"
+            value="1"
+            aria-label="Oyun hizi"
+          />
+          <span class="settings-field-label" id="settings-speed-value">1.00x</span>
+        </div>
+      </div>
+
       <div id="settings-teams-root"></div>
 
       </div>
@@ -597,8 +614,8 @@
      */
     const ARENA3 = {
       arenaLayout: {
-        edgePad: 12,
-        clipInset: 20,
+        edgePad: 0,
+        clipInset: 2,
         matchStartFrac: 0.033,
         matchStartRMin: 10,
         ballMaxFrac: 0.52,
@@ -623,7 +640,7 @@
         maxSubSteps: 6,
         maxFrameDelta: 0.05,
         /** Toplar arasi minimum bosluk (px) */
-        minPlayerGap: 4,
+        minPlayerGap: 0,
         /** Konum ayristirma (MTV) tekrarlari */
         positionIterations: 10,
         /** Hiz itmesi tekrarlari (genelde 1 yeterli; cift uygulama enerji biriktirir) */
@@ -632,29 +649,25 @@
         positionalCorrection: 0.92,
         positionalSlop: 0.15,
         /** Esnek carpisma (0 = tamamen inelastik, 1 = tamamen elastik) */
-        collisionRestitution: 0.38,
-        /** 3+ oyuncu kumesi: dusuk geri sekme (enerji birikimini keser) */
-        collisionRestitutionCluster: 0.24,
-        /** Yalnizca normal impulse; teget/tork kapali (orbiting onleme) */
-        collisionFriction: 0,
-        wallRestitution: 0.46,
+        collisionRestitution: 0.82,
+        /** Arena5gen ile ayni teget sonum */
+        tangentDampPair: 0.16,
+        wallRestitution: 0.86,
         wallFriction: 0,
-        wallSkinPx: 0.6,
+        wallSkinPx: 0,
         /** Bu hizin altinda normal/itme atlanir (titreme onleme) */
         velocitySlop: 0.35,
         massExponent: 2,
-        speedRefRFrac: 0.18,
-        maxSpeedBase: 260,
+        maxSpeedBase: 720,
         maxSpeedMassDivisor: 5200,
-        /** Saniyede lineer hiz sonum (tum oyuncu sayilari) */
-        linearDamping: 1.1,
-        clusterLinearDamping: 1.25,
-        /** 3-10 oyuncuda hareketi canli tutan minimum dolasim hizi */
-        minCruiseSpeed: 92,
-        cruiseAccel: 24,
-        clusterCruiseScale: 0.88,
+        minSpeedBase: 92,
+        minSpeedRadiusFactor: 0.62,
+        minSpeedThreeScale: 0.88,
+        contactBounceSpeed: 320,
+        wallBounceSpeed: 320,
+        wallTangentDamp: 1,
         /** Yavas temaslarda bile oyuncular birbirinden ayrilsin */
-        collisionSeparationKick: 34,
+        collisionSeparationKick: 0,
         collisionEffectCooldownFrames: 10,
         /** Cok dusuk hizda hafif sonum (sert sifirlama yok) */
         velocitySleepThreshold: 3,
@@ -667,8 +680,8 @@
         multiContactVelDamp: 0.9,
         singleContactClusterDamp: 0.97,
         /** Impulse / ivme tavanlari (geri besleme dongusu onleme) */
-        maxImpulseNormal: 220,
-        maxDeltaVPerSubstep: 90,
+        maxImpulseNormal: 100000,
+        maxDeltaVPerSubstep: 900,
         /** Uzun sure cakisma sayaci esigi -> cift normali boyunca radyal ayirma */
         deadlockContactFrames: 18,
         deadlockNudgeSpeed: 22,
@@ -676,8 +689,11 @@
         stuckEscapeFrames: 14,
         stuckEscapeNudgeSpeed: 18,
         stuckEscapeSamples: 10,
-        heavyPackRadius: 82,
-        clusterSpeedScale: 0.78,
+        heavyPackRadius: 86,
+        wallPassesHeavy: 12,
+        wallPassesNormal: 9,
+        colPassesHeavy: 2,
+        colPassesNormal: 1,
         /** Broadphase: bu kadar px disinda carpisma hesabi atlanir */
         pairBroadphaseSlop: 14,
         nanSpeedCap: 480
@@ -709,16 +725,17 @@
       return rr + Math.max(24, Math.min(110, 0.48 * rr + 20 + digitPad));
     }
 
-    /** Fizik ve duvar: rozet + skor alani dis sinir */
+    /** Oyuncu-oyuncu carpismasi: gorunen profil dairesi */
     function physicsBadgeRadius(r, teamId) {
-      return badgeOuterRadiusPx(r, teamId);
+      return Math.max(4, r);
     }
 
     /** Profil + skor cizimini arena icinde kirp (neon + hafif ic pay) */
     const ARENA_CLIP_INSET = AL.clipInset;
     /** Top-top carpismada parcacik, shockwave ve kamera titremesi (false = kapali) */
-    const COLLISION_EFFECTS_ON = true;
+    const COLLISION_EFFECTS_ON = false;
     const PLAYER_COUNT_KEY = "arena_player_count_v1";
+    const SPEED_STORAGE_KEY = "arena3_speed_multiplier_v1";
     const PHOTO_STORAGE_KEY = "arena_slots_teamPhotos_v1";
     const PHOTO_LEGACY_KEY = "arena5gen_teamPhotos_v1";
     const LOCAL_GIFT_ASSIGN_STORAGE_KEY = "arena3_gift_assign_map_v1";
@@ -781,6 +798,8 @@
     const playerCountModeEl = document.getElementById("player-count-mode");
     const settingsGiftSearch = document.getElementById("settings-gift-search");
     const settingsGiftStatus = document.getElementById("settings-gift-status");
+    const settingsSpeedRange = document.getElementById("settings-speed-range");
+    const settingsSpeedValue = document.getElementById("settings-speed-value");
 
     const WS_STORAGE_KEY = "arena_tikfinity_ws_url";
     const DEFAULT_WS_URL = "ws://127.0.0.1:21213";
@@ -1220,6 +1239,38 @@
       try {
         localStorage.setItem(PLAYER_COUNT_KEY, String(state.playerCount));
       } catch (_e) {}
+    }
+
+    function normalizeSpeedMultiplier(v) {
+      const n = Number(v);
+      if (!Number.isFinite(n)) return 1;
+      return Math.max(0.35, Math.min(3, n));
+    }
+
+    function syncSpeedSettingsUi() {
+      const v = normalizeSpeedMultiplier(state.speedMultiplier);
+      if (settingsSpeedRange) settingsSpeedRange.value = String(v);
+      if (settingsSpeedValue) settingsSpeedValue.textContent = `${v.toFixed(2)}x`;
+    }
+
+    function saveSpeedToStorage() {
+      try {
+        localStorage.setItem(SPEED_STORAGE_KEY, String(normalizeSpeedMultiplier(state.speedMultiplier)));
+      } catch (_e) {}
+    }
+
+    function loadSpeedFromStorage() {
+      try {
+        const raw = localStorage.getItem(SPEED_STORAGE_KEY);
+        if (raw != null) state.speedMultiplier = normalizeSpeedMultiplier(raw);
+      } catch (_e) {}
+      syncSpeedSettingsUi();
+    }
+
+    function setSpeedMultiplier(v, opts = {}) {
+      state.speedMultiplier = normalizeSpeedMultiplier(v);
+      syncSpeedSettingsUi();
+      if (!opts.skipSave) saveSpeedToStorage();
     }
 
     function ensureAllBallSlots() {
@@ -2232,7 +2283,7 @@
 
     function ballMaxAllowedDist(arena, r, teamId) {
       const P = ARENA3.physics;
-      const edge = badgeOuterRadiusPx(r, teamId);
+      const edge = ballCollisionRadius(r, teamId);
       return Math.max(4, arena.radius - edge - AL.edgePad - (P.wallSkinPx || 0));
     }
 
@@ -2484,22 +2535,11 @@
 
       const ballA = entryA.ball;
       const ballB = entryB.ball;
-      const { nx, ny, mA, mB } = info;
-      const invA = 1 / mA;
-      const invB = 1 / mB;
-      const invSum = invA + invB;
+      const { nx, ny } = info;
 
       const relN = (ballB.vx - ballA.vx) * nx + (ballB.vy - ballA.vy) * ny;
-      if (relN >= -P.velocitySlop) {
-        if (info.penetration > P.positionalSlop) {
-          const kick = (P.collisionSeparationKick || 0) * Math.min(1, info.penetration / 18);
-          ballA.vx -= kick * invA * nx;
-          ballA.vy -= kick * invA * ny;
-          ballB.vx += kick * invB * nx;
-          ballB.vy += kick * invB * ny;
-        }
-        return false;
-      }
+      const speedA = Math.hypot(ballA.vx, ballA.vy) || P.contactBounceSpeed || 1;
+      const speedB = Math.hypot(ballB.vx, ballB.vy) || P.contactBounceSpeed || 1;
 
       const impact = Math.min(1, Math.abs(relN) / 620);
       const RA = ballCollisionRadius(entryA.radius, entryA.id);
@@ -2516,15 +2556,10 @@
         state.cameraShake = Math.min(1, state.cameraShake + 0.18 + impact * 0.28);
       }
 
-      const restitution = nt >= 3 ? P.collisionRestitutionCluster : P.collisionRestitution;
-      let j = -(1 + restitution) * relN / invSum;
-      const jCap = Math.max(40, P.maxImpulseNormal || 220);
-      j = Math.max(-jCap, Math.min(jCap, j));
-
-      ballA.vx -= j * invA * nx;
-      ballA.vy -= j * invA * ny;
-      ballB.vx += j * invB * nx;
-      ballB.vy += j * invB * ny;
+      ballA.vx = -nx * speedA;
+      ballA.vy = -ny * speedA;
+      ballB.vx = nx * speedB;
+      ballB.vy = ny * speedB;
       return true;
     }
 
@@ -2563,11 +2598,20 @@
       if (dist < maxD - P.positionalSlop) return false;
       const nx = dx / dist;
       const ny = dy / dist;
+      const tx = -ny;
+      const ty = nx;
       const vn = ball.vx * nx + ball.vy * ny;
-      if (vn <= P.velocitySlop) return false;
+      const minInward = Math.max(0, P.wallBounceSpeed || 0);
+      const targetVn = -Math.max(minInward, Math.abs(vn) * P.wallRestitution);
+      if (vn > targetVn) {
+        ball.vx += (targetVn - vn) * nx;
+        ball.vy += (targetVn - vn) * ny;
+      }
 
-      ball.vx -= (1 + P.wallRestitution) * vn * nx;
-      ball.vy -= (1 + P.wallRestitution) * vn * ny;
+      const vt = ball.vx * tx + ball.vy * ty;
+      const tangentDamp = Math.min(1, Math.max(0, P.wallTangentDamp || 0));
+      ball.vx -= vt * tangentDamp * tx;
+      ball.vy -= vt * tangentDamp * ty;
       return true;
     }
 
@@ -2602,7 +2646,7 @@
 
     function applyLinearDamping(balls, subDt, nt) {
       const P = ARENA3.physics;
-      const dampRate = nt >= 3 ? P.clusterLinearDamping : P.linearDamping;
+      const dampRate = 0;
       if (dampRate <= 0) return;
       const damp = Math.exp(-dampRate * subDt);
       balls.forEach(({ ball }) => {
@@ -2613,12 +2657,36 @@
 
     function clampBallSpeeds(balls, radii, nt, maxRPhys) {
       const P = ARENA3.physics;
-      const packScale = nt >= 3 ? P.clusterSpeedScale : 1;
-      const maxSpeedGlobal =
-        Math.min(P.maxSpeedBase * packScale, 920 / (1 + maxRPhys * 0.02)) * packScale;
+      let minSpeed = Math.max(
+        P.minSpeedBase,
+        Math.min(210, 312 - maxRPhys * P.minSpeedRadiusFactor)
+      );
+      if (nt >= 3) minSpeed *= P.minSpeedThreeScale;
+      const maxSpeedGlobal = Math.max(
+        minSpeed + 45,
+        Math.min(P.maxSpeedBase, 1580 / (1 + maxRPhys * 0.011))
+      );
       balls.forEach(({ ball, radius, id }) => {
         const mass = physMassFromDisplayR(radius || 36);
         const maxSp = maxSpeedGlobal / (1 + mass / P.maxSpeedMassDivisor);
+        let speed = Math.hypot(ball.vx, ball.vy);
+        if (speed < minSpeed) {
+          if (speed < 1e-3) {
+            const v = randomVelocity(minSpeed);
+            ball.vx = v.vx;
+            ball.vy = v.vy;
+          } else {
+            const factor = minSpeed / speed;
+            ball.vx *= factor;
+            ball.vy *= factor;
+          }
+          speed = minSpeed;
+        }
+        if (speed > maxSp) {
+          const f = maxSp / speed;
+          ball.vx *= f;
+          ball.vy *= f;
+        }
         sanitizeBallState(ball, maxSp);
       });
     }
@@ -2847,13 +2915,6 @@
       const gctx = arenaGradientLayer.getContext("2d");
       gctx.fillStyle = "#000000";
       gctx.fillRect(0, 0, canvas.width, canvas.height);
-      gctx.save();
-      gctx.beginPath();
-      gctx.arc(cx, cy, radius * 0.992, 0, Math.PI * 2);
-      gctx.clip();
-      gctx.fillStyle = "#000000";
-      gctx.fillRect(0, 0, canvas.width, canvas.height);
-      gctx.restore();
       return arenaGradientLayer;
     }
 
@@ -2897,56 +2958,13 @@
       ctx.restore();
     }
 
-    function drawLeaderCrown(cx, cy, r) {
-      const cr = r * 0.42;
-      const y0 = cy - r - cr * 0.35;
-      ctx.save();
-      ctx.strokeStyle = "rgba(255, 220, 120, 0.95)";
-      ctx.fillStyle = "rgba(255, 210, 60, 0.88)";
-      ctx.lineWidth = 2;
-      ctx.lineJoin = "round";
-      ctx.beginPath();
-      ctx.moveTo(cx - cr * 1.1, y0 + cr * 0.55);
-      ctx.lineTo(cx - cr * 0.55, y0 - cr * 0.15);
-      ctx.lineTo(cx - cr * 0.2, y0 + cr * 0.25);
-      ctx.lineTo(cx, y0 - cr * 0.55);
-      ctx.lineTo(cx + cr * 0.2, y0 + cr * 0.25);
-      ctx.lineTo(cx + cr * 0.55, y0 - cr * 0.15);
-      ctx.lineTo(cx + cr * 1.1, y0 + cr * 0.55);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    }
-
     function drawTeamBadge(id, x, y, r, isLeader) {
       const vis = teamVisualForId(id);
       const score = Math.round(state.displayScores[id] ?? state.scores[id]);
-      const pulse = isLeader ? 1 + 0.038 * Math.sin(performance.now() * 0.0036) : 1;
+      const pulse = 1;
       const rp = r * pulse;
       const clipR = Math.max(8, rp - 1.5);
       const boundR = Math.max(badgeOuterRadiusPx(rp, id), clipR + 4);
-
-      if (isLeader) {
-        ctx.save();
-        const g = ctx.createRadialGradient(x, y, rp * 0.15, x, y, boundR * 1.02);
-        g.addColorStop(0, "rgba(255, 230, 140, 0.2)");
-        g.addColorStop(0.55, "rgba(255, 200, 60, 0.1)");
-        g.addColorStop(1, "rgba(255, 180, 40, 0)");
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.arc(x, y, boundR * 1.02, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255, 215, 90, 0.92)";
-        ctx.lineWidth = 3;
-        ctx.shadowColor = "rgba(255, 200, 80, 0.72)";
-        ctx.shadowBlur = 16;
-        ctx.beginPath();
-        ctx.arc(x, y, clipR + 2.2, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.restore();
-      }
 
       ctx.save();
       ctx.beginPath();
@@ -3000,9 +3018,9 @@
       ctx.lineWidth = Math.max(2.5, fontN * 0.14);
       ctx.strokeStyle = "rgba(0,0,0,0.92)";
       ctx.strokeText(String(score), x, scoreY);
-      ctx.fillStyle = isLeader ? "#fff6a8" : "#ffea00";
-      ctx.shadowColor = isLeader ? "rgba(255, 220, 80, 0.65)" : "rgba(255, 235, 0, 0.5)";
-      ctx.shadowBlur = isLeader ? 6 : 3;
+      ctx.fillStyle = "#ffea00";
+      ctx.shadowColor = "rgba(255, 235, 0, 0.5)";
+      ctx.shadowBlur = 3;
       ctx.fillText(String(score), x, scoreY);
       ctx.shadowBlur = 0;
       ctx.font = `600 ${fontL}px ${CANVAS_SCORE_FONT}`;
@@ -3018,7 +3036,6 @@
 
       ctx.restore();
 
-      if (isLeader) drawLeaderCrown(x, y, rp);
     }
 
     function drawGiftScreenFlashOverlay() {
@@ -3362,27 +3379,6 @@
       return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
     }
 
-    function applyCruiseMotion(balls, arena, dtSec, nt) {
-      const P = ARENA3.physics;
-      const minSpeed =
-        (P.minCruiseSpeed || 0) * (nt >= 3 ? P.clusterCruiseScale || 1 : 1);
-      if (minSpeed <= 0) return;
-      const accel = Math.max(1, P.cruiseAccel || 24);
-      balls.forEach((entry) => {
-        const ball = entry.ball;
-        const sp = Math.hypot(ball.vx, ball.vy);
-        if (sp >= minSpeed) return;
-        const idx = slotIndexFromId(entry.id);
-        const radial = Math.atan2(ball.y - arena.cy, ball.x - arena.cx);
-        const swirl = radial + Math.PI / 2 + (idx % 2 ? -0.38 : 0.38);
-        const drift = performance.now() * 0.00028 + idx * 1.137;
-        const target = swirl + Math.sin(drift) * 0.55;
-        const add = Math.min(minSpeed - sp, accel * dtSec);
-        ball.vx += Math.cos(target) * add;
-        ball.vy += Math.sin(target) * add;
-      });
-    }
-
     function stepPhysics(dtSec, arena, ballLayout) {
       const { radii } = ballLayout;
       const scaledDt = dtSec * state.speedMultiplier;
@@ -3411,13 +3407,11 @@
       while (state.physicsAccumulator >= fixed && subSteps < maxSteps) {
         state.physicsAccumulator -= fixed;
         subSteps += 1;
-        applyCruiseMotion(balls, arena, fixed, nt);
         physicsSubstep(fixed, arena, balls, gap, nt, maxRPhys, true);
       }
 
       if (subSteps === 0 && scaledDt > 1e-6) {
         const subDt = Math.min(scaledDt, fixed);
-        applyCruiseMotion(balls, arena, subDt, nt);
         physicsSubstep(subDt, arena, balls, gap, nt, maxRPhys, true);
       }
 
@@ -3427,10 +3421,6 @@
         }
       });
 
-      updatePairOverlapDeadlock(balls, gap);
-      updateStuckBallEscape(balls, arena, gap, nt);
-      runPositionSolver(balls, arena, gap, 4);
-      stabilizeContactVelocities(balls, gap, nt);
       clampBallSpeeds(balls, radii, nt, maxRPhys);
 
       updateCollisionEffects(scaledDt);
@@ -3714,6 +3704,10 @@
       if (giftComboPopoverTeamId != null) rebuildGiftComboPopover();
     });
 
+    settingsSpeedRange?.addEventListener("input", () => {
+      setSpeedMultiplier(settingsSpeedRange.value);
+    });
+
     document.addEventListener("pointerdown", (ev) => {
       if (!giftComboPopover || giftComboPopover.hidden) return;
       const t = ev.target;
@@ -3741,9 +3735,9 @@
         return;
       }
       if (event.key === "ArrowUp") {
-        state.speedMultiplier = Math.min(3, state.speedMultiplier + 0.15);
+        setSpeedMultiplier(state.speedMultiplier + 0.15);
       } else if (event.key === "ArrowDown") {
-        state.speedMultiplier = Math.max(0.35, state.speedMultiplier - 0.15);
+        setSpeedMultiplier(state.speedMultiplier - 0.15);
       }
     }
 
@@ -3790,6 +3784,7 @@
 
     (async function boot() {
       loadPlayerCountFromStorage();
+      loadSpeedFromStorage();
       loadLocalGiftAssignmentsToState();
       sanitizeLocalGiftAssignments();
       loadPhotosFromStorage();
