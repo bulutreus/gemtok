@@ -648,7 +648,14 @@
         maxSpeedMassDivisor: 5200,
         /** Saniyede lineer hiz sonum (tum oyuncu sayilari) */
         linearDamping: 1.1,
-        clusterLinearDamping: 1.8,
+        clusterLinearDamping: 1.25,
+        /** 3-10 oyuncuda hareketi canli tutan minimum dolasim hizi */
+        minCruiseSpeed: 92,
+        cruiseAccel: 24,
+        clusterCruiseScale: 0.88,
+        /** Yavas temaslarda bile oyuncular birbirinden ayrilsin */
+        collisionSeparationKick: 34,
+        collisionEffectCooldownFrames: 10,
         /** Cok dusuk hizda hafif sonum (sert sifirlama yok) */
         velocitySleepThreshold: 3,
         velocitySleepDamp: 0.94,
@@ -710,7 +717,7 @@
     /** Profil + skor cizimini arena icinde kirp (neon + hafif ic pay) */
     const ARENA_CLIP_INSET = AL.clipInset;
     /** Top-top carpismada parcacik, shockwave ve kamera titremesi (false = kapali) */
-    const COLLISION_EFFECTS_ON = false;
+    const COLLISION_EFFECTS_ON = true;
     const PLAYER_COUNT_KEY = "arena_player_count_v1";
     const PHOTO_STORAGE_KEY = "arena_slots_teamPhotos_v1";
     const PHOTO_LEGACY_KEY = "arena5gen_teamPhotos_v1";
@@ -805,6 +812,7 @@
       physFrameIdx: 0,
       physicsAccumulator: 0,
       pairOverlapTick: Object.create(null),
+      collisionEffectTick: Object.create(null),
       ballStuckTick: Object.create(null),
       musicPlaybackTime: Object.create(null),
       leaderMusicPlayingId: null,
@@ -2252,6 +2260,7 @@
         ny,
         minSep,
         dist,
+        penetration: minSep - dist,
         mA: physMassFromDisplayR(entryA.radius),
         mB: physMassFromDisplayR(entryB.radius)
       };
@@ -2481,16 +2490,30 @@
       const invSum = invA + invB;
 
       const relN = (ballB.vx - ballA.vx) * nx + (ballB.vy - ballA.vy) * ny;
-      if (relN >= -P.velocitySlop) return false;
+      if (relN >= -P.velocitySlop) {
+        if (info.penetration > P.positionalSlop) {
+          const kick = (P.collisionSeparationKick || 0) * Math.min(1, info.penetration / 18);
+          ballA.vx -= kick * invA * nx;
+          ballA.vy -= kick * invA * ny;
+          ballB.vx += kick * invB * nx;
+          ballB.vy += kick * invB * ny;
+        }
+        return false;
+      }
 
       const impact = Math.min(1, Math.abs(relN) / 620);
       const RA = ballCollisionRadius(entryA.radius, entryA.id);
       const contactX = ballA.x + nx * RA;
       const contactY = ballA.y + ny * RA;
-      if (playEffects && COLLISION_EFFECTS_ON) {
+      const effectKey = physicsPairKey(entryA.id, entryB.id);
+      const lastFx = state.collisionEffectTick[effectKey] || -Infinity;
+      const canFx =
+        state.physFrameIdx - lastFx >= Math.max(1, P.collisionEffectCooldownFrames || 10);
+      if (playEffects && COLLISION_EFFECTS_ON && canFx) {
+        state.collisionEffectTick[effectKey] = state.physFrameIdx;
         spawnCollisionEffect(contactX, contactY, impact);
         spawnShockwave(contactX, contactY, impact);
-        state.cameraShake = Math.min(1, state.cameraShake + 0.35 + impact * 0.4);
+        state.cameraShake = Math.min(1, state.cameraShake + 0.18 + impact * 0.28);
       }
 
       const restitution = nt >= 3 ? P.collisionRestitutionCluster : P.collisionRestitution;
@@ -3339,6 +3362,27 @@
       return { vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed };
     }
 
+    function applyCruiseMotion(balls, arena, dtSec, nt) {
+      const P = ARENA3.physics;
+      const minSpeed =
+        (P.minCruiseSpeed || 0) * (nt >= 3 ? P.clusterCruiseScale || 1 : 1);
+      if (minSpeed <= 0) return;
+      const accel = Math.max(1, P.cruiseAccel || 24);
+      balls.forEach((entry) => {
+        const ball = entry.ball;
+        const sp = Math.hypot(ball.vx, ball.vy);
+        if (sp >= minSpeed) return;
+        const idx = slotIndexFromId(entry.id);
+        const radial = Math.atan2(ball.y - arena.cy, ball.x - arena.cx);
+        const swirl = radial + Math.PI / 2 + (idx % 2 ? -0.38 : 0.38);
+        const drift = performance.now() * 0.00028 + idx * 1.137;
+        const target = swirl + Math.sin(drift) * 0.55;
+        const add = Math.min(minSpeed - sp, accel * dtSec);
+        ball.vx += Math.cos(target) * add;
+        ball.vy += Math.sin(target) * add;
+      });
+    }
+
     function stepPhysics(dtSec, arena, ballLayout) {
       const { radii } = ballLayout;
       const scaledDt = dtSec * state.speedMultiplier;
@@ -3367,11 +3411,14 @@
       while (state.physicsAccumulator >= fixed && subSteps < maxSteps) {
         state.physicsAccumulator -= fixed;
         subSteps += 1;
-        physicsSubstep(fixed, arena, balls, gap, nt, maxRPhys, false);
+        applyCruiseMotion(balls, arena, fixed, nt);
+        physicsSubstep(fixed, arena, balls, gap, nt, maxRPhys, true);
       }
 
       if (subSteps === 0 && scaledDt > 1e-6) {
-        physicsSubstep(Math.min(scaledDt, fixed), arena, balls, gap, nt, maxRPhys, false);
+        const subDt = Math.min(scaledDt, fixed);
+        applyCruiseMotion(balls, arena, subDt, nt);
+        physicsSubstep(subDt, arena, balls, gap, nt, maxRPhys, true);
       }
 
       balls.forEach(({ ball }) => {
