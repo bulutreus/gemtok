@@ -1851,10 +1851,10 @@
       }
 
       const raw =
-        pick(data.giftName) ||
-        pick(data.giftDetails && data.giftDetails.giftName) ||
-        pick(data.gift && (data.gift.name || data.gift.giftName || data.gift.gift_name)) ||
-        pickSentDescribe(data.extendedGiftInfo) ||
+        pick(giftEventValue(data, ["giftName", "data.giftName"])) ||
+        pick(giftEventValue(data, ["giftDetails.giftName", "data.giftDetails.giftName"])) ||
+        pick(giftEventValue(data, ["gift.name", "gift.giftName", "gift.gift_name", "data.gift.name", "data.gift.giftName"])) ||
+        pickSentDescribe(data.extendedGiftInfo || (data.data && data.data.extendedGiftInfo)) ||
         "";
 
       const n = raw.normalize("NFC").toLowerCase();
@@ -1913,23 +1913,40 @@
 
     function parseTikTokGiftId(data) {
       const candidates = [
-        data.giftKey,
-        data.gift_key,
-        data.giftId,
-        data.giftID,
-        data.gift_id,
-        data.extendedGiftInfo?.giftKey,
-        data.extendedGiftInfo?.giftId,
-        data.extendedGiftInfo?.gift_id,
-        data.giftDetails?.giftKey,
-        data.giftDetails?.giftId,
-        data.giftDetails?.gift_id,
-        data.gift?.giftKey,
-        data.gift?.giftId,
-        data.gift?.gift_id,
-        data.gift?.id
+        "giftKey",
+        "gift_key",
+        "giftId",
+        "giftID",
+        "gift_id",
+        "id",
+        "extendedGiftInfo.giftKey",
+        "extendedGiftInfo.giftId",
+        "extendedGiftInfo.gift_id",
+        "giftDetails.giftKey",
+        "giftDetails.giftId",
+        "giftDetails.gift_id",
+        "gift.giftKey",
+        "gift.giftId",
+        "gift.gift_id",
+        "gift.id",
+        "data.giftKey",
+        "data.gift_key",
+        "data.giftId",
+        "data.giftID",
+        "data.gift_id",
+        "data.extendedGiftInfo.giftKey",
+        "data.extendedGiftInfo.giftId",
+        "data.extendedGiftInfo.gift_id",
+        "data.giftDetails.giftKey",
+        "data.giftDetails.giftId",
+        "data.giftDetails.gift_id",
+        "data.gift.giftKey",
+        "data.gift.giftId",
+        "data.gift.gift_id",
+        "data.gift.id"
       ];
-      for (const raw of candidates) {
+      for (const key of candidates) {
+        const raw = giftEventRawValue(data, [key]);
         if (raw == null || raw === "") continue;
         const gid = parseInt(String(raw), 10);
         if (Number.isFinite(gid) && gid > 0) return gid;
@@ -1944,13 +1961,33 @@
     /** TikTok streak (giftType 1): yalnizca repeatEnd=true tek olay; ara combo tiklari sayilmaz */
     function isTikfinityGiftEventInProgress(data) {
       const giftType = Number(
-        data.giftType ?? data.gift_type ?? data.gift?.gift_type ?? data.gift?.giftType ?? 0
+        giftEventRawValue(data, [
+          "giftType",
+          "gift_type",
+          "gift.gift_type",
+          "gift.giftType",
+          "data.giftType",
+          "data.gift_type",
+          "data.gift.gift_type",
+          "data.gift.giftType"
+        ]) ?? 0
       );
-      const repeatEnd = data.repeatEnd ?? data.repeat_end;
+      const repeatEnd = giftEventRawValue(data, [
+        "repeatEnd",
+        "repeat_end",
+        "gift.repeatEnd",
+        "gift.repeat_end",
+        "data.repeatEnd",
+        "data.repeat_end",
+        "data.gift.repeatEnd",
+        "data.gift.repeat_end"
+      ]);
+      const ended = repeatEnd === true || repeatEnd === 1 || repeatEnd === "1" || String(repeatEnd).toLowerCase() === "true";
+      const inProgress = repeatEnd === false || repeatEnd === 0 || repeatEnd === "0" || String(repeatEnd).toLowerCase() === "false";
       if (giftType === 1) {
-        return !(repeatEnd === true || repeatEnd === 1 || repeatEnd === "1");
+        return repeatEnd == null ? false : !ended;
       }
-      return repeatEnd === false || repeatEnd === 0 || repeatEnd === "0";
+      return inProgress;
     }
 
     function resolveGiftDiamondPerUnit(data) {
@@ -1962,13 +1999,24 @@
       }
       const direct = Math.floor(
         Number(
-          data.diamondCount ??
-            data.diamond_count ??
-            data.gift?.diamond_count ??
-            data.gift?.diamondCount ??
-            data.extendedGiftInfo?.diamondCount ??
-            data.giftDetails?.diamondCount ??
-            0
+          giftEventRawValue(data, [
+            "diamondCount",
+            "diamond_count",
+            "gift.diamond_count",
+            "gift.diamondCount",
+            "extendedGiftInfo.diamondCount",
+            "extendedGiftInfo.diamond_count",
+            "giftDetails.diamondCount",
+            "giftDetails.diamond_count",
+            "data.diamondCount",
+            "data.diamond_count",
+            "data.gift.diamond_count",
+            "data.gift.diamondCount",
+            "data.extendedGiftInfo.diamondCount",
+            "data.extendedGiftInfo.diamond_count",
+            "data.giftDetails.diamondCount",
+            "data.giftDetails.diamond_count"
+          ]) ?? 0
         )
       );
       if (direct > 0) return direct;
@@ -1977,19 +2025,40 @@
 
     function resolveGiftComboCount(data) {
       const candidates = [
-        data.repeatCount,
-        data.repeat_count,
-        data.giftCombo,
-        data.comboCount,
-        data.groupCount,
-        data.combo,
-        data.gift?.repeatCount,
-        data.gift?.repeat_count,
-        data.gift?.comboCount,
-        data.gift?.groupCount,
-        data.gift?.combo
+        "repeatCount",
+        "repeat_count",
+        "giftCombo",
+        "comboCount",
+        "groupCount",
+        "combo",
+        "gift.repeatCount",
+        "gift.repeat_count",
+        "gift.giftCombo",
+        "gift.comboCount",
+        "gift.groupCount",
+        "gift.combo",
+        "giftDetails.repeatCount",
+        "giftDetails.repeat_count",
+        "giftDetails.comboCount",
+        "giftDetails.groupCount",
+        "extendedGiftInfo.repeatCount",
+        "extendedGiftInfo.repeat_count",
+        "extendedGiftInfo.comboCount",
+        "data.repeatCount",
+        "data.repeat_count",
+        "data.giftCombo",
+        "data.comboCount",
+        "data.groupCount",
+        "data.combo",
+        "data.gift.repeatCount",
+        "data.gift.repeat_count",
+        "data.gift.giftCombo",
+        "data.gift.comboCount",
+        "data.gift.groupCount",
+        "data.gift.combo"
       ];
-      const raw = candidates.reduce((best, v) => {
+      const raw = candidates.reduce((best, key) => {
+        const v = giftEventRawValue(data, [key]);
         const n = Math.floor(Number(v));
         return Number.isFinite(n) && n > best ? n : best;
       }, 1);
@@ -2011,7 +2080,9 @@
         "user.userId",
         "user.nickname"
       ]);
-      const gid = giftIdFromTikfinityData(data) || giftEventValue(data, ["giftName", "gift.giftName", "gift.name"]);
+      const gid =
+        giftIdFromTikfinityData(data) ||
+        giftEventValue(data, ["giftName", "gift.giftName", "gift.name", "data.giftName", "data.gift.giftName", "data.gift.name"]);
       return `${teamId}|${gid || "gift"}|${user || "anon"}`;
     }
 
@@ -2063,15 +2134,20 @@
     }
 
     function giftEventValue(data, keys) {
+      const value = giftEventRawValue(data, keys);
+      return value != null && value !== "" ? String(value) : "";
+    }
+
+    function giftEventRawValue(data, keys) {
       for (const key of keys) {
         const parts = key.split(".");
         let cur = data;
         for (const part of parts) {
           cur = cur && typeof cur === "object" ? cur[part] : undefined;
         }
-        if (cur != null && cur !== "") return String(cur);
+        if (cur != null && cur !== "") return cur;
       }
-      return "";
+      return undefined;
     }
 
     function shouldSkipDuplicateGiftEvent(data, teamId, points) {
@@ -2098,7 +2174,9 @@
         "user.userId",
         "user.nickname"
       ]);
-      const gid = giftIdFromTikfinityData(data) || giftEventValue(data, ["giftName", "gift.giftName", "gift.name"]);
+      const gid =
+        giftIdFromTikfinityData(data) ||
+        giftEventValue(data, ["giftName", "gift.giftName", "gift.name", "data.giftName", "data.gift.giftName", "data.gift.name"]);
       const combo = resolveGiftComboCount(data);
       const key = eventId
         ? `id:${eventId}`
