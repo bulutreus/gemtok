@@ -2,48 +2,95 @@
   'use strict';
 
   const DEFAULT_WS_URL = 'ws://127.0.0.1:21213';
-  const STORAGE_KEY = 'tikfinity_ws_url';
+  const FALLBACK_WS_URLS = [
+    DEFAULT_WS_URL,
+    'ws://localhost:21213',
+    'ws://127.0.0.1:29213',
+    'ws://localhost:29213',
+  ];
+  const STORAGE_KEY = 'tikfinity_url';
+  const STORAGE_KEYS = ['tikfinity_url', 'tikfinity_ws_url', 'streamxt_tikfinity_ws_url', 'gemtok_tikfinity_ws_url'];
   const RECONNECT_MS = 3000;
   const MAX_QUEUE = 2000;
+  const MAX_BATCH = 12;
 
   function getQueryParam(name) {
-    return new URLSearchParams(global.location.search).get(name);
+    try {
+      return new URLSearchParams(global.location?.search ?? '').get(name);
+    } catch {
+      return null;
+    }
+  }
+
+  function cleanWsUrl(value) {
+    const url = String(value ?? '').trim();
+    return /^wss?:\/\//i.test(url) ? url : '';
+  }
+
+  function pushUnique(list, value) {
+    const url = cleanWsUrl(value);
+    if (url && !list.includes(url)) list.push(url);
+  }
+
+  function isTruthy(value) {
+    const v = String(value ?? '').trim().toLowerCase();
+    return v === '1' || v === 'true' || v === 'yes' || v === 'on';
+  }
+
+  function isFalsey(value) {
+    const v = String(value ?? '').trim().toLowerCase();
+    return v === '0' || v === 'false' || v === 'no' || v === 'off';
   }
 
   function isAutoConnectDisabled() {
-    const v = getQueryParam('autoconnect') ?? getQueryParam('noConnect');
-    if (v === null) return false;
-    return v === '0' || v === 'false' || v === 'no' || v === '1';
+    const auto = getQueryParam('autoconnect');
+    const tik = getQueryParam('tikfinity');
+    const tikAuto = getQueryParam('tikfinityAuto');
+    const noConnect = getQueryParam('noConnect') ?? getQueryParam('notikfinity');
+
+    if (noConnect != null) return isTruthy(noConnect);
+    if (auto != null) return isFalsey(auto);
+    if (tik != null) return isFalsey(tik);
+    if (tikAuto != null) return isFalsey(tikAuto);
+    return false;
+  }
+
+  function resolveWsUrls() {
+    const urls = [];
+
+    pushUnique(urls, getQueryParam('ws'));
+    pushUnique(urls, getQueryParam('tikfinityUrl'));
+    pushUnique(urls, getQueryParam('tikfinity_ws_url'));
+
+    try {
+      for (const key of STORAGE_KEYS) {
+        pushUnique(urls, global.localStorage?.getItem(key));
+      }
+    } catch { /* ignore */ }
+
+    pushUnique(urls, global.__ENV__?.TIKFINITY_WS_URL);
+    pushUnique(urls, global.TIKFINITY_WS_URL);
+    pushUnique(urls, global.process?.env?.TIKFINITY_WS_URL);
+    pushUnique(urls, global.__TIKFINITY_WS_URL__);
+
+    FALLBACK_WS_URLS.forEach((url) => pushUnique(urls, url));
+    return urls;
   }
 
   function resolveWsUrl() {
-    const fromStorage = global.localStorage?.getItem(STORAGE_KEY);
-    if (fromStorage) return fromStorage;
-
-    try {
-      const w = global.__TIKFINITY_WS_URL__;
-      if (typeof w === 'string' && w.trim()) return w.trim();
-    } catch {}
-
-    const fromEnv =
-      global.__ENV__?.TIKFINITY_WS_URL ??
-      global.TIKFINITY_WS_URL ??
-      global.process?.env?.TIKFINITY_WS_URL;
-    if (fromEnv) return fromEnv;
-
-    try {
-      if (global.location && global.location.protocol === 'https:') {
-        const h = String(global.location.hostname || '').toLowerCase();
-        if (h !== '127.0.0.1' && h !== 'localhost' && h !== '::1') {
-          return 'ws://127.0.0.1:29213';
-        }
-      }
-    } catch {}
-
-    return DEFAULT_WS_URL;
+    return resolveWsUrls()[0] ?? DEFAULT_WS_URL;
   }
 
   function parseMessage(raw) {
+    if (!raw) return null;
+    if (typeof raw === 'object' && !(raw instanceof ArrayBuffer)) return raw;
+    if (raw instanceof ArrayBuffer) {
+      try {
+        raw = new TextDecoder().decode(raw);
+      } catch {
+        return null;
+      }
+    }
     if (typeof raw !== 'string') return null;
     try {
       return JSON.parse(raw);
@@ -52,26 +99,36 @@
     }
   }
 
+  function normalizeEventName(value) {
+    return String(value ?? '').trim().toLowerCase().replace(/[\s:-]+/g, '_');
+  }
+
   function normalizeEvent(msg) {
     if (!msg || typeof msg !== 'object') return null;
 
-    const event = (msg.event ?? msg.type ?? msg.action ?? '').toLowerCase();
-    const data = msg.data ?? msg.payload ?? msg;
+    const event = normalizeEventName(msg.event ?? msg.type ?? msg.action ?? msg.eventName ?? msg.name);
+    const data = msg.data ?? msg.payload ?? msg.detail ?? msg;
+    const dataEvent = normalizeEventName(data?.event ?? data?.type ?? data?.action);
+    const combined = event || dataEvent;
 
-    if (!event) return null;
+    if (!combined) return null;
 
-    if (event === 'social') {
-      const action = (data.action ?? data.type ?? '').toLowerCase();
+    if (combined === 'social') {
+      const action = normalizeEventName(data.action ?? data.type);
       if (action === 'follow' || action === 'share' || action === 'favourite' || action === 'favorite') {
         return { event: action === 'favourite' || action === 'favorite' ? 'follow' : action, data };
       }
     }
 
-    if (event.includes('gift')) {
-      return { event: 'gift', data };
-    }
+    if (combined.includes('gift')) return { event: 'gift', data };
+    if (combined.includes('like')) return { event: 'like', data };
+    if (combined.includes('follow')) return { event: 'follow', data };
+    if (combined.includes('share')) return { event: 'share', data };
+    if (combined.includes('member') || combined.includes('join')) return { event: 'member', data };
+    if (combined.includes('subscribe') || combined.includes('sub')) return { event: 'subscribe', data };
+    if (combined.includes('chat') || combined.includes('comment')) return { event: 'chat', data };
 
-    return { event, data };
+    return { event: combined, data };
   }
 
   function hashString(str) {
@@ -83,27 +140,53 @@
     return Math.abs(h);
   }
 
+  function firstValue(...values) {
+    for (const value of values) {
+      if (value !== undefined && value !== null && value !== '') return value;
+    }
+    return '';
+  }
+
+  function asNumber(value, fallback) {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  }
+
+  function extractUser(data) {
+    return data.user ?? data.userInfo ?? data.member ?? data.viewer ?? data;
+  }
+
   function extractGiftFields(data) {
-    const gift = data.gift ?? data.giftInfo ?? data.extendedGiftInfo ?? {};
-    const giftName = (
-      data.giftName
-      ?? data.gift_name
-      ?? gift.name
-      ?? gift.giftName
-      ?? data.name
-      ?? ''
+    const gift = data.gift ?? data.giftInfo ?? data.extendedGiftInfo ?? data.giftDetails ?? {};
+    const giftName = firstValue(
+      data.giftName,
+      data.gift_name,
+      data.gift?.name,
+      data.gift?.giftName,
+      gift.name,
+      gift.giftName,
+      data.name,
     );
-    const giftId = data.giftId ?? data.gift_id ?? gift.id ?? gift.giftId ?? null;
-    const unitCost = Number(
-      data.diamondCount
-      ?? data.diamond_count
-      ?? data.coins
-      ?? gift.diamond_count
-      ?? gift.diamondCount
-      ?? 1,
-    ) || 1;
-    const repeatCount = Math.max(1, Number(data.repeatCount ?? data.repeat_count ?? 1) || 1);
-    const repeatEnd = data.repeatEnd ?? data.repeat_end;
+    const giftId = firstValue(
+      data.giftId,
+      data.gift_id,
+      data.gift?.id,
+      data.gift?.giftId,
+      gift.id,
+      gift.giftId,
+      gift.gift_id,
+    ) || null;
+    const unitCost = Math.max(1, asNumber(firstValue(
+      data.diamondCount,
+      data.diamond_count,
+      data.coins,
+      data.giftValue,
+      gift.diamond_count,
+      gift.diamondCount,
+      gift.coins,
+    ), 1));
+    const repeatCount = Math.max(1, asNumber(firstValue(data.repeatCount, data.repeat_count, data.comboCount, data.repeat_count_display), 1));
+    const repeatEnd = firstValue(data.repeatEnd, data.repeat_end, data.isEnded, data.comboEnd);
 
     return { giftName, giftId, unitCost, repeatCount, repeatEnd };
   }
@@ -116,29 +199,55 @@
     return true;
   }
 
+  function normalizeText(text) {
+    return String(text ?? '')
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim();
+  }
+
   class TikFinityClient {
     constructor(options = {}) {
       this.onAction = options.onAction ?? (() => {});
       this.onStatus = options.onStatus ?? (() => {});
-      this.laneCount = options.laneCount ?? 20;
+      this.laneCount = Math.max(1, Number(options.laneCount ?? 20) || 20);
       this.countryNames = options.countryNames ?? [];
       this.teamAliases = options.teamAliases ?? this.countryNames.map((name) => [name]);
 
       this.ws = null;
-      this.url = options.url ?? resolveWsUrl();
+      this.urls = Array.isArray(options.urls) && options.urls.length ? options.urls : resolveWsUrls();
+      if (options.url) {
+        const preferred = cleanWsUrl(options.url);
+        if (preferred) this.urls = [preferred, ...this.urls.filter((url) => url !== preferred)];
+      }
+      if (!this.urls.length) this.urls = [DEFAULT_WS_URL];
+      this.urlIndex = 0;
+      this.url = this.urls[this.urlIndex];
       this.autoConnect = options.autoConnect ?? !isAutoConnectDisabled();
       this.reconnectTimer = null;
       this.shouldReconnect = false;
       this.queue = [];
       this.rafId = null;
       this.connected = false;
+      this.lastError = '';
     }
 
     setUrl(url) {
-      this.url = url;
+      const clean = cleanWsUrl(url);
+      if (!clean) {
+        this.lastError = 'invalid_url';
+        this._setStatus('error');
+        return false;
+      }
+      this.urls = [clean, ...this.urls.filter((item) => item !== clean)];
+      this.urlIndex = 0;
+      this.url = clean;
       try {
-        global.localStorage?.setItem(STORAGE_KEY, url);
+        for (const key of STORAGE_KEYS) global.localStorage?.setItem(key, clean);
       } catch { /* ignore */ }
+      return true;
     }
 
     connect() {
@@ -155,6 +264,7 @@
         this.ws.close();
         this.ws = null;
       }
+      this.connected = false;
       this._setStatus('disconnected');
     }
 
@@ -162,18 +272,28 @@
       if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
         return;
       }
+      if (typeof WebSocket === 'undefined') {
+        this.lastError = 'websocket_unavailable';
+        this._setStatus('error');
+        this._scheduleReconnect(false);
+        return;
+      }
 
+      this.url = this.urls[this.urlIndex] ?? DEFAULT_WS_URL;
       this._setStatus('connecting');
 
       try {
         this.ws = new WebSocket(this.url);
-      } catch {
-        this._scheduleReconnect();
+      } catch (err) {
+        this.lastError = err?.message ?? 'open_failed';
+        this.ws = null;
+        this._scheduleReconnect(true);
         return;
       }
 
       this.ws.onopen = () => {
         this.connected = true;
+        this.lastError = '';
         this._setStatus('connected');
       };
 
@@ -183,6 +303,7 @@
 
       this.ws.onerror = () => {
         this.connected = false;
+        this.lastError = 'socket_error';
         this._setStatus('error');
       };
 
@@ -190,19 +311,25 @@
         this.connected = false;
         this.ws = null;
         this._setStatus('disconnected');
-        if (this.shouldReconnect) this._scheduleReconnect();
+        if (this.shouldReconnect) this._scheduleReconnect(true);
       };
     }
 
-    _scheduleReconnect() {
+    _scheduleReconnect(rotateUrl) {
       clearTimeout(this.reconnectTimer);
+      if (rotateUrl && this.urls.length > 1) {
+        this.urlIndex = (this.urlIndex + 1) % this.urls.length;
+        this.url = this.urls[this.urlIndex];
+      }
       this.reconnectTimer = setTimeout(() => {
         if (this.shouldReconnect) this._open();
       }, RECONNECT_MS);
     }
 
     _setStatus(status) {
-      this.onStatus(status, this.url);
+      try {
+        this.onStatus(status, this.url, this.lastError);
+      } catch { /* keep the game alive */ }
     }
 
     _enqueue(raw) {
@@ -213,12 +340,13 @@
 
     _scheduleProcess() {
       if (this.rafId !== null) return;
-      this.rafId = global.requestAnimationFrame(() => this._processQueue());
+      const raf = global.requestAnimationFrame ?? ((cb) => global.setTimeout(cb, 16));
+      this.rafId = raf(() => this._processQueue());
     }
 
     _processQueue() {
       this.rafId = null;
-      const batch = Math.min(8, this.queue.length);
+      const batch = Math.min(MAX_BATCH, this.queue.length);
 
       for (let i = 0; i < batch; i++) {
         const raw = this.queue.shift();
@@ -227,32 +355,37 @@
         const normalized = normalizeEvent(parsed);
         if (!normalized) continue;
         const action = this._toAction(normalized.event, normalized.data);
-        if (action) this.onAction(action);
+        if (!action) continue;
+        try {
+          this.onAction(action);
+        } catch (err) {
+          this.lastError = err?.message ?? 'action_failed';
+          this._setStatus('action_error');
+        }
       }
 
       if (this.queue.length > 0) this._scheduleProcess();
     }
 
     _laneFromUser(data) {
-      const user = data.user ?? data;
-      const uniqueId = user?.uniqueId ?? user?.username ?? user?.nickname ?? '';
-      if (!uniqueId) return hashString(JSON.stringify(data)) % this.laneCount;
-
-      const fromComment = this._laneFromComment(data.comment ?? data.message ?? '');
+      const user = extractUser(data);
+      const uniqueId = firstValue(user?.uniqueId, user?.unique_id, user?.username, user?.nickname, data.uniqueId, data.nickname);
+      const fromComment = this._laneFromComment(firstValue(data.comment, data.message, data.content, data.text));
       if (fromComment !== null) return fromComment;
-
-      return hashString(uniqueId) % this.laneCount;
+      if (!uniqueId) return hashString(JSON.stringify(data)) % this.laneCount;
+      return hashString(String(uniqueId)) % this.laneCount;
     }
 
     _laneFromComment(text) {
-      if (!text || !this.teamAliases.length) return null;
-      const lower = text.toLowerCase().trim();
+      const lower = normalizeText(text);
+      if (!lower || !this.teamAliases.length) return null;
       for (let i = 0; i < this.teamAliases.length; i++) {
         const aliases = this.teamAliases[i];
         if (!Array.isArray(aliases)) continue;
         for (const alias of aliases) {
-          const token = String(alias).toLowerCase();
-          if (token.length >= 3 && lower.includes(token)) return i;
+          const token = normalizeText(alias);
+          if (token.length >= 2 && (` ${lower} `).includes(` ${token} `)) return i;
+          if (token.length >= 4 && lower.includes(token)) return i;
         }
       }
       return null;
@@ -260,10 +393,10 @@
 
     _toAction(event, data) {
       const lane = this._laneFromUser(data);
-      const user = data.user ?? {};
+      const user = extractUser(data);
       const meta = {
-        user: user.uniqueId ?? user.nickname ?? '',
-        nickname: user.nickname ?? user.uniqueId ?? '',
+        user: firstValue(user?.uniqueId, user?.unique_id, user?.username, user?.nickname),
+        nickname: firstValue(user?.nickname, user?.uniqueId, user?.username),
       };
 
       switch (event) {
@@ -289,7 +422,7 @@
           return {
             type: 'like',
             lane,
-            meta: { ...meta, likeCount: data.likeCount ?? 1 },
+            meta: { ...meta, likeCount: Math.max(1, asNumber(firstValue(data.likeCount, data.like_count, data.count), 1)) },
           };
         case 'follow':
           return { type: 'follow', lane, meta };
@@ -299,9 +432,8 @@
           return { type: 'subscribe', lane, meta };
         case 'share':
           return { type: 'share', lane, meta };
-        case 'chat':
-        case 'comment': {
-          const comment = data.comment ?? data.message ?? '';
+        case 'chat': {
+          const comment = firstValue(data.comment, data.message, data.content, data.text);
           const commentLane = this._laneFromComment(comment);
           if (commentLane !== null) {
             return {
@@ -321,13 +453,19 @@
   global.TikFinity = {
     Client: TikFinityClient,
     resolveWsUrl,
+    resolveWsUrls,
     isAutoConnectDisabled,
     setUrl(url) {
+      const clean = cleanWsUrl(url);
+      if (!clean) return false;
       try {
-        global.localStorage?.setItem(STORAGE_KEY, url);
+        for (const key of STORAGE_KEYS) global.localStorage?.setItem(key, clean);
       } catch { /* ignore */ }
+      return true;
     },
     DEFAULT_WS_URL,
+    FALLBACK_WS_URLS,
     STORAGE_KEY,
+    STORAGE_KEYS,
   };
 })(typeof window !== 'undefined' ? window : globalThis);

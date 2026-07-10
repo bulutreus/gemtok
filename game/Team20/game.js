@@ -46,6 +46,15 @@ const TEAM_CHAT_ALIASES = COUNTRIES.map((c) => {
     brunei: ['brunei'],
   };
   (extras[c.name] ?? []).forEach((a) => aliases.add(a));
+  const asciiExtras = {
+    turkey: ['turkiye', 'turkey', 'turk', 'tr'],
+    palestine: ['filistin', 'palestine', 'ps'],
+    kurdistan: ['kurdistan', 'kurd', 'kurdish'],
+    afghanistan: ['afganistan', 'afghanistan', 'afghan'],
+    turkmenistan: ['turkmenistan', 'turkmen'],
+    cambodia: ['kambocya', 'cambodia'],
+  };
+  (asciiExtras[c.name] ?? []).forEach((a) => aliases.add(a));
   return [...aliases];
 });
 
@@ -210,6 +219,23 @@ function normalizeGiftName(name) {
   return (name ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 }
 
+function giftMatchKey(name) {
+  return normalizeGiftName(name)
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+function giftNamesMatch(a, b) {
+  const left = giftMatchKey(a);
+  const right = giftMatchKey(b);
+  if (!left || !right) return false;
+  return left === right || left.includes(right) || right.includes(left);
+}
+
 const KNOWN_GIFT_IDS = {
   5655: 'Rose',
   5269: 'TikTok',
@@ -227,17 +253,19 @@ function findGiftIndexByName(name) {
   let idx = TIKTOK_GIFTS.findIndex((g) => normalizeGiftName(g.name) === normalized);
   if (idx >= 0) return idx;
 
+  idx = TIKTOK_GIFTS.findIndex((g) => giftNamesMatch(g.name, normalized));
+  if (idx >= 0) return idx;
+
   for (const [canonical, aliases] of Object.entries(GIFT_NAME_ALIASES)) {
-    const canonicalIdx = TIKTOK_GIFTS.findIndex((g) => normalizeGiftName(g.name) === canonical);
+    const canonicalIdx = TIKTOK_GIFTS.findIndex((g) => giftNamesMatch(g.name, canonical));
     if (canonicalIdx < 0) continue;
-    if (aliases.some((alias) => normalized === alias || normalized.includes(alias) || alias.includes(normalized))) {
+    if (aliases.some((alias) => giftNamesMatch(normalized, alias))) {
       return canonicalIdx;
     }
   }
 
   idx = TIKTOK_GIFTS.findIndex((g) => {
-    const giftName = normalizeGiftName(g.name);
-    return giftName.includes(normalized) || normalized.includes(giftName);
+    return giftNamesMatch(g.name, normalized);
   });
   return idx;
 }
@@ -255,8 +283,18 @@ function findGiftIndexById(giftId) {
   return -1;
 }
 
+function fallbackGiftIndex(lane = 0) {
+  return TIKTOK_GIFTS.length ? lane % TIKTOK_GIFTS.length : 0;
+}
+
+function giftIndexOrFallback(idx, lane = 0) {
+  return Number.isInteger(idx) && idx >= 0 && idx < TIKTOK_GIFTS.length
+    ? idx
+    : fallbackGiftIndex(lane);
+}
+
 function getDefaultTeamGiftAssignments() {
-  return COUNTRIES.map((_, i) => findGiftIndexByName(LEGACY_GIFT_NAMES[i % LEGACY_GIFT_NAMES.length]) ?? (i % TIKTOK_GIFTS.length));
+  return COUNTRIES.map((_, i) => giftIndexOrFallback(findGiftIndexByName(LEGACY_GIFT_NAMES[i % LEGACY_GIFT_NAMES.length]), i));
 }
 
 function loadTeamGiftAssignments() {
@@ -289,19 +327,20 @@ function loadTeamGiftAssignments() {
 function saveTeamGiftAssignments(assignments) {
   localStorage.setItem(TEAM_GIFT_STORAGE_KEY, JSON.stringify({
     v: 2,
-    names: assignments.map((idx) => TIKTOK_GIFTS[idx]?.name ?? LEGACY_GIFT_NAMES[idx % LEGACY_GIFT_NAMES.length]),
+    names: assignments.map((idx, lane) => TIKTOK_GIFTS[giftIndexOrFallback(idx, lane)]?.name ?? LEGACY_GIFT_NAMES[lane % LEGACY_GIFT_NAMES.length]),
   }));
 }
 
 function applyTeamGiftAssignments(assignments) {
   assignments.forEach((giftIndex, lane) => {
-    if (runners[lane]) runners[lane].giftIndex = giftIndex;
+    if (runners[lane]) runners[lane].giftIndex = giftIndexOrFallback(giftIndex, lane);
   });
 }
 
 function setTeamGift(lane, giftIndex) {
-  teamGiftAssignments[lane] = giftIndex;
-  runners[lane].giftIndex = giftIndex;
+  const safeGiftIndex = giftIndexOrFallback(giftIndex, lane);
+  teamGiftAssignments[lane] = safeGiftIndex;
+  runners[lane].giftIndex = safeGiftIndex;
   saveTeamGiftAssignments(teamGiftAssignments);
 }
 
@@ -397,7 +436,9 @@ const giftImages = {};
 function loadGiftImages() {
   TIKTOK_GIFTS.forEach((gift, index) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.onerror = () => {
+      img.dataset.failed = '1';
+    };
     img.src = gift.url;
     giftImages[index] = img;
   });
@@ -405,7 +446,10 @@ function loadGiftImages() {
 
 function drawGiftIcon(runner, cy) {
   const img = giftImages[runner.giftIndex];
-  if (!img?.complete || !img.naturalWidth) return;
+  if (!img?.complete || !img.naturalWidth) {
+    drawGiftIconFallback(runner, cy);
+    return;
+  }
   ctx.drawImage(
     img,
     LAYOUT.giftX,
@@ -413,6 +457,28 @@ function drawGiftIcon(runner, cy) {
     LAYOUT.giftW,
     LAYOUT.giftH,
   );
+}
+
+function drawGiftIconFallback(runner, cy) {
+  const giftName = TIKTOK_GIFTS[runner.giftIndex]?.name ?? '?';
+  const label = (giftName.match(/[a-z0-9]/i)?.[0] ?? '?').toUpperCase();
+  const cx = LAYOUT.giftX + LAYOUT.giftW / 2;
+  const y = cy - LAYOUT.giftH / 2;
+
+  ctx.save();
+  ctx.fillStyle = '#2a143d';
+  ctx.strokeStyle = '#ffcf4a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.roundRect(LAYOUT.giftX, y, LAYOUT.giftW, LAYOUT.giftH, 6);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 13px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, cx, cy + 0.5);
+  ctx.restore();
 }
 
 function emojiToUrl(emoji) {
@@ -1263,12 +1329,26 @@ function syncRunnerSprites() {
   });
 }
 
-const tikfinity = new TikFinity.Client({
+const TikFinityApi = globalThis.TikFinity ?? {
+  resolveWsUrl: () => '',
+  isAutoConnectDisabled: () => true,
+  Client: class {
+    constructor() {
+      this.autoConnect = false;
+      this.connected = false;
+    }
+    connect() {}
+    disconnect() {}
+    setUrl() { return false; }
+  },
+};
+
+const tikfinity = new TikFinityApi.Client({
   laneCount: LANE_COUNT,
   countryNames: COUNTRIES.map((c) => c.name),
   teamAliases: TEAM_CHAT_ALIASES,
-  url: TikFinity.resolveWsUrl(),
-  autoConnect: !TikFinity.isAutoConnectDisabled(),
+  url: TikFinityApi.resolveWsUrl(),
+  autoConnect: !TikFinityApi.isAutoConnectDisabled(),
   onStatus() {},
   onAction: handleLiveAction,
 });
