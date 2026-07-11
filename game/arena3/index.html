@@ -3937,10 +3937,15 @@
       }
       if (event.repeat) return;
       if (/^[0-9]$/.test(event.key)) {
-        const idx = event.key === "0" ? 9 : parseInt(event.key, 10) - 1;
+        const bonusTeamIndex = /^[456]$/.test(event.key) ? parseInt(event.key, 10) - 4 : null;
+        const idx = bonusTeamIndex != null
+          ? bonusTeamIndex
+          : event.key === "0"
+            ? 9
+            : parseInt(event.key, 10) - 1;
         if (idx >= 0 && idx < state.playerCount) {
           const teamId = SLOT_IDS[idx];
-          const points = /^[456]$/.test(event.key) ? 100 : 1;
+          const points = bonusTeamIndex != null ? 100 : 1;
           if (!state.audioReady) initAudio();
           state.scores[teamId] += points;
           spawnGiftBurst(teamId, points);
