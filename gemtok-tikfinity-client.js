@@ -384,7 +384,18 @@
           Number(data.combo) || 0,
           1,
         );
-        var giftCombo = Math.min(120, Math.max(1, Math.round(rawCombo) || 1));
+        var giftCombo = Math.min(100000, Math.max(1, Math.round(rawCombo) || 1));
+        var giftEventId = String(
+          data.eventId != null
+            ? data.eventId
+            : data.event_id != null
+              ? data.event_id
+              : data.msgId != null
+                ? data.msgId
+                : data.messageId != null
+                  ? data.messageId
+                  : "",
+        ).trim();
         out.push({
           type: "gift",
           userId: gUser.userId,
@@ -396,6 +407,9 @@
           diamondCount: data.diamondCount != null ? data.diamondCount : data.diamond_count,
           giftCombo: giftCombo,
           repeatCount: giftCombo,
+          repeatEnd: data.repeatEnd != null ? data.repeatEnd : data.repeat_end,
+          giftType: data.giftType != null ? data.giftType : data.gift_type,
+          ...(giftEventId ? { eventId: giftEventId } : {}),
           avatarUrl: gUser.avatarUrl,
           team: "auto",
           ...(gUser.user ? { user: gUser.user } : {}),

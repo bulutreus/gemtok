@@ -1991,12 +1991,6 @@
     }
 
     function resolveGiftDiamondPerUnit(data) {
-      const gid = giftIdFromTikfinityData(data);
-      if (gid != null) {
-        const row = giftRowById(gid);
-        const cat = Math.floor(Number(row && row.diamond_count));
-        if (cat > 0) return cat;
-      }
       const direct = Math.floor(
         Number(
           giftEventRawValue(data, [
@@ -2020,6 +2014,12 @@
         )
       );
       if (direct > 0) return direct;
+      const gid = giftIdFromTikfinityData(data);
+      if (gid != null) {
+        const row = giftRowById(gid);
+        const cat = Math.floor(Number(row && row.diamond_count));
+        if (cat > 0) return cat;
+      }
       return 1;
     }
 
@@ -2092,12 +2092,12 @@
       const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
       const streaks = state.tikfinity.giftComboStreaks;
       streaks.forEach((row, key) => {
-        if (!row || now - row.time > 6500) streaks.delete(key);
+        if (!row || now - row.time > 30000) streaks.delete(key);
       });
 
       const key = tikfinityComboStreakKey(data, teamId);
       const prev = streaks.get(key);
-      if (!prev || now - prev.time > 4500) {
+      if (!prev || now - prev.time > 15000) {
         streaks.set(key, { combo, awarded: totalPoints, time: now });
         return totalPoints;
       }
@@ -2154,7 +2154,7 @@
       const now = performance.now();
       const recent = state.tikfinity.recentGiftEvents;
       recent.forEach((time, key) => {
-        if (now - time > 1400) recent.delete(key);
+        if (now - time > 30000) recent.delete(key);
       });
 
       const eventId = giftEventValue(data, [
@@ -2183,7 +2183,8 @@
         : `sig:${teamId}|${gid}|${user}|${combo}|${points}`;
 
       const last = recent.get(key);
-      if (last != null && now - last < 900) return true;
+      const duplicateWindowMs = eventId ? 30000 : 120;
+      if (last != null && now - last < duplicateWindowMs) return true;
       recent.set(key, now);
       return false;
     }
@@ -2201,7 +2202,6 @@
 
       const data = msg.data != null && typeof msg.data === "object" ? msg.data : msg;
 
-      if (isTikfinityGiftEventInProgress(data)) return;
       const giftTeam = teamIdFromGiftData(data);
       if (!giftTeam) return;
 
