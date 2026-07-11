@@ -3940,9 +3940,10 @@
         const idx = event.key === "0" ? 9 : parseInt(event.key, 10) - 1;
         if (idx >= 0 && idx < state.playerCount) {
           const teamId = SLOT_IDS[idx];
+          const points = /^[456]$/.test(event.key) ? 100 : 1;
           if (!state.audioReady) initAudio();
-          state.scores[teamId] += 1;
-          spawnGiftBurst(teamId, 1);
+          state.scores[teamId] += points;
+          spawnGiftBurst(teamId, points);
           updateAll();
         }
         return;
