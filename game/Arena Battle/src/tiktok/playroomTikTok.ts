@@ -68,7 +68,24 @@ export function mapPlayroomTikTokToLiveEvent(raw: TikTokLiveEvent): LiveEvent | 
         kind: "gift",
         gift: mapPlayroomGiftToGameGift(d),
         user: toLiveUser(d, event),
-        count: Math.max(1, d.giftDiamondCount ?? 1),
+        // `count` = combo (kac kez gonderildi), efekt SURESI carpani. Playroom olay
+        // basina tek hediye yollar ve combo alani vermez; elmas degerini (giftDiamondCount)
+        // sure carpani yapmak 1000 elmaslik hediyede ~sonsuz sureye yol acardi.
+        // Combo alani varsa onu kullan, yoksa 1; ust sinir 20.
+        count: Math.max(
+          1,
+          Math.min(
+            20,
+            Math.floor(
+              Number(
+                (d as Record<string, unknown>).repeatCount ??
+                  (d as Record<string, unknown>).giftCombo ??
+                  (d as Record<string, unknown>).comboCount ??
+                  1
+              )
+            )
+          )
+        ),
       };
     case "subscribe":
       return { kind: "like", user: toLiveUser(d, event) };
