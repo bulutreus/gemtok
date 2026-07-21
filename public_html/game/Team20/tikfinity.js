@@ -191,11 +191,13 @@
     return { giftName, giftId, unitCost, repeatCount, repeatEnd };
   }
 
-  function shouldProcessGift({ repeatCount, repeatEnd }) {
-    if (repeatEnd === true || repeatEnd === 1 || repeatEnd === 'true') return true;
-    if (repeatEnd === false || repeatEnd === 0 || repeatEnd === 'false') {
-      return repeatCount <= 1;
-    }
+  function shouldProcessGift({ repeatEnd }) {
+    // Combo/streak devam ederken (repeatEnd=false) ara tiklari sayma; yalnizca
+    // final (repeatEnd=true) veya combo olmayan tek hediyeleri isle. Boylece her
+    // hediye bir kez, tam degeriyle (unitCost * repeatCount) puanlanir. Onceki
+    // surumde ilk combo tiki (repeatCount<=1) da sayildigi icin combolar bir
+    // birim fazla puan veriyordu.
+    if (repeatEnd === false || repeatEnd === 0 || repeatEnd === 'false' || repeatEnd === '0') return false;
     return true;
   }
 

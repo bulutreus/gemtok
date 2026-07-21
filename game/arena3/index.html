@@ -853,8 +853,7 @@
         intentionalClose: false,
         bridgeUnsub: null,
         portalHudTimer: null,
-        recentGiftEvents: new Map(),
-        giftComboStreaks: new Map()
+        recentGiftEvents: new Map()
       }
     };
 
@@ -2071,64 +2070,6 @@
       return Math.max(1, diamondPerUnit * combo);
     }
 
-    function tikfinityComboStreakKey(data, teamId) {
-      const user = giftEventValue(data, [
-        "userId",
-        "uniqueId",
-        "nickname",
-        "user.uniqueId",
-        "user.userId",
-        "user.nickname"
-      ]);
-      const gid =
-        giftIdFromTikfinityData(data) ||
-        giftEventValue(data, ["giftName", "gift.giftName", "gift.name", "data.giftName", "data.gift.giftName", "data.gift.name"]);
-      return `${teamId}|${gid || "gift"}|${user || "anon"}`;
-    }
-
-    function computeTikfinityGiftPointDelta(data, teamId) {
-      const combo = resolveGiftComboCount(data);
-      const totalPoints = computeTikfinityGiftTotalPoints(data);
-      const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
-      const streaks = state.tikfinity.giftComboStreaks;
-      streaks.forEach((row, key) => {
-        if (!row || now - row.time > 30000) streaks.delete(key);
-      });
-
-      const key = tikfinityComboStreakKey(data, teamId);
-      const prev = streaks.get(key);
-      if (!prev || now - prev.time > 15000) {
-        streaks.set(key, { combo, awarded: totalPoints, time: now });
-        return totalPoints;
-      }
-
-      if (combo <= 1) {
-        if (prev.combo > 1) {
-          streaks.set(key, { combo, awarded: totalPoints, time: now });
-        } else {
-          prev.combo = 1;
-          prev.awarded = Math.max(0, Math.floor(Number(prev.awarded)) || 0) + totalPoints;
-          prev.time = now;
-        }
-        return totalPoints;
-      }
-
-      const alreadyAwarded = Math.max(0, Math.floor(Number(prev.awarded)) || 0);
-      const delta = Math.max(0, totalPoints - alreadyAwarded);
-      if (delta < 1) {
-        prev.combo = Math.max(prev.combo || 1, combo);
-        prev.awarded = Math.max(alreadyAwarded, totalPoints);
-        prev.time = now;
-        return 0;
-      }
-      streaks.set(key, {
-        combo: Math.max(prev.combo || 1, combo),
-        awarded: alreadyAwarded + delta,
-        time: now
-      });
-      return delta;
-    }
-
     function computeTikfinityGiftPoints(data) {
       return computeTikfinityGiftTotalPoints(data);
     }
@@ -2202,12 +2143,15 @@
 
       const data = msg.data != null && typeof msg.data === "object" ? msg.data : msg;
 
+      // Streak hediyelerinde yalnizca son (repeatEnd) olayi say; ara combo tiklarini atla.
+      if (isTikfinityGiftEventInProgress(data)) return;
+
       const giftTeam = teamIdFromGiftData(data);
       if (!giftTeam) return;
 
-      const totalPoints = computeTikfinityGiftTotalPoints(data);
-      if (shouldSkipDuplicateGiftEvent(data, giftTeam, totalPoints)) return;
-      const points = computeTikfinityGiftPointDelta(data, giftTeam);
+      // Puan = elmas (jeton) x combo, tam deger; her hediye bir kez sayilir.
+      const points = computeTikfinityGiftPoints(data);
+      if (shouldSkipDuplicateGiftEvent(data, giftTeam, points)) return;
       applyTikfinityPoints(giftTeam, points);
     }
 
