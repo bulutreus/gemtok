@@ -553,6 +553,81 @@
     global.setInterval(syncNavPill, 600);
   }
 
+  /**
+   * Lisans aktif ama canlı bağlantı kurulamıyorsa (TikFinity kapalı ya da tarayıcı
+   * yerel ağ/ws erişimini engelliyor) tüm oyunlarda görünen, aksiyona yönlendiren uyarı.
+   * Bağlıyken (sessiz yayın olsa bile) gösterilmez; yanlış alarm vermez.
+   */
+  function installConnectionAlert() {
+    if (!global.document) return;
+    var GRACE_MS = 12000;
+    var troubleSince = 0;
+    var dismissedUntil = 0;
+
+    function ensureEl() {
+      var el = global.document.getElementById("gemtok-live-conn-alert");
+      if (el) return el;
+      el = global.document.createElement("div");
+      el.id = "gemtok-live-conn-alert";
+      el.setAttribute("role", "alert");
+      el.style.cssText =
+        "position:fixed;top:0;left:0;right:0;z-index:2147483000;display:none;box-sizing:border-box;" +
+        "padding:10px 44px 10px 16px;font:600 13px/1.45 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;" +
+        "color:#fff;background:linear-gradient(90deg,#b91c1c,#7f1d1d);box-shadow:0 2px 14px rgba(0,0,0,0.4);text-align:center;";
+      el.innerHTML =
+        '<span id="gemtok-live-conn-alert-msg"></span>' +
+        ' <button type="button" id="gemtok-live-conn-alert-retry" style="margin-left:10px;cursor:pointer;padding:3px 10px;border-radius:6px;border:1px solid rgba(255,255,255,0.6);background:rgba(255,255,255,0.16);color:#fff;font-weight:700">Yeniden bağlan</button>' +
+        '<button type="button" id="gemtok-live-conn-alert-close" aria-label="Kapat" style="position:absolute;top:5px;right:10px;cursor:pointer;border:none;background:transparent;color:#fff;font-size:20px;line-height:1;font-weight:700">×</button>';
+      (global.document.body || global.document.documentElement).appendChild(el);
+      var retry = el.querySelector("#gemtok-live-conn-alert-retry");
+      if (retry)
+        retry.onclick = function () {
+          if (isHostedPublicSite()) {
+            triggerHostedBridgeAccess()
+              .then(function () {
+                reconnect();
+              })
+              .catch(function () {
+                reconnect();
+              });
+          } else {
+            reconnect();
+          }
+        };
+      var close = el.querySelector("#gemtok-live-conn-alert-close");
+      if (close)
+        close.onclick = function () {
+          dismissedUntil = Date.now() + 60000;
+          el.style.display = "none";
+        };
+      return el;
+    }
+
+    function tick() {
+      var el = ensureEl();
+      var trouble = hasActiveLicenseSession() && shouldAttemptTikfinityBridge() && !isLiveSignalOk();
+      if (!trouble) {
+        troubleSince = 0;
+        el.style.display = "none";
+        return;
+      }
+      if (!troubleSince) troubleSince = Date.now();
+      if (Date.now() - troubleSince <= GRACE_MS || Date.now() < dismissedUntil) {
+        el.style.display = "none";
+        return;
+      }
+      var msgEl = el.querySelector("#gemtok-live-conn-alert-msg");
+      if (msgEl) {
+        msgEl.textContent = isHostedPublicSite()
+          ? "TikTok hediyeleri gelmiyor. TikFinity açık olmalı ve WebSocket API portu 21213 olmalı; tarayıcıda yerel ağ erişimine izin verin. Bağlanamazsanız «GemTok TikFinity Köprüsü»nü çalıştırıp oyunu açın."
+          : "TikTok hediyeleri gelmiyor. TikFinity masaüstü uygulamasını açın (ws://127.0.0.1:21213).";
+      }
+      el.style.display = "block";
+    }
+
+    global.setInterval(tick, 1500);
+  }
+
   function installHud() {
     if (!global.document || global.document.querySelector("#gemtok-tiktok-live-hud")) return;
     var el = global.document.createElement("div");
@@ -620,6 +695,7 @@
     startHb();
     if (opt && opt.showHud) installHud();
     if (opt && opt.navConnectionSlot) installNavConnectionStatus(opt);
+    installConnectionAlert();
   }
 
   global.GemTokTikTokLive = {
