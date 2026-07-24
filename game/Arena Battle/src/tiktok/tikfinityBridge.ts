@@ -23,6 +23,10 @@ export function mapTikFinityJsonToLiveEvent(raw: unknown): LiveEvent | null {
   const data = (obj.data as Record<string, unknown> | undefined) ?? obj;
 
   if (event === "gift") {
+    // TikTok streak hediyesi devam ederken her tik icin bir olay gelir ve
+    // repeatCount kumulatiftir. Ara tiklar islenirse 5'li bir combo efekti
+    // 1+2+3+4+5 = 15 birim sureye cikar. Yalnizca final olayi islenir.
+    if (data.repeatEnd === false || data.repeat_end === false) return null;
     const user = userFromPayload(data);
     if (!user) return null;
     const giftName = String(data.giftName ?? data.giftId ?? "");

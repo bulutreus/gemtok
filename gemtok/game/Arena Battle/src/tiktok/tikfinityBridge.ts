@@ -23,14 +23,28 @@ export function mapTikFinityJsonToLiveEvent(raw: unknown): LiveEvent | null {
   const data = (obj.data as Record<string, unknown> | undefined) ?? obj;
 
   if (event === "gift") {
+    // TikTok streak hediyesi devam ederken her tik icin bir olay gelir ve
+    // repeatCount kumulatiftir. Ara tiklar islenirse 5'li bir combo efekti
+    // 1+2+3+4+5 = 15 birim sureye cikar. Yalnizca final olayi islenir.
+    if (data.repeatEnd === false || data.repeat_end === false) return null;
     const user = userFromPayload(data);
     if (!user) return null;
     const giftName = String(data.giftName ?? data.giftId ?? "");
     const giftId = String(data.giftId ?? data.giftType ?? "");
-    const count = Math.max(
-      1,
-      Math.floor(Number(data.diamondCount ?? data.repeatCount ?? data.giftCount ?? 1))
+    // `count` = hediye combo'su (kac kez gonderildi). Efekt SURESI bunun katidir
+    // (WEAPON_DURATION_MS * count). Bu yuzden elmas degeri (diamondCount) buraya
+    // KARISTIRILMAMALI: 1000 elmaslik tek hediye ~sonsuz sureye yol acardi ve
+    // combo'lar yok sayilirdi. Hediyenin degeri zaten hangi silaha eslendigiyle yansir.
+    const rawCombo = Number(
+      data.repeatCount ??
+        data.giftCombo ??
+        data.comboCount ??
+        data.groupCount ??
+        data.repeat_count ??
+        data.giftCount ??
+        1
     );
+    const count = Math.max(1, Math.min(20, Math.floor(Number.isFinite(rawCombo) ? rawCombo : 1)));
     return {
       kind: "gift",
       gift: mapPlayroomGiftToGameGift({ giftName, giftId }),

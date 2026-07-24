@@ -647,10 +647,11 @@
   }
 
   function giftPoints(p) {
+    // TikTok'ta diamondCount birim basina degerdir; combo (repeatCount) ile
+    // carpilir. Tek hediye en fazla bir tam pist kadar ilerletir.
     const combo = Math.max(1, parseInt(p.giftCombo || p.repeatCount, 10) || 1);
-    const diamonds = parseInt(p.diamondCount, 10);
-    if (diamonds > 0) return Math.max(combo, Math.min(TOTAL_STEPS, diamonds));
-    return combo;
+    const perUnit = Math.max(1, parseInt(p.diamondCount, 10) || 1);
+    return Math.max(1, Math.min(TOTAL_STEPS, perUnit * combo));
   }
 
   function handlePayload(p) {
@@ -812,6 +813,15 @@
       },
     });
     tikfinityClient.startAuto();
+
+    // Lisans aktifken hediye akmiyorsa yayinci fark etsin.
+    if (window.GemTokLiveConnAlert) {
+      window.GemTokLiveConnAlert.install({
+        isLiveOk: () => state.tikfinityPhase === "connected",
+        isEnabled: () => !window.GemTokTikFinity.isTikfinityAutoDisabled(),
+        reconnect: () => tikfinityClient && tikfinityClient.reconnect(),
+      });
+    }
   }
 
   els.btnReset.addEventListener("click", () => resetRace(true));

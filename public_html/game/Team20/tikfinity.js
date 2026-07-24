@@ -232,6 +232,8 @@
       this.shouldReconnect = false;
       this.queue = [];
       this.rafId = null;
+      this.rafIsFrame = false;
+      this.visibilityBound = false;
       this.connected = false;
       this.lastError = '';
     }
@@ -261,6 +263,8 @@
       this.shouldReconnect = false;
       clearTimeout(this.reconnectTimer);
       this.reconnectTimer = null;
+      this._cancelProcess();
+      this.queue.length = 0;
       if (this.ws) {
         this.ws.onclose = null;
         this.ws.close();
@@ -340,10 +344,46 @@
       this._scheduleProcess();
     }
 
+    _isHidden() {
+      try {
+        return !!(global.document && global.document.hidden);
+      } catch {
+        return false;
+      }
+    }
+
+    _bindVisibilityOnce() {
+      if (this.visibilityBound || !global.document?.addEventListener) return;
+      this.visibilityBound = true;
+      try {
+        global.document.addEventListener('visibilitychange', () => {
+          if (this.rafIsFrame && this._isHidden()) this._cancelProcess();
+          if (this.queue.length > 0) this._scheduleProcess();
+        });
+      } catch { /* ignore */ }
+    }
+
+    _cancelProcess() {
+      if (this.rafId === null) return;
+      try {
+        if (this.rafIsFrame && global.cancelAnimationFrame) global.cancelAnimationFrame(this.rafId);
+        else global.clearTimeout(this.rafId);
+      } catch { /* ignore */ }
+      this.rafId = null;
+    }
+
     _scheduleProcess() {
       if (this.rafId !== null) return;
-      const raf = global.requestAnimationFrame ?? ((cb) => global.setTimeout(cb, 16));
-      this.rafId = raf(() => this._processQueue());
+      this._bindVisibilityOnce();
+      // Arka plan sekmesinde requestAnimationFrame calismaz; hediyeler kuyrukta
+      // birikip hic islenmez. Sayfa gizliyken zamanlayiciya dus.
+      if (!this._isHidden() && typeof global.requestAnimationFrame === 'function') {
+        this.rafIsFrame = true;
+        this.rafId = global.requestAnimationFrame(() => this._processQueue());
+        return;
+      }
+      this.rafIsFrame = false;
+      this.rafId = global.setTimeout(() => this._processQueue(), 16);
     }
 
     _processQueue() {

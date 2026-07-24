@@ -6,13 +6,40 @@
 (function (global) {
   "use strict";
 
-  var LS_KEYS = ["hava_yarisi_tikfinity_ws_url", "streamxt_tikfinity_ws_url", "hottok_tikfinity_ws_url"];
+  var LS_KEYS = ["tikfinity_url", "hava_yarisi_tikfinity_ws_url", "streamxt_tikfinity_ws_url", "gemtok_tikfinity_ws_url"];
   var DEFAULT_WS = "ws://127.0.0.1:21213";
+  var DEFAULT_WS_CANDIDATES = ["ws://127.0.0.1:21213", "ws://localhost:21213", "ws://[::1]:21213"];
+  var CONNECT_TIMEOUT_MS = 2600;
+
+  function pushUniqueUrl(list, url) {
+    var u = String(url || "").trim().slice(0, 512);
+    if (!u || !/^wss?:\/\//i.test(u)) return;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i] === u) return;
+    }
+    list.push(u);
+  }
+
+  /** Tek bir adres engellenirse digerlerini de dene (127.0.0.1 / localhost / ::1). */
+  function getTikfinityWsUrlCandidates() {
+    var urls = [];
+    var i;
+    try {
+      for (i = 0; i < LS_KEYS.length; i++) {
+        var ls = global.localStorage && global.localStorage.getItem(LS_KEYS[i]);
+        if (ls && String(ls).trim()) pushUniqueUrl(urls, String(ls).trim());
+      }
+    } catch (e0) {}
+    pushUniqueUrl(urls, getResolvedTikfinityWsUrl());
+    for (i = 0; i < DEFAULT_WS_CANDIDATES.length; i++) pushUniqueUrl(urls, DEFAULT_WS_CANDIDATES[i]);
+    return urls.length ? urls : [DEFAULT_WS];
+  }
 
   function isTikfinityAutoDisabled() {
     try {
       var q = new URLSearchParams(String(global.location && global.location.search ? global.location.search : ""));
       if (q.get("tikfinity") === "0" || String(q.get("tikfinity")).toLowerCase() === "false") return true;
+      if (q.get("autoconnect") === "0" || String(q.get("autoconnect")).toLowerCase() === "false") return true;
       if (q.get("tikfinityAuto") === "0") return true;
       if (q.get("notikfinity") === "1") return true;
       return false;
@@ -29,6 +56,13 @@
         if (ls && String(ls).trim()) return String(ls).trim().slice(0, 512);
       }
     } catch (e0) {}
+    try {
+      var envUrl =
+        (global.__ENV__ && (global.__ENV__.TIKFINITY_WS_URL || global.__ENV__.VITE_TIKFINITY_WS_URL)) ||
+        global.TIKFINITY_WS_URL ||
+        (global.process && global.process.env && (global.process.env.TIKFINITY_WS_URL || global.process.env.VITE_TIKFINITY_WS_URL));
+      if (envUrl && String(envUrl).trim()) return String(envUrl).trim().slice(0, 512);
+    } catch (eEnv) {}
     try {
       var w = global.__TIKFINITY_WS_URL__;
       if (typeof w === "string" && w.trim()) return w.trim().slice(0, 512);
@@ -84,6 +118,38 @@
     return { userId: userId, userIds: userIds, nickname: nickname, avatarUrl: avatarUrl, user: userOut };
   }
 
+  function giftRawValue(data, keys) {
+    for (var i = 0; i < keys.length; i++) {
+      var parts = keys[i].split(".");
+      var cur = data;
+      for (var j = 0; j < parts.length; j++) {
+        cur = cur && typeof cur === "object" ? cur[parts[j]] : undefined;
+      }
+      if (cur != null && cur !== "") return cur;
+    }
+    return undefined;
+  }
+
+  /**
+   * TikTok streak hediyelerinde (giftType 1) her tik icin bir olay gelir.
+   * Yalnizca final olayi sayilmali; ara tiklar atlanmali. giftType alani her
+   * TikFinity surumunde gelmedigi icin karar repeatEnd uzerinden verilir:
+   * acikca false ise combo devam ediyordur, aksi halde tam degeriyle islenir.
+   */
+  function isGiftEventInProgress(data) {
+    var repeatEnd = giftRawValue(data, [
+      "repeatEnd",
+      "repeat_end",
+      "gift.repeatEnd",
+      "gift.repeat_end",
+      "data.repeatEnd",
+      "data.repeat_end",
+    ]);
+    if (repeatEnd === false || repeatEnd === 0) return true;
+    var s = String(repeatEnd).toLowerCase();
+    return s === "false" || s === "0";
+  }
+
   function streamxtPayloadsFromTikfinityJson(raw) {
     var out = [];
     var list = Array.isArray(raw) ? raw : [raw];
@@ -122,22 +188,32 @@
       }
 
       if (ev === "gift") {
-        var giftType = data.giftType === 1 ? 1 : 0;
-        var repeatEnd = data.repeatEnd === true;
-        if (giftType === 1 && !repeatEnd) continue;
+        if (isGiftEventInProgress(data)) continue;
 
         var gUser = buildTikfinityUserBase(data.user, data);
         var giftNameRaw = data.giftName != null ? data.giftName : data.name != null ? data.name : "";
-        var gid = String(data.giftId != null ? data.giftId : data.gift_id != null ? data.gift_id : "").trim();
+        var gid = String(giftRawValue(data, ["giftId", "gift_id", "giftKey", "gift.giftId", "gift.id"]) || "").trim();
         var giftSlug = String(giftNameRaw || gid || "gift").toLowerCase().replace(/\s+/g, "_");
         var rawCombo = Math.max(
-          Number(data.repeatCount) || 0,
+          Number(giftRawValue(data, ["repeatCount", "repeat_count", "gift.repeatCount", "data.repeatCount"])) || 0,
           Number(data.comboCount) || 0,
           Number(data.groupCount) || 0,
           Number(data.combo) || 0,
           1
         );
-        var giftCombo = Math.min(120, Math.max(1, Math.round(rawCombo) || 1));
+        var giftCombo = Math.min(100000, Math.max(1, Math.round(rawCombo) || 1));
+        var perUnit = Math.floor(
+          Number(
+            giftRawValue(data, [
+              "diamondCount",
+              "diamond_count",
+              "gift.diamond_count",
+              "gift.diamondCount",
+              "extendedGiftInfo.diamondCount",
+              "extendedGiftInfo.diamond_count",
+            ])
+          ) || 0
+        );
         out.push({
           type: "gift",
           userId: gUser.userId,
@@ -146,9 +222,9 @@
           giftId: gid,
           giftName: giftSlug,
           giftKey: gid,
-          giftType: giftType,
-          repeatEnd: repeatEnd,
-          diamondCount: data.diamondCount != null ? data.diamondCount : data.diamond_count,
+          giftType: Number(giftRawValue(data, ["giftType", "gift_type", "gift.gift_type"])) || 0,
+          repeatEnd: true,
+          diamondCount: perUnit > 0 ? perUnit : undefined,
           giftCombo: giftCombo,
           repeatCount: giftCombo,
           avatarUrl: gUser.avatarUrl,
@@ -204,15 +280,29 @@
     var socket = null;
     var gen = 0;
     var reconnectTimer = null;
+    var connectTimer = null;
     var userClosed = false;
     var queue = [];
-    var flushRaf = null;
+    var flushHandle = null;
+    var flushIsRaf = false;
+    var visibilityBound = false;
     var eventsPerFrame = Math.max(4, Math.min(120, Number(options.eventsPerFrame) || 32));
+    var maxQueueSize = Math.max(100, Math.min(10000, Number(options.maxQueueSize) || 2000));
+    var urlCandidates = [];
+    var urlCandidateIndex = 0;
+    var lastGoodUrl = "";
 
     function clearReconnect() {
       if (reconnectTimer != null) {
         clearTimeout(reconnectTimer);
         reconnectTimer = null;
+      }
+    }
+
+    function clearConnectTimer() {
+      if (connectTimer != null) {
+        clearTimeout(connectTimer);
+        connectTimer = null;
       }
     }
 
@@ -226,8 +316,52 @@
       }, delay);
     }
 
+    function isDocHidden() {
+      try {
+        return !!(global.document && global.document.hidden);
+      } catch (eHid) {
+        return false;
+      }
+    }
+
+    function cancelFlush() {
+      if (flushHandle == null) return;
+      try {
+        if (flushIsRaf && typeof global.cancelAnimationFrame === "function") global.cancelAnimationFrame(flushHandle);
+        else global.clearTimeout(flushHandle);
+      } catch (eCan) {}
+      flushHandle = null;
+    }
+
+    /**
+     * Arka plan sekmesinde requestAnimationFrame calismaz; hediyeler kuyrukta
+     * birikip hic islenmez. Sayfa gizliyken zamanlayiciya dus.
+     */
+    function scheduleFlush() {
+      if (flushHandle != null) return;
+      bindVisibilityOnce();
+      if (!isDocHidden() && typeof global.requestAnimationFrame === "function") {
+        flushIsRaf = true;
+        flushHandle = global.requestAnimationFrame(flushQueue);
+        return;
+      }
+      flushIsRaf = false;
+      flushHandle = global.setTimeout(flushQueue, 16);
+    }
+
+    function bindVisibilityOnce() {
+      if (visibilityBound || !global.document || !global.document.addEventListener) return;
+      visibilityBound = true;
+      try {
+        global.document.addEventListener("visibilitychange", function () {
+          if (flushIsRaf && isDocHidden()) cancelFlush();
+          if (queue.length > 0) scheduleFlush();
+        });
+      } catch (eVis) {}
+    }
+
     function flushQueue() {
-      flushRaf = null;
+      flushHandle = null;
       var onPayloads = options.onPayloads;
       var n = 0;
       var batch = [];
@@ -248,20 +382,45 @@
           onPayloads(batch);
         } catch (e2) {}
       }
-      if (queue.length > 0) flushRaf = global.requestAnimationFrame(flushQueue);
+      if (queue.length > 0) scheduleFlush();
     }
 
     function enqueueRaw(parsed) {
+      if (queue.length >= maxQueueSize) queue.splice(0, queue.length - maxQueueSize + 1);
       queue.push(parsed);
-      if (flushRaf == null) flushRaf = global.requestAnimationFrame(flushQueue);
+      scheduleFlush();
     }
 
     function connect() {
       if (userClosed) return;
-      var url = getResolvedTikfinityWsUrl();
-      if (!/^wss?:\/\//i.test(url)) {
-        if (typeof options.onStatus === "function") options.onStatus({ phase: "invalid_url", url: url });
+      var found = getTikfinityWsUrlCandidates();
+      if (lastGoodUrl) {
+        urlCandidates = [lastGoodUrl];
+        for (var ci = 0; ci < found.length; ci++) pushUniqueUrl(urlCandidates, found[ci]);
+      } else {
+        urlCandidates = found;
+      }
+      urlCandidateIndex = 0;
+      tryConnectCandidate();
+    }
+
+    function tryConnectCandidate() {
+      if (userClosed) return;
+      if (!urlCandidates.length) urlCandidates = [DEFAULT_WS];
+      if (urlCandidateIndex >= urlCandidates.length) {
+        if (typeof options.onStatus === "function") {
+          options.onStatus({
+            phase: "local_network_blocked",
+            message: "TikFinity masaustu uygulamasina baglanilamadi. TikFinity acik olmali ve WebSocket API portu 21213 olmalidir.",
+          });
+        }
         scheduleReconnect();
+        return;
+      }
+      var url = urlCandidates[urlCandidateIndex];
+      urlCandidateIndex += 1;
+      if (!/^wss?:\/\//i.test(url)) {
+        tryConnectCandidate();
         return;
       }
       var myGen = ++gen;
@@ -274,14 +433,24 @@
       try {
         sock = new global.WebSocket(url);
       } catch (e1) {
-        scheduleReconnect();
+        tryConnectCandidate();
         return;
       }
       socket = sock;
+      clearConnectTimer();
+      connectTimer = global.setTimeout(function () {
+        if (gen !== myGen) return;
+        try {
+          sock.close();
+        } catch (eTimeout) {}
+      }, CONNECT_TIMEOUT_MS);
 
       sock.onopen = function () {
         if (gen !== myGen) return;
+        clearConnectTimer();
         clearReconnect();
+        lastGoodUrl = url;
+        urlCandidateIndex = urlCandidates.length;
         if (typeof options.onStatus === "function") options.onStatus({ phase: "connected", url: url });
       };
 
@@ -298,13 +467,23 @@
 
       sock.onclose = function () {
         if (gen !== myGen) return;
+        clearConnectTimer();
         socket = null;
         if (userClosed) return;
+        if (urlCandidateIndex < urlCandidates.length) {
+          tryConnectCandidate();
+          return;
+        }
         if (typeof options.onStatus === "function") options.onStatus({ phase: "reconnecting", url: getResolvedTikfinityWsUrl() });
         scheduleReconnect();
       };
 
-      sock.onerror = function () {};
+      sock.onerror = function () {
+        if (gen !== myGen) return;
+        try {
+          sock.close();
+        } catch (e3) {}
+      };
     }
 
     return {
@@ -319,6 +498,9 @@
       stop: function () {
         userClosed = true;
         clearReconnect();
+        clearConnectTimer();
+        cancelFlush();
+        queue.length = 0;
         gen += 1;
         try {
           if (socket) socket.close();
@@ -334,9 +516,11 @@
 
   global.GemTokTikFinity = {
     DEFAULT_WS: DEFAULT_WS,
+    DEFAULT_WS_CANDIDATES: DEFAULT_WS_CANDIDATES,
     LS_KEYS: LS_KEYS,
     isTikfinityAutoDisabled: isTikfinityAutoDisabled,
     getResolvedTikfinityWsUrl: getResolvedTikfinityWsUrl,
+    getTikfinityWsUrlCandidates: getTikfinityWsUrlCandidates,
     streamxtPayloadsFromTikfinityJson: streamxtPayloadsFromTikfinityJson,
     createClient: createClient,
   };
