@@ -6,7 +6,7 @@
   <!-- Bos birakilir; TikFinity WS URL icin (localStorage ve window.TIKFINITY_WS_URL oncelikli) -->
   <meta name="tikfinity-ws-url" content="" />
   <title>Arena 5 Gen</title>
-  <script src="../../gemtok-web-host.js"></script>
+  <script src="../../gemtok-web-host.js?v=20260706-ws2"></script>
   <script src="../../sira/gemtok-license.js?v=20260708-license4"></script>
   <script src="../../gemtok-game-license-gate.js?v=20260708-gate2"></script>
   <script>GemtokGameLicenseGate("arena5gen");</script>
@@ -1306,7 +1306,8 @@
         reconnectTimer: null,
         intentionalClose: false,
         bridgeUnsub: null,
-        portalHudTimer: null
+        portalHudTimer: null,
+        recentGiftEvents: new Map()
       },
       roundEndTime: null,
       roundFrozen: false,
@@ -2159,8 +2160,11 @@
         data.giftType ?? data.gift_type ?? data.gift?.gift_type ?? data.gift?.giftType ?? 0
       );
       const repeatEnd = data.repeatEnd ?? data.repeat_end;
+      const ended =
+        repeatEnd === true || repeatEnd === 1 || repeatEnd === "1" || String(repeatEnd).toLowerCase() === "true";
       if (giftType === 1) {
-        return !(repeatEnd === true || repeatEnd === 1 || repeatEnd === "1");
+        // Streak hediyesi: repeatEnd bilgisi yoksa (null) bekletme; olayi isle ki hediye kaybolmasin.
+        return repeatEnd == null ? false : !ended;
       }
       return repeatEnd === false || repeatEnd === 0 || repeatEnd === "0";
     }
@@ -2173,7 +2177,11 @@
             data.gift?.diamond_count ??
             data.gift?.diamondCount ??
             data.extendedGiftInfo?.diamondCount ??
+            data.extendedGiftInfo?.diamond_count ??
             data.giftDetails?.diamondCount ??
+            data.giftDetails?.diamond_count ??
+            data.data?.diamondCount ??
+            data.data?.diamond_count ??
             0
         )
       );
@@ -2189,17 +2197,69 @@
             data.giftCombo ??
             data.comboCount ??
             data.groupCount ??
+            data.combo ??
             data.gift?.repeat_count ??
+            data.gift?.repeatCount ??
             1
         )
       );
-      return Math.min(120, Math.max(1, Number.isFinite(raw) && raw > 0 ? raw : 1));
+      // Ust sinir yok (sinirsiz); yalnizca guvenli alt sinir 1.
+      return Math.max(1, Number.isFinite(raw) && raw > 0 ? raw : 1);
     }
 
     function computeTikfinityGiftPoints(data) {
       const diamondPerUnit = resolveGiftDiamondPerUnit(data);
       const combo = resolveGiftComboCount(data);
-      return Math.min(60, Math.max(1, diamondPerUnit * combo));
+      // Elmas (jeton) x combo — ust sinir YOK; hediyenin tam degeri puana yansir.
+      return Math.max(1, diamondPerUnit * combo);
+    }
+
+    /** Ayni hediye olayinin (ayni eventId veya ayni imza) kisa surede iki kez sayilmasini engeller. */
+    function shouldSkipDuplicateGiftEvent(data, teamId, points) {
+      const now = typeof performance !== "undefined" && performance.now ? performance.now() : Date.now();
+      let recent = state.tikfinity.recentGiftEvents;
+      if (!(recent instanceof Map)) {
+        recent = new Map();
+        state.tikfinity.recentGiftEvents = recent;
+      }
+      recent.forEach((time, key) => {
+        if (now - time > 30000) recent.delete(key);
+      });
+      const eventId = String(
+        data.eventId ??
+          data.event_id ??
+          data.msgId ??
+          data.messageId ??
+          data.data?.eventId ??
+          data.data?.msgId ??
+          ""
+      ).trim();
+      const user = String(
+        data.userId ??
+          data.uniqueId ??
+          data.nickname ??
+          data.user?.uniqueId ??
+          data.user?.userId ??
+          data.user?.nickname ??
+          ""
+      ).trim();
+      let gid = null;
+      if (typeof GemtokGiftHub !== "undefined" && GemtokGiftHub.extractGiftIdFromEvent) {
+        try {
+          gid = GemtokGiftHub.extractGiftIdFromEvent(data);
+        } catch (_e) {}
+      }
+      const giftKey =
+        gid != null
+          ? String(gid)
+          : String(data.giftName ?? data.gift?.giftName ?? data.gift?.name ?? "gift");
+      const combo = resolveGiftComboCount(data);
+      const key = eventId ? `id:${eventId}` : `sig:${teamId}|${giftKey}|${user}|${combo}|${points}`;
+      const last = recent.get(key);
+      const windowMs = eventId ? 30000 : 150;
+      if (last != null && now - last < windowMs) return true;
+      recent.set(key, now);
+      return false;
     }
 
     function handleGemTokPortalGift(p) {
@@ -2219,7 +2279,9 @@
       const giftTeam = teamIdFromGiftData(data);
       if (!giftTeam) return;
 
-      applyTikfinityPoints(giftTeam, computeTikfinityGiftPoints(data));
+      const points = computeTikfinityGiftPoints(data);
+      if (shouldSkipDuplicateGiftEvent(data, giftTeam, points)) return;
+      applyTikfinityPoints(giftTeam, points);
     }
 
     function handleTikfinityRawLine(line) {

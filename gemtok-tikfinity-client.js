@@ -277,6 +277,19 @@
     return { userId: userId, nickname: nickname, avatarUrl: avatarUrl, user: userOut };
   }
 
+  /** Ilk dolu alani dondurur; "gift.diamond_count" gibi ic ice yollari destekler. */
+  function giftRawValue(data, keys) {
+    for (var i = 0; i < keys.length; i++) {
+      var parts = keys[i].split(".");
+      var cur = data;
+      for (var j = 0; j < parts.length; j++) {
+        cur = cur && typeof cur === "object" ? cur[parts[j]] : undefined;
+      }
+      if (cur != null && cur !== "") return cur;
+    }
+    return undefined;
+  }
+
   function parseChatDigitLane15(raw) {
     var t = String(raw || "").trim();
     if (!t) return null;
@@ -377,11 +390,13 @@
                 ? data.imageUrl
                 : "",
         ).trim();
+        // TikFinity surumleri alan adlarini camelCase veya snake_case yollayabilir;
+        // eksik okunan combo tum oyunlarda hediyeyi tek birim gibi puanlar.
         var rawCombo = Math.max(
-          Number(data.repeatCount) || 0,
-          Number(data.comboCount) || 0,
-          Number(data.groupCount) || 0,
-          Number(data.combo) || 0,
+          Number(giftRawValue(data, ["repeatCount", "repeat_count", "gift.repeatCount", "gift.repeat_count"])) || 0,
+          Number(giftRawValue(data, ["comboCount", "combo_count", "gift.comboCount"])) || 0,
+          Number(giftRawValue(data, ["groupCount", "group_count", "gift.groupCount"])) || 0,
+          Number(giftRawValue(data, ["giftCombo", "combo", "gift.combo"])) || 0,
           1,
         );
         var giftCombo = Math.min(100000, Math.max(1, Math.round(rawCombo) || 1));
@@ -404,11 +419,18 @@
           giftKey: gid,
           giftName: String(giftNameRaw || "").slice(0, 200),
           giftImageUrl: giftImageUrl.slice(0, 2000),
-          diamondCount: data.diamondCount != null ? data.diamondCount : data.diamond_count,
+          diamondCount: giftRawValue(data, [
+            "diamondCount",
+            "diamond_count",
+            "gift.diamond_count",
+            "gift.diamondCount",
+            "extendedGiftInfo.diamondCount",
+            "extendedGiftInfo.diamond_count",
+          ]),
           giftCombo: giftCombo,
           repeatCount: giftCombo,
-          repeatEnd: data.repeatEnd != null ? data.repeatEnd : data.repeat_end,
-          giftType: data.giftType != null ? data.giftType : data.gift_type,
+          repeatEnd: giftRawValue(data, ["repeatEnd", "repeat_end", "gift.repeatEnd", "gift.repeat_end"]),
+          giftType: giftRawValue(data, ["giftType", "gift_type", "gift.giftType", "gift.gift_type"]),
           ...(giftEventId ? { eventId: giftEventId } : {}),
           avatarUrl: gUser.avatarUrl,
           team: "auto",
@@ -495,12 +517,15 @@
     var reconnectAttempt = 0;
     var userClosed = false;
     var queue = [];
-    var flushRaf = null;
+    var flushHandle = null;
+    var flushIsRaf = false;
+    var visibilityBound = false;
     var eventsPerFrame = Math.max(4, Math.min(120, Number(options.eventsPerFrame) || 32));
     var maxQueueSize = Math.max(100, Math.min(10000, Number(options.maxQueueSize) || 2000));
     var cachedServerUrl = "";
     var urlCandidates = [];
     var urlCandidateIndex = 0;
+    var lastGoodUrl = "";
 
     function clearReconnect() {
       if (reconnectTimer != null) {
@@ -527,8 +552,55 @@
       }, delay);
     }
 
+    function isDocHidden() {
+      try {
+        return !!(global.document && global.document.hidden);
+      } catch (eHid) {
+        return false;
+      }
+    }
+
+    function cancelFlush() {
+      if (flushHandle == null) return;
+      try {
+        if (flushIsRaf && typeof global.cancelAnimationFrame === "function") global.cancelAnimationFrame(flushHandle);
+        else global.clearTimeout(flushHandle);
+      } catch (eCan) {}
+      flushHandle = null;
+    }
+
+    /**
+     * Arka plan sekmesinde requestAnimationFrame calismaz; hediyeler kuyrukta
+     * birikip hic islenmez ve kuyruk dolunca kaybolur. Sayfa gizliyken
+     * zamanlayiciya dus, gorunur oldugunda tekrar rAF kullan.
+     */
+    function scheduleFlush() {
+      if (flushHandle != null) return;
+      bindVisibilityOnce();
+      if (!isDocHidden() && typeof global.requestAnimationFrame === "function") {
+        flushIsRaf = true;
+        flushHandle = global.requestAnimationFrame(flushQueue);
+        return;
+      }
+      flushIsRaf = false;
+      flushHandle = global.setTimeout(flushQueue, 16);
+    }
+
+    function bindVisibilityOnce() {
+      if (visibilityBound || !global.document || !global.document.addEventListener) return;
+      visibilityBound = true;
+      try {
+        global.document.addEventListener("visibilitychange", function () {
+          // Gizlenirken bekleyen rAF hicbir zaman tetiklenmez: iptal edip
+          // zamanlayiciya gec. Gorunur olunca birikmis kuyrugu hemen bosalt.
+          if (flushIsRaf && isDocHidden()) cancelFlush();
+          if (queue.length > 0) scheduleFlush();
+        });
+      } catch (eVis) {}
+    }
+
     function flushQueue() {
-      flushRaf = null;
+      flushHandle = null;
       var onPayloads = options.onPayloads;
       var n = 0;
       var batch = [];
@@ -554,18 +626,26 @@
           if (typeof console !== "undefined" && console.warn) console.warn("[GemTokTikFinity] onPayloads", e2);
         }
       }
-      if (queue.length > 0) flushRaf = global.requestAnimationFrame(flushQueue);
+      if (queue.length > 0) scheduleFlush();
     }
 
     function enqueueRaw(parsed) {
       if (queue.length >= maxQueueSize) queue.splice(0, queue.length - maxQueueSize + 1);
       queue.push(parsed);
-      if (flushRaf == null) flushRaf = global.requestAnimationFrame(flushQueue);
+      scheduleFlush();
     }
 
     function connect() {
       if (userClosed) return;
-      urlCandidates = getTikfinityWsUrlCandidates(cachedServerUrl);
+      var found = getTikfinityWsUrlCandidates(cachedServerUrl);
+      // Daha once basariyla baglanilan adresi bas siraya al: TikFinity yeniden
+      // baslatildiginda calisan adres yerine sirasiyla tum adaylari denemeyelim.
+      if (lastGoodUrl) {
+        urlCandidates = [lastGoodUrl];
+        for (var ci = 0; ci < found.length; ci++) pushUniqueUrl(urlCandidates, found[ci]);
+      } else {
+        urlCandidates = found;
+      }
       urlCandidateIndex = 0;
       tryConnectCandidate();
     }
@@ -619,6 +699,11 @@
         clearConnectTimer();
         reconnectAttempt = 0;
         clearReconnect();
+        lastGoodUrl = url;
+        // Aday listesini tuket: baglanti sonradan koparsa kalan adaylara
+        // atlamak yerine gecikmeli yeniden baglanma calissin (connect() bu
+        // adresi yeniden bas siraya alir).
+        urlCandidateIndex = urlCandidates.length;
         if (typeof options.onStatus === "function") options.onStatus({ phase: "connected", url: url });
       };
 
@@ -704,6 +789,8 @@
         userClosed = true;
         clearReconnect();
         clearConnectTimer();
+        cancelFlush();
+        queue.length = 0;
         gen += 1;
         try {
           if (socket) socket.close();

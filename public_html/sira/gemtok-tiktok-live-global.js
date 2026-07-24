@@ -9,6 +9,10 @@
 
   var BC_NAME = "gemtok-tiktok-live-v1";
   var LS_HUB = "gemtok_gift_hub_url";
+  var LEADER_BEAT_MS = 1500;
+  var LEADER_STALE_MS = 4500;
+  var LEADER_PROBE_MS = 1500;
+  var STATUS_BROADCAST_MS = 400;
 
   function uuid() {
     return "c_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -86,17 +90,22 @@
   var licenseListenerBound = false;
   var bridgeWatchTimer = null;
   var bridgeStatusHint = "";
+  var leaderBeatTimer = null;
+  var leaderWatchTimer = null;
+  var lastLeaderBeatAt = 0;
+  var leaderProbeSentAt = 0;
+  var lastStatusBroadcastAt = 0;
 
   function setState(s, extra) {
     state = s;
     if (extra && extra.url) lastWsUrl = String(extra.url);
-    broadcastStatus();
+    broadcastStatus(true);
   }
 
   function touchEvent(typ) {
     lastEventType = String(typ || "");
     lastEventAt = Date.now();
-    broadcastStatus();
+    broadcastStatus(false);
   }
 
   function isLocalOnlyHubBase(base) {
@@ -218,27 +227,33 @@
       var d = ev && ev.data;
       if (!d || typeof d !== "object") return;
       if (d.t === "IAM_LEADER") {
-        if (d.id !== getClientId()) {
-          remoteLeader = true;
-          if (claimTimer) {
-            global.clearTimeout(claimTimer);
-            claimTimer = null;
-          }
-          if (isLeader) {
-            try {
-              tikClient && tikClient.stop();
-            } catch (e2) {}
-            tikClient = null;
-            isLeader = false;
-            lastEventAt = 0;
-            lastEventType = "";
-            setState("disconnected", {});
-          }
+        if (d.id === getClientId()) return;
+        lastLeaderBeatAt = Date.now();
+        leaderProbeSentAt = 0;
+        if (isLeader) {
+          // Iki sekme ayni anda onculuge gecerse sabit bir kural ile yalnizca
+          // biri geri cekilsin; ikisi de birakirsa lidersiz kalir ve hediye akmaz.
+          if (String(d.id) < getClientId()) return;
+          stepDownFromLeader();
         }
+        remoteLeader = true;
+        adoptRemoteStatus(d);
+        if (claimTimer) {
+          global.clearTimeout(claimTimer);
+          claimTimer = null;
+        }
+        return;
+      }
+      if (d.t === "PING_LEADER" || d.t === "CLAIM") {
+        // Zamanlayicidan bagimsiz yanit: arka planda kisitlanan bir oncu sekme
+        // bile mesaj olayina cevap verebilir, bosuna devralma olmaz.
+        if (d.id !== getClientId() && isLeader) postLeaderBeat();
         return;
       }
       if (d.t === "LEADER_DEAD") {
         remoteLeader = false;
+        lastLeaderBeatAt = 0;
+        leaderProbeSentAt = 0;
         if (!isLeader) {
           lastEventAt = 0;
           lastEventType = "";
@@ -251,16 +266,26 @@
       }
       if (d.t === "STATUS" && !isLeader && d.id !== getClientId()) {
         remoteLeader = true;
-        state = String(d.state || state || "disconnected");
-        lastWsUrl = String(d.url || lastWsUrl || "");
-        lastEventType = String(d.lastEventType || lastEventType || "");
-        lastEventAt = Number(d.lastEventAt || lastEventAt || 0);
+        lastLeaderBeatAt = Date.now();
+        leaderProbeSentAt = 0;
+        adoptRemoteStatus(d);
       }
     };
   }
 
-  function broadcastStatus() {
+  function adoptRemoteStatus(d) {
+    state = String(d.state || state || "disconnected");
+    lastWsUrl = String(d.url || lastWsUrl || "");
+    lastEventType = String(d.lastEventType || lastEventType || "");
+    lastEventAt = Number(d.lastEventAt || lastEventAt || 0);
+  }
+
+  function broadcastStatus(force) {
     if (!bc || !isLeader) return;
+    // touchEvent her olayda cagrilir; hediye yagmurunda kanali bogmamak icin kis.
+    var now = Date.now();
+    if (!force && now - lastStatusBroadcastAt < STATUS_BROADCAST_MS) return;
+    lastStatusBroadcastAt = now;
     try {
       bc.postMessage({
         t: "STATUS",
@@ -271,6 +296,73 @@
         lastEventAt: lastEventAt,
       });
     } catch (e) {}
+  }
+
+  function postLeaderBeat() {
+    if (!bc || !isLeader) return;
+    try {
+      bc.postMessage({
+        t: "IAM_LEADER",
+        id: getClientId(),
+        state: state,
+        url: lastWsUrl,
+        lastEventType: lastEventType,
+        lastEventAt: lastEventAt,
+      });
+    } catch (e) {}
+  }
+
+  function startLeaderBeat() {
+    postLeaderBeat();
+    if (leaderBeatTimer) return;
+    leaderBeatTimer = global.setInterval(postLeaderBeat, LEADER_BEAT_MS);
+  }
+
+  function stopLeaderBeat() {
+    if (!leaderBeatTimer) return;
+    global.clearInterval(leaderBeatTimer);
+    leaderBeatTimer = null;
+  }
+
+  function stepDownFromLeader() {
+    stopLeaderBeat();
+    try {
+      tikClient && tikClient.stop();
+    } catch (e0) {}
+    tikClient = null;
+    isLeader = false;
+    lastEventAt = 0;
+    lastEventType = "";
+    setState("disconnected", {});
+  }
+
+  /**
+   * Oncu sekme beforeunload calismadan olurse (cokme, sekme atilmasi, OBS
+   * kaynagi kapanmasi) izleyici sekmelere hediye akmaz ve oyun sessizce durur.
+   * Nabiz kesilince once PING at, yanit yoksa onculugu devral.
+   */
+  function startLeaderWatch() {
+    if (leaderWatchTimer) return;
+    leaderWatchTimer = global.setInterval(function () {
+      if (isLeader || !remoteLeader) return;
+      if (Date.now() - lastLeaderBeatAt < LEADER_STALE_MS) {
+        leaderProbeSentAt = 0;
+        return;
+      }
+      if (!leaderProbeSentAt) {
+        leaderProbeSentAt = Date.now();
+        try {
+          bc && bc.postMessage({ t: "PING_LEADER", id: getClientId() });
+        } catch (e) {}
+        return;
+      }
+      if (Date.now() - leaderProbeSentAt < LEADER_PROBE_MS) return;
+      leaderProbeSentAt = 0;
+      remoteLeader = false;
+      lastEventAt = 0;
+      lastEventType = "";
+      scheduleBecomeLeader();
+    }, 1000);
   }
 
   function broadcastBatches(batch) {
@@ -344,11 +436,15 @@
 
   function stopLeaderIfRunning() {
     if (isLeader) {
+      stopLeaderBeat();
       try {
         tikClient && tikClient.stop();
       } catch (e0) {}
       tikClient = null;
       isLeader = false;
+      try {
+        bc && bc.postMessage({ t: "LEADER_DEAD", from: getClientId() });
+      } catch (e1) {}
     }
     setState("disconnected", {});
   }
@@ -373,16 +469,15 @@
       claimTimer = null;
       if (remoteLeader) return;
       isLeader = true;
-      try {
-        bc && bc.postMessage({ t: "IAM_LEADER", id: getClientId() });
-      } catch (e) {}
       setState("connecting", {});
+      startLeaderBeat();
       startLeaderSocket();
-    }, 250);
+    }, 500);
   }
 
   function onBeforeUnload() {
     if (isLeader) {
+      stopLeaderBeat();
       try {
         bc && bc.postMessage({ t: "LEADER_DEAD", from: getClientId() });
       } catch (e) {}
@@ -425,7 +520,8 @@
   function isLiveSignalOk() {
     if (!shouldAttemptTikfinityBridge()) return false;
     if (isLeader && state === "connected") return true;
-    if (remoteLeader && state === "connected") return true;
+    // Oncu sekmenin nabzi kesildiyse "bagli" bilgisi artik guvenilir degil.
+    if (remoteLeader && state === "connected" && Date.now() - lastLeaderBeatAt < LEADER_STALE_MS * 2) return true;
     if (!isLeader && lastEventAt && Date.now() - lastEventAt < 3500) return true;
     return false;
   }
@@ -682,9 +778,23 @@
     } else {
       startBridge();
     }
+    startLeaderWatch();
     if (!unloadBound) {
       unloadBound = true;
       global.addEventListener("beforeunload", onBeforeUnload);
+      global.addEventListener("pagehide", onBeforeUnload);
+      global.addEventListener("pageshow", function (ev) {
+        // Geri/ileri onbelleginden donuldu: pagehide onculugu birakmisti,
+        // baska bir sekme devraldi mi diye sor, almadiysa yeniden ustlen.
+        if (!ev || !ev.persisted) return;
+        remoteLeader = false;
+        lastLeaderBeatAt = 0;
+        leaderProbeSentAt = 0;
+        try {
+          bc && bc.postMessage({ t: "CLAIM", id: getClientId() });
+        } catch (ePs) {}
+        scheduleBecomeLeader();
+      });
     }
     if (!licenseListenerBound) {
       licenseListenerBound = true;

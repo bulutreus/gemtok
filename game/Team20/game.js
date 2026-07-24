@@ -1343,15 +1343,28 @@ const TikFinityApi = globalThis.TikFinity ?? {
   },
 };
 
+let liveStatus = 'disconnected';
+
 const tikfinity = new TikFinityApi.Client({
   laneCount: LANE_COUNT,
   countryNames: COUNTRIES.map((c) => c.name),
   teamAliases: TEAM_CHAT_ALIASES,
   url: TikFinityApi.resolveWsUrl(),
   autoConnect: !TikFinityApi.isAutoConnectDisabled(),
-  onStatus() {},
+  onStatus(status) {
+    liveStatus = String(status || '');
+  },
   onAction: handleLiveAction,
 });
+
+// Lisans aktifken hediye akmiyorsa yayinci fark etsin.
+if (window.GemTokLiveConnAlert) {
+  window.GemTokLiveConnAlert.install({
+    isLiveOk: () => liveStatus === 'connected',
+    isEnabled: () => !TikFinityApi.isAutoConnectDisabled(),
+    reconnect: () => tikfinity.connect(),
+  });
+}
 
 function drawRoadSurface(x, y, w, h, laneIndex) {
   ctx.fillStyle = laneIndex % 2 === 0 ? '#0d0d0d' : '#111111';
